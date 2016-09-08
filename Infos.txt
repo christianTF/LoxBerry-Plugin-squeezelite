@@ -1,0 +1,3 @@
+Download and compile Squeezelite
+http://forums.slimdevices.com/showthread.php?103999-Raspberry-Pi-with-Squeezelite-and-Shairport_Sync
+
