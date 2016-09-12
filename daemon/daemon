@@ -10,10 +10,17 @@ then
     /usr/bin/logger "DAEMON Script from Squeezelite Plugin"
 fi
 
+pluginname = $(basename $0 .sh)
+
 if systemctl is-active squeezelite.service
-then
-	/usr/bin/logger "Disabling squeezelite.service"
-	systemctl stop squeezelite.service
-	systemctl disable squeezelite.service
+	then
+		/usr/bin/logger "Disabling squeezelite.service"
+		systemctl stop squeezelite.service
+		systemctl disable squeezelite.service
 fi
+
+[ -s /opt/loxberry/config/plugins/$pluginname/plugin_squeezelite.cfg ]
+	then
+		
+fi		
 exit 0

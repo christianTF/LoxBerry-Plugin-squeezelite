@@ -19,9 +19,12 @@ my  $installfolder;
 my  $cfg;
 our $helptext;
 our $template_title;
+our $pluginname;
 
+$pluginname = abs_path($0);
+$pluginname =~ s/(.*)\/(.*)\/(.*)$/$2/g;
 # Read Settings
-$cfg             = new Config::Simple("$home/config/system/general.cfg");
+$cfg             = new Config::Simple("$installfolder/config/plugins/$pluginname/plugin_squeezelite.cfg");
 $installfolder   = $cfg->param("BASE.INSTALLFOLDER");
 $lang            = $cfg->param("BASE.LANG");
 
