@@ -1,11 +1,5 @@
 #!/bin/sh
 
-# This is a sample DAEMON file which is started at boottime. iIt must be names
-# "start" here and will be renamed according to your Pluginname during
-# installation. CAUTION! MAKE SURE YOUR SCRIPT EXITS CLEANLY! It is a good idea
-# to start your daemon as background process. If you do something wrong here
-# your user's systems may hang forever during boottime!
-
 # Will be executed as user "root".
 
 # Name this file "daemon.sh" in your plugin-archive. It will be renamed to NAME
@@ -13,7 +7,13 @@
 
 if [ -x /usr/bin/logger ]
 then
-    /usr/bin/logger "This is just a sample DAEMON script from Sample Plugin"
+    /usr/bin/logger "DAEMON Script from Squeezelite Plugin"
 fi
 
+if systemctl is-active squeezelite.service
+then
+	/usr/bin/logger "Disabling squeezelite.service"
+	systemctl stop squeezelite.service
+	systemctl disable squeezelite.service
+fi
 exit 0
