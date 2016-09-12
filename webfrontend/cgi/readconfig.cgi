@@ -17,13 +17,51 @@ my  $cfg;
 our $helptext;
 our $template_title;
 our $pluginname;
+my $cfgversion=0;
+my $squ_instances=0;
+my $aqu_server;
+my @inst_enabled;
+my @inst_name;
+my @inst_mac;
+my @inst_output;
+my @inst_params;
+my @commandline;
 
 $pluginname = abs_path($0);
 $pluginname =~ s/(.*)\/(.*)\/(.*)$/$2/g;
 # Read Settings
-$cfg             = new Config::Simple("$installfolder/config/plugins/$pluginname/plugin_squeezelite.cfg");
-$installfolder   = $cfg->param("BASE.INSTALLFOLDER");
+$cfg = new Config::Simple("$installfolder/config/plugins/$pluginname/plugin_squeezelite.cfg") or die Config::Simple->error();
 
+# Read the Main section
+$cfgversion = $cfg->param("Main.ConfigVersion");
+$squ_instances = $cfg->param("Main.Instances");
+$squ_server = $cfg->param("Main.Server");
 
+# Read the Instances section
+for ($instance = 1; $instance <= $squ_instances; $instance++) {
+	$enabled = NULL;
+	$enabled = $cfg->param("Instance" . $instance . ".Enabled");
+	if (($enabled eq "True") || ($enabled eq "Yes")) {
+		push(@inst_enabled, $cfg->param("Instance" . $instance . ".Enabled"));
+		push(@inst_name, $cfg->param("Instance" . $instance . ".Name"));
+		push(@inst_mac, $cfg->param("Instance" . $instance . ".MAC"));
+		push(@inst_output, $cfg->param("Instance" . $instance . ".MAC"));
+		push(@inst_params, $cfg->param("Instance" . $instance . ".Parameters"));
+	# ToDo: At some point, we may validate the config file parameters
+	}
+}
+
+# Create the command line
+$instcount = scalar @inst_name;
+for ($instance = 0; $instance < $instcount; $instance++) {
+	$command = 	"squeezelite" . 
+				" -s " . $squ_server .
+				" -o " . @inst_output[$instance] . 
+				" -m " . @inst_mac[$instance] . 
+				" -n " . @inst_name[$instance] . 
+				" -z";
+	# Starten
+	system($command);
+}
 
 exit;
