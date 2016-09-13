@@ -29,7 +29,13 @@ my @commandline;
 
 $pluginname = abs_path($0);
 $pluginname =~ s/(.*)\/(.*)\/(.*)$/$2/g;
-# Read Settings
+
+# Read global settings
+$cfg             = new Config::Simple("$home/config/system/general.cfg");
+$installfolder   = $cfg->param("BASE.INSTALLFOLDER");
+$lang            = $cfg->param("BASE.LANG");
+
+# Read plugin settings
 $cfg = new Config::Simple("$installfolder/config/plugins/$pluginname/plugin_squeezelite.cfg") or die Config::Simple->error();
 
 # Read the Main section
