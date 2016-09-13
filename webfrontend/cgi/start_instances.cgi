@@ -22,6 +22,7 @@ my $squ_instances=0;
 my $aqu_server;
 my @inst_enabled;
 my @inst_name;
+my @inst_desc;
 my @inst_mac;
 my @inst_output;
 my @inst_params;
@@ -50,6 +51,7 @@ for ($instance = 1; $instance <= $squ_instances; $instance++) {
 	if (($enabled eq "True") || ($enabled eq "Yes")) {
 		push(@inst_enabled, $cfg->param("Instance" . $instance . ".Enabled"));
 		push(@inst_name, $cfg->param("Instance" . $instance . ".Name"));
+		push(@inst_desc, $cfg->param("Instance" . $instance . ".Description"));
 		push(@inst_mac, $cfg->param("Instance" . $instance . ".MAC"));
 		push(@inst_output, $cfg->param("Instance" . $instance . ".Output"));
 		push(@inst_params, $cfg->param("Instance" . $instance . ".Parameters"));
