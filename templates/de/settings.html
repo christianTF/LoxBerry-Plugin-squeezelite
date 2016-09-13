@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+									<link rel="stylesheet" href="/plugins/<!--$psubfolder-->/style.css">
+									<center>
+										
+									<form method="post" data-ajax="false" name="main_form" id="main_form" action="./index.cgi">
+										<input type="hidden" name="saveformdata" value="1">
+										<input type="hidden" name="ConfigVersion" value="<!--$configversion-->">
+										<input type="hidden" name="Instances" value="<!--$instances-->">
+										<h1>Grundeinstellungen</h1>
+										<div style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><table border="1" cellpadding="2" cellspacing="2" style="background-color: #ffffff;">
+                                          <tr valign="top">
+                                          <td style="border-width : 0px;">Logitech Media Server Adresse
+                                          </td>
+                                          <td style="border-width : 0px;"><input type="text" name="LMSServer" value="<!--$lmsserver-->">
+                                          </td>
+                                          <td style="border-width : 0px;">Format: server oder server:port<br />Bleibt das Feld leer, sucht Squeezelite automatisch nach dem Server.
+                                          </td>
+                                          </tr>
+                                          </table>
+                                        </div>
+										<h1>Instanzen</h1>
+										Es k&ouml;nnen mehrere Instanzen von Squeezelite betrieben werden. Ob es stabil funktioniert, ist von der 
+										Leistungsf&auml;higkeit der LoxBerry-Hardware abh&auml;ngig.<br /><br />
+
+<div style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><table width="100%" border="1" cellpadding="2" cellspacing="2" style="background-color: #ffffff;">
+<tr valign="top">
+<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Instanz</span></p>
+</td>
+<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Aktiv</span></p>
+</td>
+<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Name der Zone</span></p>
+</td>
+<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">MAC-Adresse</span></p>
+</td>
+<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Audio-Ausgang</span></p>
+</td>
+<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Zus&auml;tzliche Parameter</span></p>
+</td>
+</tr>
+<tr valign="top">
+<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;"><!--$instance--><input type="hidden" name="Instance" value="1"></span></p>
+</td>
+<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;"><input type="checkbox" name="Enabled" value="<!--$enabled-->"></span></p>
+</td>
+<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;"><input type="text" name="Name" value="<!--$name-->"></span></p>
+</td>
+<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;"><input type="text" name="MAC" value="<!--$mac-->"></span></p>
+</td>
+<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">
+<select name="Output" align="left">
+  <!-- Generate Output List -->
+  <option value="null">Null</option>
+  <option selected value="ALSA">ALSA</option>
+</select>
+</span></p>
+</td>
+<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;"><input type="text" name="Parameters" value="<!--$parameters-->"></span></p>
+</td>
+</tr>
+</table>
+</div>
+
+									</form>
+
+									<p>
+										&nbsp;
+									</p>
+									<p>
+										<center>
+											<a id="btncancel" data-role="button" data-inline="true" data-mini="true" data-icon="delete" href="/admin/index.cgi">Abbrechen</a>
+												<button type="submit" form="main_form" id="btnsubmit" data-role="button" data-inline="true" data-mini="true" data-icon="check">Speichern</button>
+												<button type="submit" form="main_form" id="btnapply" data-role="button" data-inline="true" data-mini="true" data-icon="check">Jetzt ausf&uuml;hren</button>
+												
+										</center>
+									</p>
+<h3>Erl&auml;uterungen</h3>
+
+<div style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><table width="100%" border="1" cellpadding="2" cellspacing="2" style="background-color: #ffffff;">
+<tr valign="top">
+<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Aktiv</span></p>
+</td>
+<td style="border-width : 0px;">Aktiviert und deaktiviert das Laden dieser Instanz.
+</td>
+</tr>
+<tr valign="top">
+<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Name der Zone</span></p>
+</td>
+<td style="border-width : 0px;">Wird kein Name vergeben, heißt die Zone squeezelite.
+</td>
+</tr>
+<tr valign="top">
+<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">MAC-Adresse</span></p>
+</td>
+<td style="border-width : 0px;">Die Interfaces sprechen die Player mit der MAC-Adresse an, daher müssen für alle Instanzen unterschiedliche Adressen angegeben werden.
+</td>
+</tr>
+<tr valign="top">
+<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Audio-Ausgang</span></p>
+</td>
+<td style="border-width : 0px;">Aufgelistet werden alle Ausgänge, die gefunden wurden. Mit null kann eine Instanz ohne Ausgabe erzeugt werden.
+</td>
+</tr>
+<tr valign="top">
+<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">ZusÃ¤tzliche Parameter</span></p>
+</td>
+<td style="border-width : 0px;">Hier können zusätzliche Commandline-Parameter mitgegeben werden.
+</td>
+</tr>
+</table>
+</div>
+
+
+									<div>
+										<table width="100%" border="0">
+											<tr>
+												<td width="200px%"><label id="LogLiveLabel"><input data-mini="true" type="checkbox" id="LogLive">Logdatei live anzeigen</label></td>
+												<td width="200px" id="LogScrolltd"><label><input data-mini="true" type="checkbox" checked id="LogScroll">Automatisch zum Ende springen</label></td>
+												<td width="200px" id="LogSessionReset"><a onclick="$('#Logfile').prop('innerHTML','<hr\><div style=\'text-align:center; width:100%; color:#000000; background-color:lightgreen;\'>##### Neue Sitzung gestartet #####</div><hr\>'); $.get('/plugins/<!--$psubfolder-->/logfile.php?ajax&new_session=1');" id="reset_session" data-role="button" data-mini="true" href="" data-icon="star" target="_blank">Debug-Sitzung neu starten</a></td>
+											</tr>
+										</table>
+										<div style="resize:vertical; overflow:auto; border: 1px solid #888;  background-color: transparent; font-family:monospace; color:#8080FF; overflow-y: scroll;" id="Logfile" contenteditable="true"></div>
+									</div>
+									<script>
+										$.get('/plugins/<!--$psubfolder-->/logfile.php?ajax&new_session=1');
+										$("#LogScrolltd").fadeTo( "fast", 0 );
+										$("#Logfile").fadeTo( "fast", 0 );
+										var liveviewtimer ="";
+										var $messages = $('#form-error-message');
+										$.validate({
+											modules : 'security',
+											errorMessagePosition : $messages,
+										});
+											 $("#LogLive").change(function()
+											{
+												if($(this).is(":checked"))
+												{
+												var timeleft = 900000;
+												$("#LogLiveLabel").text("Logdatei aktualisieren");
+												$("#LogScrolltd").fadeTo( "slow", 1 );
+												$("#Logfile").fadeTo( "slow", 1 );
+												setTimeout( function()
+												{
+													$('#response').fadeTo( 'slow', 1 );
+													$('#response').html( "Stoppe Logdatei-Anzeige. Bitte bei Bedarf fortsetzen." );
+													clearInterval(liveviewtimer);
+
+													if ($("#LogLive").prop("checked"))
+													{
+													//$("#LogLive").trigger("click");
+													$("#LogLiveLabel").trigger("click");
+
+												}
+												setTimeout( function()
+													{
+														$('#response').fadeTo( 'slow', 0 );
+															setTimeout( function()
+															{
+															$('#response').html( "&nbsp;" );
+															}, 1000);
+													}, 5000);
+												}, timeleft);
+												liveviewtimer = setInterval(function() {
+												timeleft = timeleft - 500;
+												var displaytimeleft = timeleft;
+												if (timeleft >= 60000)
+													{
+														var min = Math.floor(displaytimeleft / (1000*60));
+														displaytimeleft = displaytimeleft % (1000*60);
+														var sec = Math.floor(displaytimeleft / 1000);
+														var mSec = displaytimeleft % 1000;
+														var displaytime = "(" + min + " min " + sec + " s)";
+												 }
+												else
+													{
+														var sec = Math.floor(displaytimeleft / 1000);
+														var mSec = displaytimeleft % 1000;
+														var displaytime = "(" + sec + " s)";
+													}
+												$("#LogLiveLabel").text("Logdatei aktualisieren " + displaytime);
+												$.get('/plugins/<!--$psubfolder-->/logfile.php?ajax', function(data) {
+													$('#Logfile').append(data);
+
+												 $('#Logfile').height("300");
+
+												if($("#LogScroll").is(":checked"))
+													{
+													$('#Logfile').scrollTop($('#Logfile')[0].scrollHeight);
+													}
+												 });
+													}, 500);
+												}
+												else
+												{
+													$("#LogLiveLabel").text("Logdatei aktualisieren");
+													clearInterval(liveviewtimer);
+													$("#LogScrolltd").fadeTo( "slow", 0 );
+											}
+											});
+
+									</script>

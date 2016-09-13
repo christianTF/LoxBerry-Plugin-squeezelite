@@ -1,0 +1,200 @@
+<!DOCTYPE htm ccID="9"l>
+									<link rel="stylesheet" href="/plugins/<!--$psubfolder-->/style.css">
+									<center ccID="106">
+										
+									<form ccID="137" method="post" data-ajax="false" name="main_form" id="main_form" action="./index.cgi">
+										<input ccID="240" type="hidden" name="saveformdata" value="1">
+										<input ccID="303" type="hidden" name="ConfigVersion" value="<!--$configversion-->">
+										<input ccID="387" type="hidden" name="Instances" value="<!--$instances-->">
+										<h1 ccID="463">Grundeinstellungen</h1>
+										<div ccID="502" style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><table ccID="605" border="1" cellpadding="2" cellspacing="2" style="background-color: #ffffff;">
+                                          <tr ccID="734" valign="top">
+                                          <td ccID="795" style="border-width : 0px;">Logitech Media Server Adresse
+                                          </td>
+                                          <td ccID="949" style="border-width : 0px;"><input ccID="981" type="text" name="LMSServer" value="<!--$lmsserver-->">
+                                          </td>
+                                          <td ccID="1136" style="border-width : 0px;">Format: server oder server:port<br ccID="1199" />Bleibt das Feld leer, sucht Squeezelite automatisch nach dem Server.
+                                          </td>
+                                          </tr>
+                                          </table>
+                                        </div>
+										<h1 ccID="1483">Instanzen</h1>
+										Es k&ouml;nnen mehrere Instanzen von Squeezelite betrieben werden. Ob es stabil funktioniert, ist von der 
+										Leistungsf&auml;higkeit der LoxBerry-Hardware abh&auml;ngig.<br ccID="1691" /><br ccID="1697" />
+
+<div ccID="1707" style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><table ccID="1810" width="100%" border="1" cellpadding="2" cellspacing="2" style="background-color: #ffffff;">
+<tr ccID="1910" valign="top">
+<td ccID="1929" style="border-width : 0px;"><p ccID="1961" style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span ccID="2060" style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Instanz</span></p>
+</td>
+<td ccID="2277" style="border-width : 0px;"><p ccID="2309" style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span ccID="2408" style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Aktiv</span></p>
+</td>
+<td ccID="2623" style="border-width : 0px;"><p ccID="2655" style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span ccID="2754" style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Name der Zone</span></p>
+</td>
+<td ccID="2977" style="border-width : 0px;"><p ccID="3009" style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span ccID="3108" style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">MAC-Adresse</span></p>
+</td>
+<td ccID="3329" style="border-width : 0px;"><p ccID="3361" style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span ccID="3460" style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Audio-Ausgang</span></p>
+</td>
+<td ccID="3683" style="border-width : 0px;"><p ccID="3715" style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span ccID="3814" style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Zus&auml;tzliche Parameter</span></p>
+</td>
+</tr>
+<tr ccID="4057" valign="top">
+<td ccID="4076" style="border-width : 0px;"><p ccID="4108" style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span ccID="4207" style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;"><!--$instance--><input ccID="4413" type="hidden" name="Instance" value="1"></span></p>
+</td>
+<td ccID="4480" style="border-width : 0px;"><p ccID="4512" style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span ccID="4611" style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;"><input ccID="4801" type="checkbox" name="Enabled" value="<!--$enabled-->"></span></p>
+</td>
+<td ccID="4883" style="border-width : 0px;"><p ccID="4915" style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span ccID="5014" style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;"><input ccID="5204" type="text" name="Name" value="<!--$name-->"></span></p>
+</td>
+<td ccID="5276" style="border-width : 0px;"><p ccID="5308" style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span ccID="5407" style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;"><input ccID="5597" type="text" name="MAC" value="<!--$mac-->"></span></p>
+</td>
+<td ccID="5667" style="border-width : 0px;"><p ccID="5699" style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span ccID="5798" style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">
+<select ccID="5990" name="Output" align="left">
+  <!-- Generate Output List -->
+  <option ccID="6062" value="null">Null</option>
+  <option ccID="6100" selected value="ALSA">ALSA</option>
+</select>
+</span></p>
+</td>
+<td ccID="6176" style="border-width : 0px;"><p ccID="6208" style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span ccID="6307" style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;"><input ccID="6497" type="text" name="Parameters" value="<!--$parameters-->"></span></p>
+</td>
+</tr>
+</table>
+</div>
+
+									</form>
+
+									<p ccID="6637">
+										&nbsp;
+									</p>
+									<p ccID="6684">
+										<center ccID="6699">
+											<a ccID="6720" id="btncancel" data-role="button" data-inline="true" data-mini="true" data-icon="delete" href="/admin/index.cgi">Abbrechen</a>
+												<button ccID="6863" type="submit" form="main_form" id="btnsubmit" data-role="button" data-inline="true" data-mini="true" data-icon="check">Speichern</button>
+												<button ccID="7022" type="submit" form="main_form" id="btnapply" data-role="button" data-inline="true" data-mini="true" data-icon="check">Jetzt ausf&uuml;hren</button>
+												
+										</center>
+									</p>
+<h3 ccID="7229">Erl&auml;uterungen</h3>
+
+<div ccID="7260" style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><table ccID="7361" width="100%" border="1" cellpadding="2" cellspacing="2" style="background-color: #ffffff;">
+<tr ccID="7461" valign="top">
+<td ccID="7480" style="border-width : 0px;"><p ccID="7512" style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span ccID="7611" style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Aktiv</span></p>
+</td>
+<td ccID="7826" style="border-width : 0px;">Aktiviert und deaktiviert das Laden dieser Instanz.
+</td>
+</tr>
+<tr ccID="7925" valign="top">
+<td ccID="7944" style="border-width : 0px;"><p ccID="7976" style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span ccID="8075" style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Name der Zone</span></p>
+</td>
+<td ccID="8298" style="border-width : 0px;">Wird kein Name vergeben, heißt die Zone squeezelite.
+</td>
+</tr>
+<tr ccID="8399" valign="top">
+<td ccID="8418" style="border-width : 0px;"><p ccID="8450" style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span ccID="8549" style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">MAC-Adresse</span></p>
+</td>
+<td ccID="8770" style="border-width : 0px;">Die Interfaces sprechen die Player mit der MAC-Adresse an, daher müssen für alle Instanzen unterschiedliche Adressen angegeben werden.
+</td>
+</tr>
+<tr ccID="8954" valign="top">
+<td ccID="8973" style="border-width : 0px;"><p ccID="9005" style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span ccID="9104" style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Audio-Ausgang</span></p>
+</td>
+<td ccID="9327" style="border-width : 0px;">Aufgelistet werden alle Ausgänge, die gefunden wurden. Mit null kann eine Instanz ohne Ausgabe erzeugt werden.
+</td>
+</tr>
+<tr ccID="9486" valign="top">
+<td ccID="9505" style="border-width : 0px;"><p ccID="9537" style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span ccID="9636" style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">ZusÃ¤tzliche Parameter</span></p>
+</td>
+<td ccID="9870" style="border-width : 0px;">Hier können zusätzliche Commandline-Parameter mitgegeben werden.
+</td>
+</tr>
+</table>
+</div>
+
+
+									<div ccID="10015">
+										<table ccID="10032" width="100%" border="0">
+											<tr ccID="10076">
+												<td ccID="10094" width="200px%"><label ccID="10113" id="LogLiveLabel"><input ccID="10138" data-mini="true" type="checkbox" id="LogLive">Logdatei live anzeigen</label></td>
+												<td ccID="10240" width="200px" id="LogScrolltd"><label ccID="10275"><input ccID="10282" data-mini="true" type="checkbox" checked id="LogScroll">Automatisch zum Ende springen</label></td>
+												<td ccID="10401" width="200px" id="LogSessionReset"><a ccID="10440" onclick="$('#Logfile').prop('innerHTML','<hr\><div style=\'text-align:center; width:100%; color:#000000; background-color:lightgreen;\'>##### Neue Sitzung gestartet #####</div><hr\>'); $.get('/plugins/<!--$psubfolder-->/logfile.php?ajax&new_session=1');" id="reset_session" data-role="button" data-mini="true" href="" data-icon="star" target="_blank">Debug-Sitzung neu starten</a></td>
+											</tr>
+										</table>
+										<div ccID="10878" style="resize:vertical; overflow:auto; border: 1px solid #888;  background-color: transparent; font-family:monospace; color:#8080FF; overflow-y: scroll;" id="Logfile" contenteditable="true"></div>
+									</div>
+									<script ccID="11107">
+										$.get('/plugins/<!--$psubfolder-->/logfile.php?ajax&new_session=1');
+										$("#LogScrolltd").fadeTo( "fast", 0 );
+										$("#Logfile").fadeTo( "fast", 0 );
+										var liveviewtimer ="";
+										var $messages = $('#form-error-message');
+										$.validate({
+											modules : 'security',
+											errorMessagePosition : $messages,
+										});
+											 $("#LogLive").change(function()
+											{
+												if($(this).is(":checked"))
+												{
+												var timeleft = 900000;
+												$("#LogLiveLabel").text("Logdatei aktualisieren");
+												$("#LogScrolltd").fadeTo( "slow", 1 );
+												$("#Logfile").fadeTo( "slow", 1 );
+												setTimeout( function()
+												{
+													$('#response').fadeTo( 'slow', 1 );
+													$('#response').html( "Stoppe Logdatei-Anzeige. Bitte bei Bedarf fortsetzen." );
+													clearInterval(liveviewtimer);
+
+													if ($("#LogLive").prop("checked"))
+													{
+													//$("#LogLive").trigger("click");
+													$("#LogLiveLabel").trigger("click");
+
+												}
+												setTimeout( function()
+													{
+														$('#response').fadeTo( 'slow', 0 );
+															setTimeout( function()
+															{
+															$('#response').html( "&nbsp;" );
+															}, 1000);
+													}, 5000);
+												}, timeleft);
+												liveviewtimer = setInterval(function() {
+												timeleft = timeleft - 500;
+												var displaytimeleft = timeleft;
+												if (timeleft >= 60000)
+													{
+														var min = Math.floor(displaytimeleft / (1000*60));
+														displaytimeleft = displaytimeleft % (1000*60);
+														var sec = Math.floor(displaytimeleft / 1000);
+														var mSec = displaytimeleft % 1000;
+														var displaytime = "(" + min + " min " + sec + " s)";
+												 }
+												else
+													{
+														var sec = Math.floor(displaytimeleft / 1000);
+														var mSec = displaytimeleft % 1000;
+														var displaytime = "(" + sec + " s)";
+													}
+												$("#LogLiveLabel").text("Logdatei aktualisieren " + displaytime);
+												$.get('/plugins/<!--$psubfolder-->/logfile.php?ajax', function(data) {
+													$('#Logfile').append(data);
+
+												 $('#Logfile').height("300");
+
+												if($("#LogScroll").is(":checked"))
+													{
+													$('#Logfile').scrollTop($('#Logfile')[0].scrollHeight);
+													}
+												 });
+													}, 500);
+												}
+												else
+												{
+													$("#LogLiveLabel").text("Logdatei aktualisieren");
+													clearInterval(liveviewtimer);
+													$("#LogScrolltd").fadeTo( "slow", 0 );
+											}
+											});
+
+									</script>
