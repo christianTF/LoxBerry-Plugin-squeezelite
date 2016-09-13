@@ -66,7 +66,7 @@ for ($instance = 0; $instance < $instcount; $instance++) {
 				" -m " . @inst_mac[$instance] . 
 				" -n " . @inst_name[$instance] . 
 				" -z " .
-				" -f $installfolder/log/plugins/$pluginname/squeezelite_$instance.log";
+				" -f $installfolder/log/plugins/$pluginname/squeezelite_" . ($instance+1) . ".log";
 	# Starten
 	system($command);
 }
