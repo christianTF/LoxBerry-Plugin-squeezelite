@@ -19,8 +19,17 @@ if systemctl is-active squeezelite.service
 		systemctl disable squeezelite.service
 fi
 
+# ToDo: 
+# Permission issue:
+# SqueezeLite has no permission to read output ports when not root
+# Not tested if it can run without root permission
+# Possible solution 1: Write a static list at startup --> no PnP with USB devices
+# Possible solution 2: Elevate squeezelite
+
 [ -s /opt/loxberry/config/plugins/$pluginname/plugin_squeezelite.cfg ]
 	then
-		
+	# If a configuration file exists, run Perl script to read config and start Player instances
+	# Run forked to do not delay startup
+	/opt/loxberry/webfrontend/cgi/plugins/$pluginname/start_instances.cgi >/opt/loxberry/log/plugins/$pluginname/start_instances.log 2>&1 &
 fi		
 exit 0

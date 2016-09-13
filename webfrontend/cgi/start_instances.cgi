@@ -35,7 +35,7 @@ $cfg = new Config::Simple("$installfolder/config/plugins/$pluginname/plugin_sque
 # Read the Main section
 $cfgversion = $cfg->param("Main.ConfigVersion");
 $squ_instances = $cfg->param("Main.Instances");
-$squ_server = $cfg->param("Main.Server");
+$squ_server = $cfg->param("Main.LMSServer");
 
 # Read the Instances section
 for ($instance = 1; $instance <= $squ_instances; $instance++) {
@@ -45,9 +45,9 @@ for ($instance = 1; $instance <= $squ_instances; $instance++) {
 		push(@inst_enabled, $cfg->param("Instance" . $instance . ".Enabled"));
 		push(@inst_name, $cfg->param("Instance" . $instance . ".Name"));
 		push(@inst_mac, $cfg->param("Instance" . $instance . ".MAC"));
-		push(@inst_output, $cfg->param("Instance" . $instance . ".MAC"));
+		push(@inst_output, $cfg->param("Instance" . $instance . ".Output"));
 		push(@inst_params, $cfg->param("Instance" . $instance . ".Parameters"));
-	# ToDo: At some point, we may validate the config file parameters
+	# ToDo: At some point, we may validate the config file parameters, and define dependencies of options.
 	}
 }
 
