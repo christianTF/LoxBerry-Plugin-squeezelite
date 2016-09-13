@@ -1,3 +1,10 @@
 Download and compile Squeezelite
 http://forums.slimdevices.com/showthread.php?103999-Raspberry-Pi-with-Squeezelite-and-Shairport_Sync
 
+Squeezelite Debian Repo
+- Version ist 1.6.x (alt)
+- Aktuell ist 1.8.x
+
+Squeezelite Outputs lesen
+- Squeezelite darf nur als Root die verfügbaren Outputs auslesen
+- Noch nicht getestet, ob squeezelite ohne root läuft
