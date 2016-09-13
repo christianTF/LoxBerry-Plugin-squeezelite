@@ -12,6 +12,14 @@ fi
 
 pluginname = $(basename $0 .sh)
 
+# Add Squeezelite to sudoers (need root permission)
+if [! -x /etc/sudoers.d/loxberry-plugin-squeezelite ]
+	then
+		echo loxberry ALL = NOPASSWD: /usr/bin/squeezelite > /etc/sudoers.d/$pluginname
+		echo loxberry ALL = NOPASSWD: /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh >> /etc/sudoers.d/$pluginname
+		chmod 0440 /etc/sudoers.d/$pluginname
+fi
+
 if systemctl is-active squeezelite.service
 	then
 		/usr/bin/logger "Disabling squeezelite.service"
@@ -21,8 +29,8 @@ fi
 
 # ToDo: 
 # Permission issue:
-# SqueezeLite has no permission to read output ports when not root
-# Not tested if it can run without root permission
+# Squeezelite has no permission to read output ports when not root
+# Squeezelite does not run without root permissions
 # Possible solution 1: Write a static list at startup --> no PnP with USB devices
 # Possible solution 2: Elevate squeezelite
 
