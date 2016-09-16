@@ -201,26 +201,31 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		# Filter
 		$debug     = quotemeta($debug);
 		
-		# Webinterface - Select Loglevel
-		if ($debug eq 1) 
-		{
-		  $selectedverbose = "selected=selected";
-		} 
-		elsif ($debug eq 2) 
-		{
-		  $selecteddebug = "selected=selected";
-		}
-		elsif ($debug eq 3) # Level 3 manual configurable in config file only
-		{
-		  $selecteddebug = "selected=selected";
-		}
-		
 		# Prepare form defaults
-		# Read Squeezelite possible outputs
-
+		# Read Squeezelite possible sound outputs
+		
 		my $squ_outputs = `squeezelite -l`;
 		
-		# Possibly there is a better solution in Perl 
+		# Possibly there is a better solution in Perl with RegEx
+
+		# Sample output:
+
+# Output devices:
+#  null                           - Discard all samples (playback) or generate zero samples (capture)
+#  default:CARD=ALSA              - bcm2835 ALSA, bcm2835 ALSA - Default Audio Device
+#  sysdefault:CARD=ALSA           - bcm2835 ALSA, bcm2835 ALSA - Default Audio Device
+#  dmix:CARD=ALSA,DEV=0           - bcm2835 ALSA, bcm2835 ALSA - Direct sample mixing device
+#  dmix:CARD=ALSA,DEV=1           - bcm2835 ALSA, bcm2835 IEC958/HDMI - Direct sample mixing device
+#  dsnoop:CARD=ALSA,DEV=0         - bcm2835 ALSA, bcm2835 ALSA - Direct sample snooping device
+#  dsnoop:CARD=ALSA,DEV=1         - bcm2835 ALSA, bcm2835 IEC958/HDMI - Direct sample snooping device
+#  hw:CARD=ALSA,DEV=0             - bcm2835 ALSA, bcm2835 ALSA - Direct hardware device without any conversions
+#  hw:CARD=ALSA,DEV=1             - bcm2835 ALSA, bcm2835 IEC958/HDMI - Direct hardware device without any conversions
+#  plughw:CARD=ALSA,DEV=0         - bcm2835 ALSA, bcm2835 ALSA - Hardware device with all software conversions
+#  plughw:CARD=ALSA,DEV=1         - bcm2835 ALSA, bcm2835 IEC958/HDMI - Hardware device with all software conversions
+#
+
+
+		# Splits the outputs
 		my @outputlist = split(/\n/, $squ_outputs, -1);
 		my $line;
 		my @outputdevs;
@@ -245,8 +250,54 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			@inst_mac[0] = get_address;
 		}
 		
+		# Generate instance table
+	
+	for ($inst = 0; $inst < $squ_instances; $inst++) {
 		
+		if ((@inst_enabled[$inst] eq "True") || (@inst_enabled[$inst] eq "Yes")) {
+			$enabled = 'checked';
+		} else {
+			$enabled = '';
+		}
+		my $instnr = $inst + 1;
+		$htmlout = '
+		<tr valign="top">
+		<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">' .
+		$instnr . '</p>
+		</td>
+		<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
+		<input type="checkbox" name="Enabled' . $instnr . '" value="True" ' . 
+		$enabled . '></p>
+		</td>
+		<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
+		<input type="text" name="Name' . $instnr . '" value="' . 
+		@inst_name[$inst] . '"></p>
+		</td>
+		<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
+		<input type="text" name="MAC' . $instnr . '" value="' . 
+		@inst_mac[$inst] . '"></p>
+		</td>
+		<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
+		<select name="Output' . $instnr . '" align="left">
+			<option value="' . @inst_output[$inst] . '">' . @inst_output[$inst] . ' (aktuell) </option>';
 		
+		my $outputnr = 0 ;
+		foreach $output (@outputdevs) { 
+			$htmlout .= "<option value=\"$output\">$output - @outputdescs[$outputnr]</option>";
+			$outputnr += 1;
+		}
+		$htmlout .= '
+		</select>
+		</p>
+		</td>
+		<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
+		<input type="text" name="Parameters' . $instnr . '" value="' . @inst_params[$inst] . '"></span></p>
+		</td>
+		<input type="hidden" name="Description' . $instnr . '" value="' . @inst_desc[$inst] . '">
+		</tr>';
+		
+	}
+			
 		if ( !$header_already_sent ) { print "Content-Type: text/html\n\n"; }
 		
 		$template_title = $phrase->param("TXT0000") . ": " . $phrase->param("TXT0040");
@@ -270,92 +321,42 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 
 	sub save 
 	{
-		# Everything from Forms
-		$autobkp    = param('autobkp');
-		$bkpcron    = param('bkpcron');
-		$bkpcounts  = param('bkpcounts');
-		$debug      = param('debug');
 		
-		# Filter
-		$autobkp   = quotemeta($autobkp);
-		$bkpcron   = quotemeta($bkpcron);
-		$bkpcounts = quotemeta($bkpcounts);
-		$debug     = quotemeta($debug);
+		# Read global plugin values from form and write to config
 		
-		# Write configuration file(s)
-		$cfg->param("MSBACKUP.AUTOBKP", "$autobkp");
-		$cfg->param("MSBACKUP.CRON",	"$bkpcron");
-		$cfg->param("MSBACKUP.MAXFILES","$bkpcounts");
-		$cfg->param("MSBACKUP.DEBUG", 	"$debug");
-		$cfg->save();
+		$cfg_version 	= param('ConfigVersion');
+		$squ_server		= param('LMSServer');
+		$squ_instances	= param('Instances');
 		
-		# Create Cronjob
-		if ($autobkp eq "on") 
-		{
-		  if ($bkpcron eq "15min") 
-		  {
-		    system ("ln -s $installfolder/webfrontend/cgi/plugins/$psubfolder/bin/createmsbackup.pl $installfolder/system/cron/cron.15min/$pname");
-		    unlink ("$installfolder/system/cron/cron.30min/$pname");
-		    unlink ("$installfolder/system/cron/cron.hourly/$pname");
-		    unlink ("$installfolder/system/cron/cron.daily/$pname");
-		    unlink ("$installfolder/system/cron/cron.weekly/$pname");
-		    unlink ("$installfolder/system/cron/cron.monthly/$pname");
-		  }
-		  if ($bkpcron eq "30min") 
-		  {
-		    system ("ln -s $installfolder/webfrontend/cgi/plugins/$psubfolder/bin/createmsbackup.pl $installfolder/system/cron/cron.30min/$pname");
-		    unlink ("$installfolder/system/cron/cron.15min/$pname");
-		    unlink ("$installfolder/system/cron/cron.hourly/$pname");
-		    unlink ("$installfolder/system/cron/cron.daily/$pname");
-		    unlink ("$installfolder/system/cron/cron.weekly/$pname");
-		    unlink ("$installfolder/system/cron/cron.monthly/$pname");
-		  }
-		  if ($bkpcron eq "60min") 
-		  {
-		    system ("ln -s $installfolder/webfrontend/cgi/plugins/$psubfolder/bin/createmsbackup.pl $installfolder/system/cron/cron.hourly/$pname");
-		    unlink ("$installfolder/system/cron/cron.15min/$pname");
-		    unlink ("$installfolder/system/cron/cron.30min/$pname");
-		    unlink ("$installfolder/system/cron/cron.daily/$pname");
-		    unlink ("$installfolder/system/cron/cron.weekly/$pname");
-		    unlink ("$installfolder/system/cron/cron.monthly/$pname");
-		  }
-		  if ($bkpcron eq "1d") 
-		  {
-		    system ("ln -s $installfolder/webfrontend/cgi/plugins/$psubfolder/bin/createmsbackup.pl $installfolder/system/cron/cron.daily/$pname");
-		    unlink ("$installfolder/system/cron/cron.15min/$pname");
-		    unlink ("$installfolder/system/cron/cron.30min/$pname");
-		    unlink ("$installfolder/system/cron/cron.hourly/$pname");
-		    unlink ("$installfolder/system/cron/cron.weekly/$pname");
-		    unlink ("$installfolder/system/cron/cron.monthly/$pname");
-		  }
-		  if ($bkpcron eq "1w") 
-		  {
-		    system ("ln -s $installfolder/webfrontend/cgi/plugins/$psubfolder/bin/createmsbackup.pl $installfolder/system/cron/cron.weekly/$pname");
-		    unlink ("$installfolder/system/cron/cron.15min/$pname");
-		    unlink ("$installfolder/system/cron/cron.30min/$pname");
-		    unlink ("$installfolder/system/cron/cron.hourly/$pname");
-		    unlink ("$installfolder/system/cron/cron.daily/$pname");
-		    unlink ("$installfolder/system/cron/cron.monthly/$pname");
-		  }
-		  if ($bkpcron eq "1m") 
-		  {
-		    system ("ln -s $installfolder/webfrontend/cgi/plugins/$psubfolder/bin/createmsbackup.pl $installfolder/system/cron/cron.monthly/$pname");
-		    unlink ("$installfolder/system/cron/cron.15min/$pname");
-		    unlink ("$installfolder/system/cron/cron.30min/$pname");
-		    unlink ("$installfolder/system/cron/cron.hourly/$pname");
-		    unlink ("$installfolder/system/cron/cron.daily/$pname");
-		    unlink ("$installfolder/system/cron/cron.weekly/$pname");
-		  }
-		} 
-		else
-		{
-		  unlink ("$installfolder/system/cron/cron.15min/$pname");
-		  unlink ("$installfolder/system/cron/cron.30min/$pname");
-		  unlink ("$installfolder/system/cron/cron.hourly/$pname");
-		  unlink ("$installfolder/system/cron/cron.daily/$pname");
-		  unlink ("$installfolder/system/cron/cron.weekly/$pname");
-		  unlink ("$installfolder/system/cron/cron.monthly/$pname");
+		
+		$cfg->param("Main.ConfigVersion", $cfg_version);
+		$cfg->param("Main.LMSServer", $squ_server);
+		$cfg->param("Main.Instances", $squ_instances);
+		
+		
+		# Run through instance table
+		
+		for ($instance = 1; $instance <= $squ_instances; $instance++) {
+			my $enabled = param("Enabled$instance");
+			my $name = param("Name$instance");
+			my $MAC = param("MAC$instance");
+			my $output = param("Output$instance");
+			my $params = param("Parameters$instance");
+			my $desc = param("Descriptiom$instance");
+
+			# Possible validations here
+			
+			# Write to config
+
+			$cfg->param("Instance$instance.Enabled", $enabled);
+			$cfg->param("Instance$instance.Name", $name);
+			$cfg->param("Instance$instance.MAC", $MAC);
+			$cfg->param("Instance$instance.Output", $output);
+			$cfg->param("Instance$instance.Parameters", $params);
+			$cfg->param("Instance$instance.Description", $desc);
+			
 		}
+		$cfg->save();
 		
 		if ( !$header_already_sent ) { print "Content-Type: text/html\n\n"; }
 		
@@ -373,32 +374,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		  }
 		close(F);
 		&footer;
-		exit;
-	}
-
-#####################################################
-# Manual backup-Sub
-#####################################################
-
-	sub backup 
-	{
-		if ( !$header_already_sent ) { print "Content-Type: text/html\n\n"; }
-		$message = $phraseplugin->param("TXT0003");
-		print $message;
-		# Create Backup
-		# Without the following workaround
-		# the script cannot be executed as
-		# background process via CGI
-		my $pid = fork();
-		die "Fork failed: $!" if !defined $pid;
-		if ($pid == 0) 
-		{
-			 # do this in the child
-			 open STDIN, "</dev/null";
-			 open STDOUT, ">/dev/null";
-			 open STDERR, ">/dev/null";
-			 system("$installfolder/webfrontend/cgi/plugins/$psubfolder/bin/createmsbackup.pl &");
-		}
 		exit;
 	}
 

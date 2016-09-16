@@ -4,14 +4,14 @@
 	
 <form method="post" data-ajax="false" name="main_form" id="main_form" action="./index.cgi">
 	<input type="hidden" name="saveformdata" value="1">
-	<input type="hidden" name="ConfigVersion" value="<!--$cfgversion-->">
-	<input type="hidden" name="Instances" value="<!--$squ_instances-->">
+	<input type="hidden" name="ConfigVersion" value="<!--$configversion-->">
+	<input type="hidden" name="Instances" value="<!--$instances-->">
 	<h1>Grundeinstellungen</h1>
 	<div style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><table border="1" cellpadding="2" cellspacing="2" style="background-color: #ffffff;">
 	  <tr valign="top">
 	  <td style="border-width : 0px;">Logitech Media Server Adresse
 	  </td>
-	  <td style="border-width : 0px;"><input type="text" name="LMSServer" value="<!--$squ_server-->">
+	  <td style="border-width : 0px;"><input type="text" name="LMSServer" value="<!--$lmsserver-->">
 	  </td>
 	  <td style="border-width : 0px;">Format: server oder server:port<br />Bleibt das Feld leer, sucht Squeezelite automatisch nach dem Server.
 	  </td>
@@ -40,6 +40,33 @@
 	</tr>
 	
 	<!--$instancetable-->
+	
+	 <tr valign="top">
+	<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
+	<!--$instance--><input type="hidden" name="Instance" value="1"></p>
+	</td>
+	<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
+	<input type="checkbox" name="Enabled" value="<!--$enabled-->"></p>
+	</td>
+	<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
+	<input type="text" name="Name" value="<!--$name-->"></p>
+	</td>
+	<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
+	<input type="text" name="MAC" value="<!--$mac-->"></p>
+	</td>
+	<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
+	<select name="Output" align="left">
+	  <!-- Generate Output List -->
+	  <option value="null">Null</option>
+	  <option selected value="ALSA">ALSA</option>
+	</select>
+	</p>
+	</td>
+	<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 10pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">
+	<input type="text" name="Parameters" value="<!--$parameters-->"></span></p>
+	</td>
+	<input type="hidden" name="description" value="<!--$description-->">
+	</tr>
 	
 	
 	</table>
