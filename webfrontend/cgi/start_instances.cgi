@@ -62,12 +62,20 @@ for ($instance = 1; $instance <= $squ_instances; $instance++) {
 # Create the command line
 $instcount = scalar @inst_name;
 for ($instance = 0; $instance < $instcount; $instance++) {
-	$command = 	"squeezelite" . 
-				" -s " . $squ_server .
-				" -o " . @inst_output[$instance] . 
-				" -m " . @inst_mac[$instance] . 
-				" -n " . @inst_name[$instance] . 
-				" -z " .
+	$command = 	"squeezelite";
+	if ($squ_server ne "") {
+		$command .= " -s $squ_server";
+	}
+	if (@inst_output[$instance] ne "") {
+		$command .= " -o @inst_output[$instance]";
+	}
+	if (@inst_mac[$instance] ne "") {
+		$command .= " -m @inst_mac[$instance]";
+	}
+	if (@inst_name[$instance] ne "") {
+		$command .= " -n @inst_name[$instance]";
+	}
+	$command .= " -z " .
 				" -f $installfolder/log/plugins/$pluginname/squeezelite_" . ($instance+1) . ".log";
 	# Starten
 	system($command);
