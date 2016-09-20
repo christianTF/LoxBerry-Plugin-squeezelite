@@ -18,6 +18,7 @@ if [! -x /etc/sudoers.d/$pluginname ]
 		echo loxberry ALL = NOPASSWD: /usr/bin/squeezelite > /etc/sudoers.d/$pluginname
 		echo loxberry ALL = NOPASSWD: /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh >> /etc/sudoers.d/$pluginname
 		chmod 0440 /etc/sudoers.d/$pluginname
+		chmod +x /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh
 fi
 
 if systemctl is-active squeezelite.service
