@@ -41,5 +41,16 @@ echo "<INFO> Installation folder is: $ARGV4"
 ARGV5=$5 # Fifth argument is Base folder of LoxBerry
 echo "<INFO> Base folder is: $ARGV5"
 
+echo "<INFO> Creating temporary folders for upgrading"
+mkdir /tmp/$ARGV1\_upgrade
+mkdir /tmp/$ARGV1\_upgrade/config
+mkdir /tmp/$ARGV1\_upgrade/log
+
+echo "<INFO> Backing up existing config files"
+cp -v -r $ARGV5/config/plugins/$ARGV3/ /tmp/$ARGV1\_upgrade/config
+
+echo "<INFO> Backing up existing log files"
+cp -v -r $ARGV5/log/plugins/$ARGV3/ /tmp/$ARGV1\_upgrade/log
+
 # Exit with Status 0
 exit 0
