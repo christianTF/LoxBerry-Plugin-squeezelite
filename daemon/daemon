@@ -5,16 +5,22 @@
 # Name this file "daemon.sh" in your plugin-archive. It will be renamed to NAME
 # during installation
 
-if [ -x /usr/bin/logger ]
-then
+if [ -x /usr/bin/logger ]; then
     /usr/bin/logger "loxberry-plugin-$pluginname - DAEMON Script from Squeezelite Plugin"
 fi
 
 pluginname = $(basename $0 .sh)
 
+# Testing Perl Modules
+perl -MNet::Address::Ethernet -e 1 &> /dev/null || cpanm -i Net::Address::Ethernet
+
+
 # Add Squeezelite to sudoers (need root permission)
 if [! -x /etc/sudoers.d/$pluginname ]
 	then
+		if [ -x /usr/bin/logger ]; then 
+			/usr/bin/logger "loxberry-plugin-$pluginname - Adding sudoers permissions"
+		fi
 		echo loxberry ALL = NOPASSWD: /usr/bin/squeezelite > /etc/sudoers.d/$pluginname
 		echo loxberry ALL = NOPASSWD: /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh >> /etc/sudoers.d/$pluginname
 		chmod 0440 /etc/sudoers.d/$pluginname
