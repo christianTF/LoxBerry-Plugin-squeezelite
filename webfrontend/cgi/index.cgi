@@ -144,7 +144,6 @@ sub apache()
 }
 
 # Everything from URL
-print "Everything from URL";
 foreach (split(/&/,$ENV{'QUERY_STRING'}))
 {
   ($namef,$value) = split(/=/,$_,2);
@@ -255,7 +254,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		
 		# If first instance has no MAC address, get current system MAC
 		if (!defined $inst_mac[0] or length $inst_mac[0] eq 0) {
-			@inst_mac[0] = get_address;
+			$inst_mac[0] = get_address;
 		}
 		
 		# Generate instance table
