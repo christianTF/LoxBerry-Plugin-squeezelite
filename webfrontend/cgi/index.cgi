@@ -103,26 +103,6 @@ $lang            = $cfg->param("BASE.LANG");
 # Read plugin settings
 $cfg = new Config::Simple("$installfolder/config/plugins/$pluginname/plugin_squeezelite.cfg");
 
-# Read the Main section
-$cfgversion = $cfg->param("Main.ConfigVersion");
-$squ_instances = $cfg->param("Main.Instances");
-$squ_server = $cfg->param("Main.LMSServer");
-
-# Read the Instances section
-for ($instance = 1; $instance <= $squ_instances; $instance++) {
-	$enabled = undef;
-	$enabled = $cfg->param("Instance" . $instance . ".Enabled");
-	push(@inst_enabled, $cfg->param("Instance" . $instance . ".Enabled"));
-	push(@inst_name, $cfg->param("Instance" . $instance . ".Name"));
-	push(@inst_desc, $cfg->param("Instance" . $instance . ".Description"));
-	push(@inst_mac, $cfg->param("Instance" . $instance . ".MAC"));
-	push(@inst_output, $cfg->param("Instance" . $instance . ".Output"));
-	push(@inst_params, $cfg->param("Instance" . $instance . ".Parameters"));
-}
-
-
-
-
 
 #########################################################################
 # Parameter
@@ -183,6 +163,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	if ($saveformdata) 
 	{
 	  &save;
+	  &form;
 	}
 	elsif ($do eq "apply") 
 	{
@@ -247,6 +228,26 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 				}
 		}
 
+		# Read the Main config section
+		$cfgversion = $cfg->param("Main.ConfigVersion");
+		$squ_instances = $cfg->param("Main.Instances");
+		$squ_server = $cfg->param("Main.LMSServer");
+
+		# Read the Instances config section
+		for ($instance = 1; $instance <= $squ_instances; $instance++) {
+			$enabled = undef;
+			$enabled = $cfg->param("Instance" . $instance . ".Enabled");
+			push(@inst_enabled, $cfg->param("Instance" . $instance . ".Enabled"));
+			push(@inst_name, $cfg->param("Instance" . $instance . ".Name"));
+			push(@inst_desc, $cfg->param("Instance" . $instance . ".Description"));
+			push(@inst_mac, $cfg->param("Instance" . $instance . ".MAC"));
+			push(@inst_output, $cfg->param("Instance" . $instance . ".Output"));
+			push(@inst_params, $cfg->param("Instance" . $instance . ".Parameters"));
+		}
+
+
+		
+		
 		# If no instances defined yet, show at least one input line
 		if ( $squ_instances < 1 ) {
 			$squ_instances = 1;
@@ -365,23 +366,23 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		}
 		$cfg->save();
 		
-		if ( !$header_already_sent ) { print "Content-Type: text/html\n\n"; }
+		# if ( !$header_already_sent ) { print "Content-Type: text/html\n\n"; }
 		
-		$template_title = $phrase->param("TXT0000") . ": " . $phrase->param("TXT0040");
-		$message 				= $phraseplugin->param("TXT0002");
-		$nexturl 				= "./index.cgi?do=form";
+		#$template_title = $phrase->param("TXT0000") . ": " . $phrase->param("TXT0040");
+		#$message 				= $phraseplugin->param("TXT0002");
+		#$nexturl 				= "./index.cgi?do=form";
 		
 		# Print Template
-		&lbheader;
-		open(F,"$installfolder/templates/system/$lang/success.html") || die "Missing template system/$lang/succses.html";
-		  while (<F>) 
-		  {
-		    $_ =~ s/<!--\$(.*?)-->/${$1}/g;
-		    print $_;
-		  }
-		close(F);
-		&footer;
-		exit;
+		# &lbheader;
+		# open(F,"$installfolder/templates/system/$lang/success.html") || die "Missing template system/$lang/succses.html";
+		  # while (<F>) 
+		  # {
+		    # $_ =~ s/<!--\$(.*?)-->/${$1}/g;
+		    # print $_;
+		  # }
+		# close(F);
+		# &footer;
+		# exit;
 	}
 
 #####################################################
