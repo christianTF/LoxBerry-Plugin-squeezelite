@@ -24,8 +24,10 @@ use CGI qw/:standard/;
 use Config::Simple;
 use File::HomeDir;
 use Cwd 'abs_path';
+use Net::Address::Ethernet qw( get_address );
 use warnings;
 use strict;
+
 no strict "refs"; # we need it for template system
 
 ##########################################################################
@@ -53,19 +55,23 @@ our $message;
 our $nexturl;
 our $do="form";
 my  $home = File::HomeDir->my_home;
-our $psubfolder;
 our $pname;
 our $verbose;
 our $debug;
-our $maxfiles;
 our $languagefileplugin;
 our $phraseplugin;
 our $selectedverbose;
 our $selecteddebug;
 our $header_already_sent=0;
+
+our $pluginname;
+
 our $cfgversion=0;
+our $cfg_version;
 our $squ_instances=0;
-our $aqu_server;
+our $squ_server;
+our $instance;
+our $enabled;
 our @inst_enabled;
 our @inst_name;
 our @inst_desc;
@@ -73,6 +79,8 @@ our @inst_mac;
 our @inst_output;
 our @inst_params;
 our @commandline;
+our $htmlout;
+
 
 ##########################################################################
 # Read Settings
@@ -82,8 +90,8 @@ our @commandline;
 $version = "0.1.1";
 
 # Figure out in which subfolder we are installed
-$psubfolder = abs_path($0);
-$psubfolder =~ s/(.*)\/(.*)\/(.*)$/$2/g;
+$pluginname = abs_path($0);
+$pluginname =~ s/(.*)\/(.*)\/(.*)$/$2/g;
 
 # Read global settings
 
@@ -102,7 +110,7 @@ $squ_server = $cfg->param("Main.LMSServer");
 
 # Read the Instances section
 for ($instance = 1; $instance <= $squ_instances; $instance++) {
-	$enabled = NULL;
+	$enabled = undef;
 	$enabled = $cfg->param("Instance" . $instance . ".Enabled");
 	push(@inst_enabled, $cfg->param("Instance" . $instance . ".Enabled"));
 	push(@inst_name, $cfg->param("Instance" . $instance . ".Name"));
@@ -165,7 +173,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	# Read translations / phrases
 		$languagefile 			= "$installfolder/templates/system/$lang/language.dat";
 		$phrase 						= new Config::Simple($languagefile);
-		$languagefileplugin = "$installfolder/templates/plugins/$psubfolder/$lang/language.dat";
+		$languagefileplugin = "$installfolder/templates/plugins/$pluginname/$lang/language.dat";
 		$phraseplugin 			= new Config::Simple($languagefileplugin);
 
 ##########################################################################
@@ -233,9 +241,9 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 
 		foreach $line (@outputlist) {
 				my @splitoutputs = split(/-/, $line, 2);
-				if ((length(trim(@splitoutputs[0])) ne 0) && (defined @splitoutputs[1])) {
-						push (@outputdevs, trim(@splitoutputs[0]));
-						push (@outputdescs, trim(@splitoutputs[1]));
+				if ((length(trim($splitoutputs[0])) ne 0) && (defined $splitoutputs[1])) {
+						push (@outputdevs, trim($splitoutputs[0]));
+						push (@outputdescs, trim($splitoutputs[1]));
 				}
 		}
 
@@ -245,16 +253,15 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		}
 		
 		# If first instance has no MAC address, get current system MAC
-		if (!defined @inst_mac[0] or length @inst_mac[0] eq 0) {
-			use Net::Address::Ethernet qw( get_address );
+		if (!defined $inst_mac[0] or length $inst_mac[0] eq 0) {
 			@inst_mac[0] = get_address;
 		}
 		
 		# Generate instance table
 	
-	for ($inst = 0; $inst < $squ_instances; $inst++) {
+	for (my $inst = 0; $inst < $squ_instances; $inst++) {
 		
-		if ((@inst_enabled[$inst] eq "True") || (@inst_enabled[$inst] eq "Yes")) {
+		if (($inst_enabled[$inst] eq "True") || ($inst_enabled[$inst] eq "Yes")) {
 			$enabled = 'checked';
 		} else {
 			$enabled = '';
@@ -271,19 +278,19 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		</td>
 		<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
 		<input type="text" name="Name' . $instnr . '" value="' . 
-		@inst_name[$inst] . '"></p>
+		$inst_name[$inst] . '"></p>
 		</td>
 		<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
 		<input type="text" name="MAC' . $instnr . '" value="' . 
-		@inst_mac[$inst] . '"></p>
+		$inst_mac[$inst] . '"></p>
 		</td>
 		<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
 		<select name="Output' . $instnr . '" align="left">
-			<option value="' . @inst_output[$inst] . '">' . @inst_output[$inst] . ' (aktuell) </option>';
+			<option value="' . $inst_output[$inst] . '">' . $inst_output[$inst] . ' (aktuell) </option>';
 		
 		my $outputnr = 0 ;
 		foreach $output (@outputdevs) { 
-			$htmlout .= "<option value=\"$output\">$output - @outputdescs[$outputnr]</option>";
+			$htmlout .= "<option value=\"$output\">$output - $outputdescs[$outputnr]</option>";
 			$outputnr += 1;
 		}
 		$htmlout .= '
@@ -291,9 +298,9 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		</p>
 		</td>
 		<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
-		<input type="text" name="Parameters' . $instnr . '" value="' . @inst_params[$inst] . '"></span></p>
+		<input type="text" name="Parameters' . $instnr . '" value="' . $inst_params[$inst] . '"></span></p>
 		</td>
-		<input type="hidden" name="Description' . $instnr . '" value="' . @inst_desc[$inst] . '">
+		<input type="hidden" name="Description' . $instnr . '" value="' . $inst_desc[$inst] . '">
 		</tr>';
 		
 	}
@@ -304,7 +311,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		
 		# Print Template
 		&lbheader;
-		open(F,"$installfolder/templates/plugins/$psubfolder/$lang/settings.html") || die "Missing template plugins/$psubfolder/$lang/settings.html";
+		open(F,"$installfolder/templates/plugins/$pluginname/$lang/settings.html") || die "Missing template plugins/$pluginname/$lang/settings.html";
 		  while (<F>) 
 		  {
 		    $_ =~ s/<!--\$(.*?)-->/${$1}/g;
@@ -405,7 +412,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	{
 		 # Create Help page
 	  $helplink = "http://www.loxwiki.eu:80/display/LOXBERRY/Miniserverbackup";
-	  open(F,"$installfolder/templates/plugins/$psubfolder/$lang/help.html") || die "Missing template plugins/$psubfolder/$lang/help.html";
+	  open(F,"$installfolder/templates/plugins/$pluginname/$lang/help.html") || die "Missing template plugins/$pluginname/$lang/help.html";
 	    @help = <F>;
 	    foreach (@help)
 	    {
