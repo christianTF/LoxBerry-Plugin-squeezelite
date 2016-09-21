@@ -144,6 +144,7 @@ sub apache()
 }
 
 # Everything from URL
+print "Everything from URL";
 foreach (split(/&/,$ENV{'QUERY_STRING'}))
 {
   ($namef,$value) = split(/=/,$_,2);
@@ -268,9 +269,9 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		}
 		my $instnr = $inst + 1;
 		$htmlout = '
-		<tr valign="top">
-		<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">' .
-		$instnr . '</p>
+		<tr>
+		<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><font size="6">' .
+		$instnr . '</font></p>
 		</td>
 		<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
 		<input type="checkbox" name="Enabled' . $instnr . '" value="True" ' . 
