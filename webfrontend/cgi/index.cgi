@@ -53,7 +53,11 @@ our $saveformdata=0;
 our $output;
 our $message;
 our $nexturl;
+
 our $doapply;
+our $doadd;
+our $dodel;
+
 my  $home = File::HomeDir->my_home;
 our $pname;
 our $debug=1;
@@ -69,6 +73,8 @@ our $cfgversion=0;
 our $cfg_version;
 our $squ_instances=0;
 our $squ_server;
+our $squ_debug;
+our $squ_debug_enabled;
 our $instance;
 our $enabled;
 our @inst_enabled;
@@ -139,9 +145,10 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	if ( !$query{'lang'} )         { if ( param('lang')         ) { $lang         = quotemeta(param('lang'));         } else { $lang         = "de";   } } else { $lang         = quotemeta($query{'lang'});         }
 #	if ( !$query{'do'} )           { if ( param('do')           ) { $do           = quotemeta(param('do'));           } else { $do           = "form"; } } else { $do           = quotemeta($query{'do'});           }
 
-	if ( param('applybtn') ) {
-		$doapply = 1;
-	}
+	if 		( param('applybtn') ) 	{ $doapply = 1; }
+	elsif ( param('addbtn') ) 	{ $doadd = 1; }
+	elsif ( param('delbtn') )		{ $dodel = 1; }
+	
 	
 # Clean up saveformdata variable
 	$saveformdata =~ tr/0-1//cd; $saveformdata = substr($saveformdata,0,1);
@@ -167,10 +174,9 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	if ($saveformdata) 
 	{
 		&save;
-		if ($doapply) {
-			&restartSqueezelite;
-			
-		}
+		if ($doapply) 		{ &restartSqueezelite; }
+		elsif ($doadd)	{ &manageInstances(1); }
+		elsif ($dodel)	{ &manageInstances(-1); }
 	  &form;
 	}
 	else 
@@ -235,6 +241,14 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		$cfgversion = $cfg->param("Main.ConfigVersion");
 		$squ_instances = $cfg->param("Main.Instances");
 		$squ_server = $cfg->param("Main.LMSServer");
+		$squ_debug = $cfg->param("Main.debug");
+		if (($squ_debug eq "True") || ($squ_debug eq "Yes")) {
+			$squ_debug_enabled = 'checked';
+			$debug = 1;
+		} else {
+			$squ_debug_enabled = '';
+			$debug = 0;
+		}
 
 		# Read the Instances config file section
 		for ($instance = 1; $instance <= $squ_instances; $instance++) {
@@ -269,24 +283,42 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			$enabled = '';
 		}
 		my $instnr = $inst + 1;
-		$htmlout = '
-		<tr>
-		<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><font size="6">' .
+		$htmlout .= '
+		<table width="100%" cellpadding="2" cellspacing="0" border="1px">
+		<tr valign="top">
+		<th width="5%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">Instanz</p></th>
+		<th width="5%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">Aktiv</p></th>
+		<th width="40%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">Name der Zone</p></th>
+		<th width="50%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">MAC-Adresse</p></th>
+		<!--<th style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">Audio-Ausgang</p></th>-->
+		<!--<th style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">Zus&auml;tzliche Parameter</p></th>-->
+		</tr>
+	
+		<tr class="top row">
+		<td rowspan="2"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><font size="6">' .
 		$instnr . '</font></p>
 		</td>
-		<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
+		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
 		<input type="checkbox" name="Enabled' . $instnr . '" value="True" ' . 
 		$enabled . '></p>
 		</td>
-		<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
-		<input type="text" name="Name' . $instnr . '" value="' . 
+		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
+		<input type="text" placeholder="Name der Zone" name="Name' . $instnr . '" value="' . 
 		$inst_name[$inst] . '"></p>
 		</td>
-		<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
-		<input type="text" name="MAC' . $instnr . '" value="' . 
+		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
+		<input type="text" placeholder="Verwendete MAC-Adresse" name="MAC' . $instnr . '" value="' . 
 		$inst_mac[$inst] . '"></p>
 		</td>
-		<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
+		</tr>
+		<tr class="bottom row">
+		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">';
+		if ($instnr eq $squ_instances) {
+			$htmlout .= '<button type="submit" form="main_form" name="delbtn" value="del" id="btndel" data-role="button" data-inline="true" data-mini="true" data-iconpos="top" data-icon="delete">Delete</button>';
+		}
+		$htmlout .= '
+		<!-- Delete-Button --></p></td>
+		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
 		<select name="Output' . $instnr . '" align="left">
 			<option value="' . $inst_output[$inst] . '">' . $inst_output[$inst] . ' (aktuell) </option>';
 		
@@ -299,11 +331,12 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		</select>
 		</p>
 		</td>
-		<td style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
-		<input type="text" name="Parameters' . $instnr . '" value="' . $inst_params[$inst] . '"></span></p>
+		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
+		<input type="text" placeholder="Zus&auml;tzliche Parameter" name="Parameters' . $instnr . '" value="' . $inst_params[$inst] . '"></span></p>
 		</td>
-		<input type="hidden" name="Description' . $instnr . '" value="' . $inst_desc[$inst] . '">
-		</tr>';
+		<input type="hidden" placeholder="Eigene Beschreibung" name="Description' . $instnr . '" value="' . $inst_desc[$inst] . '">
+		</tr>
+		</table>';
 		
 	}
 			
@@ -337,11 +370,16 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		$cfg_version 	= param('ConfigVersion');
 		$squ_server		= param('LMSServer');
 		$squ_instances	= param('Instances');
-		
+		$squ_debug		= param('debug');
 		
 		$cfg->param("Main.ConfigVersion", $cfg_version);
 		$cfg->param("Main.LMSServer", $squ_server);
 		$cfg->param("Main.Instances", $squ_instances);
+		if ($squ_debug) {
+			$cfg->param("Main.debug", "Yes");
+		} else {
+			$cfg->param("Main.debug", "False");
+		}
 		
 		
 		# Run through instance table
