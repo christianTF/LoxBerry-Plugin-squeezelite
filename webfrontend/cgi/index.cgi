@@ -56,8 +56,7 @@ our $nexturl;
 our $doapply;
 my  $home = File::HomeDir->my_home;
 our $pname;
-our $verbose;
-our $debug;
+our $debug=1;
 our $languagefileplugin;
 our $phraseplugin;
 our $selectedverbose;
@@ -400,10 +399,11 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		
 		my $killscript = "sudo /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh";
 		system($killscript);
-		my $startscript = "$installfolder/webfrontend/cgi/plugins/squeezelite/start_instances.cgi &";
+		
+		# For any reason, this call does not come back and browser is awaiting response.
+		my $startscript = "$installfolder/webfrontend/cgi/plugins/squeezelite/start_instances.cgi";
 		system($startscript);
-
-	#	my $output = `/usr/bin/sudo /opt/loxberry/data/plugins/squeezelite/kill_squeezelite.sh`;
+	
 	}
 	
 	
