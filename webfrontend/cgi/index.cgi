@@ -24,7 +24,7 @@ use CGI qw/:standard/;
 use Config::Simple;
 use File::HomeDir;
 use Cwd 'abs_path';
-use Net::Address::Ethernet qw( get_address );
+# use Net::Address::Ethernet qw( get_address );
 use warnings;
 use strict;
 
@@ -75,9 +75,12 @@ our $cfg_version;
 our $squ_instances=0;
 our $squ_server;
 our $squ_debug;
+our $lmslink;
+our $lmssettingslink;
 our $squ_debug_enabled;
 our $instance;
 our $enabled;
+our $runningInstances;
 our @inst_enabled;
 our @inst_name;
 our @inst_desc;
@@ -261,6 +264,15 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			$debug = 0;
 		}
 
+		# Generate links to LMS and LMS settings $lmslink and $lmssettingslink
+		if ($squ_server) {
+			my @splitlms = split(/:/, $squ_server);
+			$lmslink 			= "<a target=\"_blank\" href=\"http://@splitlms[0]:9000/\">Logitech Media Server</a>";
+			$lmssettingslink 	= "<a target=\"_blank\" href=\"http://@splitlms[0]:9000/settings/index.html\">LMS Settings</a>";
+			
+		}
+		
+		
 		# Read the Instances config file section
 		for ($instance = 1; $instance <= $squ_instances; $instance++) {
 			$enabled = undef;
@@ -281,7 +293,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		
 		# If first instance has no MAC address, get current system MAC
 		if (!defined $inst_mac[0] or length $inst_mac[0] eq 0) {
-			$inst_mac[0] = get_address;
+			$inst_mac[0] = getMAC();
 		}
 		
 		# Generate instance table
@@ -300,7 +312,8 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		<th width="5%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">Instanz</p></th>
 		<th width="5%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">Aktiv</p></th>
 		<th width="40%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">Name der Zone</p></th>
-		<th width="50%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">MAC-Adresse</p></th>
+		<th width="47%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">MAC-Adresse</p></th>
+		<th width="3%"></th>
 		<!--<th style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">Audio-Ausgang</p></th>-->
 		<!--<th style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">Zus&auml;tzliche Parameter</p></th>-->
 		</tr>
@@ -318,8 +331,10 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		$inst_name[$inst] . '"></p>
 		</td>
 		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
-		<input type="text" placeholder="Verwendete MAC-Adresse" name="MAC' . $instnr . '" value="' . 
+		<input type="text" placeholder="Verwendete MAC-Adresse" id="MAC' . $instnr . '" name="MAC' . $instnr . '" value="' . 
 		$inst_mac[$inst] . '"></p>
+		</td>
+		<td><a href="JavaScript:setRandomMAC(\'MAC' . $instnr . '\');" id="randommac' . $instnr . '"><img src="/plugins/' . $pluginname . '/images/dice_30_30.png" alt="Random MAC" /></a>
 		</td>
 		</tr>
 		<tr class="bottom row">
@@ -345,6 +360,8 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
 		<input type="text" placeholder="Zus&auml;tzliche Parameter" name="Parameters' . $instnr . '" value="' . $inst_params[$inst] . '"></span></p>
 		</td>
+		<td>
+		</td>
 		<input type="hidden" placeholder="Eigene Beschreibung" name="Description' . $instnr . '" value="' . $inst_desc[$inst] . '">
 		</tr>
 		</table>';
@@ -355,6 +372,9 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		
 		#$template_title = $phrase->param("TXT0000") . ": " . $phrase->param("TXT0040");
 		$template_title = "Squeezelite Plugin";
+		
+		# Get number of running Squeezelite processes
+		$runningInstances = `pgrep --exact -c squeezelite`;
 		
 		# Print Template
 		&lbheader;
@@ -407,7 +427,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		for ($instance = 1; $instance <= $squ_instances; $instance++) {
 			my $enabled = param("Enabled$instance");
 			my $name = param("Name$instance");
-			my $MAC = param("MAC$instance");
+			my $MAC = lc param("MAC$instance");
 			my $output = param("Output$instance");
 			my $params = param("Parameters$instance");
 			my $desc = param("Descriptiom$instance");
@@ -531,3 +551,30 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 #####################################################
 
 sub trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
+
+#####################################################
+# Lokale MAC-Adresse auslesen
+#####################################################
+
+sub getMAC {
+
+  use IO::Socket;
+  use IO::Interface qw(:flags);
+
+  my $s = IO::Socket::INET->new(Proto => 'udp');
+  my @interfaces = $s->if_list;
+  my $mac;
+  
+  for my $if (@interfaces) {
+    my $flags = $s->if_flags($if);
+    
+	if ( ($flags & IFF_RUNNING) and ( $flags & IFF_BROADCAST ) and ($s->if_hwaddr($if) ne '00:00:00:00:00:00' ) ) {
+		$mac =  $s->if_hwaddr($if);
+		# print $mymac;
+		last;
+	}
+  }
+
+  undef $s, @interfaces;
+  return $mac;
+}

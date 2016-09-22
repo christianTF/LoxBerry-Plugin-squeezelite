@@ -11,8 +11,8 @@ fi
 
 pluginname = $(basename $0 .sh)
 
-# Testing Perl Modules
-perl -MNet::Address::Ethernet -e 1 &> /dev/null || cpanm -i Net::Address::Ethernet
+# Testing and installing Perl Modules
+# perl -MNet::Address::Ethernet -e 1 &> /dev/null || cpanm -i Net::Address::Ethernet
 
 
 # Add Squeezelite to sudoers (need root permission)

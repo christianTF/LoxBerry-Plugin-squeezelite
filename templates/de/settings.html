@@ -18,6 +18,7 @@
 	  <td style="border-width : 0px;">Mit Vorsicht verwenden! Sollte nur im Fehlerfall aktiviert werden.</td> 
 	  </table>
 	</div>
+	<p><!--$lmslink-->&nbsp;|&nbsp;<!--$lmssettingslink--></p>
 	<h1>Instanzen</h1>
 	Es k&ouml;nnen mehrere Instanzen von Squeezelite betrieben werden. Ob es stabil funktioniert, ist von der 
 	Leistungsf&auml;higkeit der LoxBerry-Hardware abh&auml;ngig.<br /><br />
@@ -27,7 +28,7 @@
 	<!--$htmlout-->
 	
 	</div>
-	<p style="display:none;">Aktuell laufen <font color="#008040"><!--$runningInstances--></font> Squeezelite Prozesse.</p>
+	<p style="font-size:12px; font-style: italic;">Aktuell laufen <font color="#008040"><!--$runningInstances--></font> Squeezelite Prozesse.</p>
 
 <p>
 <center>
@@ -76,3 +77,22 @@
 </tr>
 </table>
 </div>
+
+<script type="text/javascript">
+function genMAC(){
+    var hexDigits = "0123456789ABCDEF";
+    var macAddress = "";
+    for (var i = 0; i < 6; i++) {
+        macAddress+=hexDigits.charAt(Math.round(Math.random() * 15));
+        macAddress+=hexDigits.charAt(Math.round(Math.random() * 15));
+        if (i != 5) macAddress += ":";
+    }
+
+    return macAddress;
+}
+
+function setRandomMAC(fieldname) {
+	var elem = document.getElementById(fieldname);
+	elem.value = genMAC();
+}
+</script> 
