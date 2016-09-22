@@ -51,8 +51,8 @@ $pluginname =~ s/(.*)\/(.*)\/(.*)$/$2/g;
 
 # Initialize logfile
 $logname = "$installfolder/log/plugins/$pluginname/start_instances.log";
-open ($loghandle, '>>' , $logname) or die("Cant open logfile $logname");
-		
+open ($loghandle, '>>' , $logname) or print "Cannot open logfile for writing (Permission?)";
+chmod (666, $loghandle) or print "Cannot change logfile permissions\n";	
 # Read plugin settings
 $cfg = new Config::Simple("$installfolder/config/plugins/$pluginname/plugin_squeezelite.cfg") or tolog($!);
 if (not defined($cfg)) {
@@ -107,5 +107,5 @@ exit;
 
 sub tolog {
   print strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " ERROR: $!\n";
-  print $loghandle strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " ERROR: $!\n";
+  print $loghandle strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " ERROR: $!\n"
 }

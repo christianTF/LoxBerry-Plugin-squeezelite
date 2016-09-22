@@ -1,2 +1,5 @@
 #!/bin/sh
-kill $(ps aux | grep 'squeezelite' | awk '{print $2}')
+# squ=$(ps aux | grep 'squeezelite' | awk '{print $2}')
+# echo $squ
+# kill $squ
+killall -e squeezelite

@@ -53,7 +53,7 @@ our $saveformdata=0;
 our $output;
 our $message;
 our $nexturl;
-our $do="form";
+our $doapply;
 my  $home = File::HomeDir->my_home;
 our $pname;
 our $verbose;
@@ -135,10 +135,15 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 }
 
 # Set parameters coming in - get over post
+# Don't know why this is so complicated...
 	if ( !$query{'saveformdata'} ) { if ( param('saveformdata') ) { $saveformdata = quotemeta(param('saveformdata')); } else { $saveformdata = 0;      } } else { $saveformdata = quotemeta($query{'saveformdata'}); }
 	if ( !$query{'lang'} )         { if ( param('lang')         ) { $lang         = quotemeta(param('lang'));         } else { $lang         = "de";   } } else { $lang         = quotemeta($query{'lang'});         }
-	if ( !$query{'do'} )           { if ( param('do')           ) { $do           = quotemeta(param('do'));           } else { $do           = "form"; } } else { $do           = quotemeta($query{'do'});           }
+#	if ( !$query{'do'} )           { if ( param('do')           ) { $do           = quotemeta(param('do'));           } else { $do           = "form"; } } else { $do           = quotemeta($query{'do'});           }
 
+	if ( param('applybtn') ) {
+		$doapply = 1;
+	}
+	
 # Clean up saveformdata variable
 	$saveformdata =~ tr/0-1//cd; $saveformdata = substr($saveformdata,0,1);
 
@@ -162,12 +167,12 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 
 	if ($saveformdata) 
 	{
-	  &save;
+		&save;
+		if ($doapply) {
+			&restartSqueezelite;
+			
+		}
 	  &form;
-	}
-	elsif ($do eq "apply") 
-	{
-	  &restartSqueezelite;
 	}
 	else 
 	{
@@ -195,8 +200,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		
 		my $squ_outputs = `squeezelite -l`;
 		
-		# Possibly there is a better solution in Perl with RegEx
-
 		# Sample output:
 
 # Output devices:
@@ -215,6 +218,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 
 
 		# Splits the outputs
+		# Possibly there is a better solution in Perl with RegEx
 		my @outputlist = split(/\n/, $squ_outputs, -1);
 		my $line;
 		my @outputdevs;
@@ -228,12 +232,12 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 				}
 		}
 
-		# Read the Main config section
+		# Read the Main config file section
 		$cfgversion = $cfg->param("Main.ConfigVersion");
 		$squ_instances = $cfg->param("Main.Instances");
 		$squ_server = $cfg->param("Main.LMSServer");
 
-		# Read the Instances config section
+		# Read the Instances config file section
 		for ($instance = 1; $instance <= $squ_instances; $instance++) {
 			$enabled = undef;
 			$enabled = $cfg->param("Instance" . $instance . ".Enabled");
@@ -245,8 +249,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			push(@inst_params, $cfg->param("Instance" . $instance . ".Parameters"));
 		}
 
-
-		
 		
 		# If no instances defined yet, show at least one input line
 		if ( $squ_instances < 1 ) {
@@ -308,7 +310,8 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			
 		if ( !$header_already_sent ) { print "Content-Type: text/html\n\n"; }
 		
-		$template_title = $phrase->param("TXT0000") . ": " . $phrase->param("TXT0040");
+		#$template_title = $phrase->param("TXT0000") . ": " . $phrase->param("TXT0040");
+		$template_title = "Squeezelite Plugin";
 		
 		# Print Template
 		&lbheader;
@@ -385,6 +388,25 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		# exit;
 	}
 
+	
+	
+	
+#####################################################
+# Apply-Sub
+#####################################################
+	
+	sub restartSqueezelite	
+	{
+		
+		my $killscript = "sudo /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh";
+		system($killscript);
+		my $startscript = "$installfolder/webfrontend/cgi/plugins/squeezelite/start_instances.cgi &";
+		system($startscript);
+
+	#	my $output = `/usr/bin/sudo /opt/loxberry/data/plugins/squeezelite/kill_squeezelite.sh`;
+	}
+	
+	
 #####################################################
 # Error-Sub
 #####################################################
