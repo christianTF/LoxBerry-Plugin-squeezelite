@@ -69,6 +69,7 @@ our $header_already_sent=0;
 
 our $pluginname;
 
+our $cfgfilename;
 our $cfgversion=0;
 our $cfg_version;
 our $squ_instances=0;
@@ -106,7 +107,16 @@ $lang            = $cfg->param("BASE.LANG");
 
 
 # Read plugin settings
-$cfg = new Config::Simple("$installfolder/config/plugins/$pluginname/plugin_squeezelite.cfg");
+$cfgfilename = "$installfolder/config/plugins/$pluginname/plugin_squeezelite.cfg";
+if (-e $cfgfilename) {
+	$cfg = new Config::Simple($cfgfilename);
+}
+unless (-e $cfgfilename) {
+	$cfg = new Config::Simple(syntax=>'ini');
+	$cfg->param("Main.ConfigVersion", 1);
+	$cfg->write($cfgfilename);
+}
+	
 
 
 #########################################################################
@@ -145,9 +155,9 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	if ( !$query{'lang'} )         { if ( param('lang')         ) { $lang         = quotemeta(param('lang'));         } else { $lang         = "de";   } } else { $lang         = quotemeta($query{'lang'});         }
 #	if ( !$query{'do'} )           { if ( param('do')           ) { $do           = quotemeta(param('do'));           } else { $do           = "form"; } } else { $do           = quotemeta($query{'do'});           }
 
-	if 		( param('applybtn') ) 	{ $doapply = 1; }
+	if 	( param('applybtn') ) 	{ $doapply = 1; }
 	elsif ( param('addbtn') ) 	{ $doadd = 1; }
-	elsif ( param('delbtn') )		{ $dodel = 1; }
+	elsif ( param('delbtn') )	{ $dodel = 1; }
 	
 	
 # Clean up saveformdata variable
@@ -163,8 +173,8 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	}
 	# Read translations / phrases
 		$languagefile 			= "$installfolder/templates/system/$lang/language.dat";
-		$phrase 						= new Config::Simple($languagefile);
-		$languagefileplugin = "$installfolder/templates/plugins/$pluginname/$lang/language.dat";
+		$phrase 				= new Config::Simple($languagefile);
+		$languagefileplugin 	= "$installfolder/templates/plugins/$pluginname/$lang/language.dat";
 		$phraseplugin 			= new Config::Simple($languagefileplugin);
 
 ##########################################################################
@@ -173,10 +183,11 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 
 	if ($saveformdata) 
 	{
-		&save;
-		if ($doapply) 		{ &restartSqueezelite; }
-		elsif ($doadd)	{ &manageInstances(1); }
-		elsif ($dodel)	{ &manageInstances(-1); }
+		if ($doapply) 		{ 	&save;
+								&restartSqueezelite; }
+		elsif ($doadd)	{ &save(1); }
+		elsif ($dodel)	{ &save(-1); }
+		else { &save; }
 	  &form;
 	}
 	else 
@@ -313,8 +324,8 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		</tr>
 		<tr class="bottom row">
 		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">';
-		if ($instnr eq $squ_instances) {
-			$htmlout .= '<button type="submit" form="main_form" name="delbtn" value="del" id="btndel" data-role="button" data-inline="true" data-mini="true" data-iconpos="top" data-icon="delete">Delete</button>';
+		if ( ($instnr eq $squ_instances) and ($instnr > 1) ){
+			$htmlout .= '<button type="submit" tabindex="-1" form="main_form" name="delbtn" value="del" id="btndel" data-role="button" data-inline="true" data-mini="true" data-iconpos="top" data-icon="delete">Delete</button>';
 		}
 		$htmlout .= '
 		<!-- Delete-Button --></p></td>
@@ -371,6 +382,15 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		$squ_server		= param('LMSServer');
 		$squ_instances	= param('Instances');
 		$squ_debug		= param('debug');
+		
+		if ( $_[0] eq 1) {
+			$squ_instances++;
+		}
+		if ( ( $_[0] eq -1) and ($squ_instances gt 1) ) {
+			$cfg->delete("Instance$squ_instances");
+			$squ_instances--;
+		}
+		
 		
 		$cfg->param("Main.ConfigVersion", $cfg_version);
 		$cfg->param("Main.LMSServer", $squ_server);
