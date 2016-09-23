@@ -87,8 +87,8 @@ for ($instance = 1; $instance <= $squ_instances; $instance++) {
 		push(@inst_name, $cfg->param("Instance" . $instance . ".Name"));
 		push(@inst_desc, $cfg->param("Instance" . $instance . ".Description"));
 		push(@inst_mac, $cfg->param("Instance" . $instance . ".MAC"));
-		push(@inst_output, $cfg->param("Instance" . $instance . ".Output"));
-		push(@inst_params, $cfg->param("Instance" . $instance . ".Parameters"));
+		push(@inst_output, join(",", $cfg->param("Instance" . $instance . ".Output")));
+		push(@inst_params, join(",", $cfg->param("Instance" . $instance . ".Parameters")));
 	# ToDo: At some point, we may validate the config file parameters, and define dependencies of options.
 	}
 }
@@ -109,6 +109,9 @@ for ($instance = 0; $instance < $instcount; $instance++) {
 	}
 	if ($inst_name[$instance] ne "") {
 		$command .= " -n $inst_name[$instance]";
+	}
+	if ($inst_params[$instance] ne "") {
+		$command .= " " . $inst_params[$instance];
 	}
 	$command .= " -f $installfolder/log/plugins/$pluginname/squeezelite_" . ($instance+1) . ".log > /dev/null 2>&1 &";
 	# Starten

@@ -19,6 +19,7 @@
 # Modules
 ##########################################################################
 
+use POSIX 'strftime';
 use CGI::Carp qw(fatalsToBrowser);
 use CGI qw/:standard/;
 use Config::Simple;
@@ -90,6 +91,10 @@ our @inst_params;
 our @commandline;
 our $htmlout;
 
+my $logname;
+my $loghandle;
+my $logmessage;
+
 
 ##########################################################################
 # Read Settings
@@ -108,13 +113,23 @@ $cfg             = new Config::Simple("$home/config/system/general.cfg");
 $installfolder   = $cfg->param("BASE.INSTALLFOLDER");
 $lang            = $cfg->param("BASE.LANG");
 
+# Initialize logfile
+if ($debug) {
+	$logname = "$installfolder/log/plugins/$pluginname/index.log";
+	open ($loghandle, '>>' , $logname) or print "Cannot open logfile for writing (Permission?) - Continuing without log\n";
+	chmod (0666, $loghandle) or print "Cannot change logfile permissions\n";	
+}
+
 
 # Read plugin settings
+tolog("INFORMATION", "Reading Plugin config $cfgfilename");
 $cfgfilename = "$installfolder/config/plugins/$pluginname/plugin_squeezelite.cfg";
 if (-e $cfgfilename) {
+	tolog("INFORMATION", "Plugin config existing - loading");
 	$cfg = new Config::Simple($cfgfilename);
 }
 unless (-e $cfgfilename) {
+	tolog("INFORMATION", "Plugin config NOT existing - creating");
 	$cfg = new Config::Simple(syntax=>'ini');
 	$cfg->param("Main.ConfigVersion", 1);
 	$cfg->write($cfgfilename);
@@ -186,15 +201,20 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 
 	if ($saveformdata) 
 	{
-		if ($doapply) 		{ 	&save;
-								&restartSqueezelite; }
-		elsif ($doadd)	{ &save(1); }
-		elsif ($dodel)	{ &save(-1); }
-		else { &save; }
+		if ($doapply) 		{ 	tolog("DEBUG", "doapply triggered - save, restart, refresh form");
+									&save;
+									&restartSqueezelite; }
+		elsif ($doadd)	{ 	tolog("DEBUG", "doaadd triggered - save with +1, refresh form");
+							&save(1); }
+		elsif ($dodel)	{ 	tolog("DEBUG", "doadel triggered - save with -1, refresh form");
+							&save(-1); }
+		else { 				tolog("DEBUG", "save triggered - save, refresh form");
+							&save; }
 	  &form;
 	}
 	else 
 	{
+	  tolog("DEBUG", "form triggered - load form");
 	  &form;
 	}
 	exit;
@@ -212,12 +232,13 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	sub form 
 	{
 		# Filter
-		$debug     = quotemeta($debug);
-		
+		# $debug     = quotemeta($debug);
+		tolog("INFORMATION", "save triggered - save, refresh form");
+							
 		# Prepare form defaults
 		# Read Squeezelite possible sound outputs
-		
-		my $squ_outputs = `squeezelite -l`;
+		tolog("INFORMATION", "Calling squeezelite to get outputs");
+		my $squ_outputs = `squeezelite -l` or tolog("ERROR", "Failed to run squeezelite.");
 		
 		# Sample output:
 
@@ -258,10 +279,10 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		$squ_debug = $cfg->param("Main.debug");
 		if (($squ_debug eq "True") || ($squ_debug eq "Yes")) {
 			$squ_debug_enabled = 'checked';
-			$debug = 1;
+			# $debug = 1;
 		} else {
 			$squ_debug_enabled = '';
-			$debug = 0;
+			# $debug = 0;
 		}
 
 		# Generate links to LMS and LMS settings $lmslink and $lmssettingslink
@@ -281,10 +302,10 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			push(@inst_name, $cfg->param("Instance" . $instance . ".Name"));
 			push(@inst_desc, $cfg->param("Instance" . $instance . ".Description"));
 			push(@inst_mac, $cfg->param("Instance" . $instance . ".MAC"));
-			push(@inst_output, $cfg->param("Instance" . $instance . ".Output"));
-			push(@inst_params, $cfg->param("Instance" . $instance . ".Parameters"));
+			tolog("DEBUG", "Instance$instance output from config: " . join(",", $cfg->param("Instance" . $instance . ".Output")));
+			push(@inst_output, join(",", $cfg->param("Instance" . $instance . ".Output")));
+			push(@inst_params, join(",", $cfg->param("Instance" . $instance . ".Parameters")));
 		}
-
 		
 		# If no instances defined yet, show at least one input line
 		if ( $squ_instances < 1 ) {
@@ -428,6 +449,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			my $enabled = param("Enabled$instance");
 			my $name = param("Name$instance");
 			my $MAC = lc param("MAC$instance");
+			
 			my $output = param("Output$instance");
 			my $params = param("Parameters$instance");
 			my $desc = param("Descriptiom$instance");
@@ -439,6 +461,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			$cfg->param("Instance$instance.Enabled", $enabled);
 			$cfg->param("Instance$instance.Name", $name);
 			$cfg->param("Instance$instance.MAC", $MAC);
+			tolog("DEBUG", "Instance$instance output from form: " . $output);
 			$cfg->param("Instance$instance.Output", $output);
 			$cfg->param("Instance$instance.Parameters", $params);
 			$cfg->param("Instance$instance.Description", $desc);
@@ -577,4 +600,17 @@ sub getMAC {
 
   undef $s, @interfaces;
   return $mac;
+}
+
+#####################################################
+# Logging
+#####################################################
+
+sub tolog {
+  print strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " $_[0]: $_[1]\n";
+  if ($debug) {
+	if ($loghandle) {
+		print $loghandle strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " $_[0]: $_[1]\n";
+	}
+  }
 }
