@@ -9,7 +9,7 @@ if [ -x /usr/bin/logger ]; then
     /usr/bin/logger "loxberry-plugin-$pluginname - DAEMON Script from Squeezelite Plugin"
 fi
 
-pluginname = $(basename $0 .sh)
+pluginname=$(basename $0 .sh)
 
 # Testing and installing Perl Modules
 # perl -MNet::Address::Ethernet -e 1 &> /dev/null || cpanm -i Net::Address::Ethernet
@@ -41,7 +41,7 @@ fi
 # Possible solution 1: Write a static list at startup --> no PnP with USB devices
 # Possible solution 2: Elevate squeezelite
 
-[ -s /opt/loxberry/config/plugins/$pluginname/plugin_squeezelite.cfg ]
+if [ -s /opt/loxberry/config/plugins/$pluginname/plugin_squeezelite.cfg ]
 	then
 	# If a configuration file exists, run Perl script to read config and start Player instances
 	# Run forked to do not delay startup
