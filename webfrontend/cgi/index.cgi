@@ -361,7 +361,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		<tr class="bottom row">
 		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">';
 		if ( ($instnr eq $squ_instances) and ($instnr > 1) ){
-			$htmlout .= '<button type="submit" tabindex="-1" form="main_form" name="delbtn" value="del" id="btndel" data-role="button" data-inline="true" data-mini="true" data-iconpos="top" data-icon="delete">Delete</button>';
+			$htmlout .= '<button type="submit" tabindex="-1" form="main_form" name="delbtn" value="del" id="btndel" data-role="button" data-inline="true" data-mini="true" data-iconpos="top" data-icon="delete">L&ouml;schen</button>';
 		}
 		$htmlout .= '
 		<!-- Delete-Button --></p></td>
@@ -535,7 +535,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	sub lbheader 
 	{
 		 # Create Help page
-	  $helplink = "http://www.loxwiki.eu:80/display/LOXBERRY/Miniserverbackup";
+	  $helplink = "http://www.loxwiki.eu:80/x/_4Cm";
 	  open(F,"$installfolder/templates/plugins/$pluginname/$lang/help.html") || die "Missing template plugins/$pluginname/$lang/help.html";
 	    @help = <F>;
 	    foreach (@help)

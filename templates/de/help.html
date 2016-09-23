@@ -1,36 +1,47 @@
 <font size="-1">
-	<p>
-		<b><i>Backup jetzt starten!</i></b> Startet ein Backup aller konfigurierter Miniserver.
-	</p>
-	<p>
-		<b><i>Downloads:</i></b> Zum Herunterladen vorhandenen Backup-Archive in einem neuen Fenster.
-	</p>
-	<p>
-		<b><i>Logdatei speichern:</i></b> Zeigt die Logdatei der letzten Backup-Durchl&auml;ufe in einem neuen Fenster an.
-	</p>
-	<p>
-		<b><i>Automatische Backups:</i></b> Schaltet automatische, zeitgesteuerte Backups ein.
-	</p>
-	<p>
-		<b><i>Zyklus:</i></b> Legt fest, wie h&auml;ufig das Backup ausgef&uuml;hrt werden soll.
-	</p>
-	<p>
-		<b><i>Anzahl Backups im Archiv speichern:</i></b> Anzahl an &auml;lteren Backups, die vorgehalten werden sollen. Bitte beachten, dass gen&uuml;gend Speicherkapazit&auml;t auf dem Laufwerk zur Verf&uuml;gung stehen muss.
-	</p>
-	<p>
-		<b><i>Protokollierungs-Stufe:</i></b> Auswahl, wie detailliert das Protokoll (Logdatei) gespeichert werden soll.
-	</p>
-	<p>
-		<b><i>Logdatei live anzeigen:</i></b> Zeigt die aktuelle Logdatei an ab dem Zeitpunkt des Anklickens an.
-	</p>
-	<p>
-		<b><i>Logdatei aktualisieren:</i></b> Aktualisiert die aktuelle Logdatei laufend.<br>Durch wiederholtes Klicken oder nach 15 Minuten wird die Aktualisierung pausiert.
-	</p>
-	<p>
-		<b><i>Automatisch zum Ende springen:</i></b> Das Logdatei rollt automatisch ans untere Ende, wenn Eintr&auml;ge hinzukommen.
-	</p>
-	<p>
-		<b><i>Debug-Sitzung neu starten:</i></b> Startet eine neue Debug-Sitzung. Das bedeutet, dass Position in der Logdatei auf den Zeitpunkt des Anklickens gesetzt wird. Wurde die Anzeige vorher pausiert, fehlt das St&uuml;ck, w&auml;hrend die Anzeige pausiert war. (Im Normalfall wird das die Logdatei ab dem Zeitpunkt des Pausierens am Ende der Pause fortgesetzt.)
-	</p>
-	<small>Die &Auml;nderung der Protokollierungs-Stufe wirkt sich nicht auf bereits laufende Datensicherungen aus! Sie wird f&uuml;r den n&auml;chsten Durchlauf verwendet.</small>
+	<h3>Allgemein</h3>
+F&uuml;r die Verwendung ist ein Logitech Media Server erforderlich.
+Im folgenden wird<span style="font-style: italic;">&nbsp;Logitech
+Media Server</span> mit <span style="font-style: italic;">LMS</span>
+abgek&uuml;rzt.<br>
+<h3>Grundeinstellungen</h3>
+<span style="font-weight: bold;">LMS Adresse:</span>
+Ohne Angabe suchen die Player den Server automatisch. Wird jedoch der
+Hostname oder die IP-Adresse eingetragen, erscheinen nach dem Speichern
+zwei Links f&uuml;r den Direktaufruf des LMS Webinterfaces und der
+Einstellungen.<br>
+<br>
+<h3>Instanzen</h3>
+<span style="font-weight: bold;">Aktiv:</span> Jede
+Instanz kann aktiviert und deaktiviert werden.<br>
+<span style="font-weight: bold;">Name der Zone:</span>
+Mit diesem Namen wird der Player im LMS angezeigt.<br>
+<span style="font-weight: bold;">MAC-Adresse</span>:
+Es <span style="font-style: italic;">m&uuml;ssen</span>
+unterschiedliche MAC-Adressen verwendet werden, da diese als eindeutige
+ID f&uuml;r den LMS gilt.<br>
+<span style="font-weight: bold;">MAC-Adresse
+w&uuml;rfeln:</span> Generiert eine zuf&auml;llige
+MAC-Adresse.<br>
+<span style="font-weight: bold;">Ausgang:</span>
+Hier werden alle Audio-Ausg&auml;nge des LoxBerry angezeigt.<br>
+<span style="font-weight: bold;">Zus&auml;tzliche
+Parameter: </span>Hier k&ouml;nnen weitere Startparameter
+f&uuml;r Squeezelite mitgegeben werden. <br>
+<br>
+<h3>Hinzuf&uuml;gen und L&ouml;schen von Instanzen</h3>
+Es k&ouml;nnen beliebig viele Instanzen mit dem <span
+ style="font-style: italic;">Hinzuf&uuml;gen</span>-Knopf
+erstellt werden. Es kann immer nur <span style="font-style: italic;">die
+letzte Instanz</span> gel&ouml;scht werden. Ein Umsortieren
+ist nicht m&ouml;glich. Die <span style="font-style: italic;">Hinzuf&uuml;gen</span>-
+und&nbsp;<span style="font-style: italic;">L&ouml;schen</span>-Kn&ouml;pfe
+speichern die aktuelle Konfiguration!<br>
+<br>
+<h3>Speichern, Speichern und ausf&uuml;hren</h3>
+<span style="font-style: italic;">Speichern</span>
+&uuml;bernimmt die Einstellungen in die Konfiguration.<br>
+<span style="font-style: italic;">Speichern und
+ausf&uuml;hren</span> &uuml;bernimmt die Konfiguration
+und startet alle Instanzen mit der neuen Konfiguration.
 </font>
