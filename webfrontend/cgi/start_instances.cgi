@@ -97,7 +97,7 @@ for ($instance = 1; $instance <= $squ_instances; $instance++) {
 tolog("INFORMATION", "Creating the command lines for squeezelite");
 $instcount = scalar @inst_name;
 for ($instance = 0; $instance < $instcount; $instance++) {
-	$command = 	"squeezelite ";
+	$command = 	"squeezelite -a 80 ";
 	if ($squ_server ne "") {
 		$command .= " -s $squ_server";
 	}
