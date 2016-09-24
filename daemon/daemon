@@ -32,7 +32,7 @@ if [ ! -x /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh ]; then
 		chmod +x /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh
 fi
 
-if systemctl is-active squeezelite.service
+if [ `systemctl is-active squeezelite.service` ]
 	then
 		/usr/bin/logger "loxberry-plugin-$pluginname - Disabling squeezelite.service"
 		systemctl stop squeezelite.service
