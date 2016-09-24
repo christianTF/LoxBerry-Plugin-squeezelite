@@ -16,7 +16,7 @@ pluginname=$(basename $0 .sh)
 
 
 # Add Squeezelite to sudoers (need root permission)
-if [! -x /etc/sudoers.d/$pluginname ]
+if [ ! -e /etc/sudoers.d/$pluginname ]
 	then
 		if [ -x /usr/bin/logger ]; then 
 			/usr/bin/logger "loxberry-plugin-$pluginname - Adding sudoers permissions"
@@ -24,6 +24,11 @@ if [! -x /etc/sudoers.d/$pluginname ]
 		echo loxberry ALL = NOPASSWD: /usr/bin/squeezelite > /etc/sudoers.d/$pluginname
 		echo loxberry ALL = NOPASSWD: /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh >> /etc/sudoers.d/$pluginname
 		chmod 0440 /etc/sudoers.d/$pluginname
+fi
+if [ ! -x /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh ]; then 
+		if [ -x /usr/bin/logger ]; then 
+			/usr/bin/logger "loxberry-plugin-$pluginname - Setting kill_squeezelite +x permissions"
+		fi
 		chmod +x /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh
 fi
 
