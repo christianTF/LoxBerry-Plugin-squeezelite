@@ -14,6 +14,12 @@ pluginname=$(basename $0 .sh)
 # Testing and installing Perl Modules
 # perl -MNet::Address::Ethernet -e 1 &> /dev/null || cpanm -i Net::Address::Ethernet
 
+# Adding user loxberry to group audio
+# Exit code: 0 -> found; other -> not found
+id -Gn "loxberry" | grep "audsdio" > /dev/nul
+if [ $? -ne 0 ] ; then
+	gpasswd -a loxberry audio
+fi
 
 # Add Squeezelite to sudoers (need root permission)
 if [ ! -e /etc/sudoers.d/$pluginname ]
