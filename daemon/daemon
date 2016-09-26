@@ -16,7 +16,7 @@ pluginname=$(basename $0 .sh)
 
 # Adding user loxberry to group audio
 # Exit code: 0 -> found; other -> not found
-id -Gn "loxberry" | grep "audsdio" > /dev/nul
+id -Gn "loxberry" | grep "audio" > /dev/nul
 if [ $? -ne 0 ] ; then
 	gpasswd -a loxberry audio
 fi
