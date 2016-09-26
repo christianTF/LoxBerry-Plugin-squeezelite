@@ -116,6 +116,8 @@ $lang            = $cfg->param("BASE.LANG");
 # Initialize logfile
 if ($debug) {
 	$logname = "$installfolder/log/plugins/$pluginname/index.log";
+	open ($loghandle, '>>' , $logname); # or warn "Cannot open logfile for writing (Permission?) - Continuing without log\n";
+	chmod (0666, $loghandle); # or warn "Cannot change logfile permissions\n";	
 }
 
 
