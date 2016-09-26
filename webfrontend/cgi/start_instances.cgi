@@ -54,8 +54,8 @@ $pluginname =~ s/(.*)\/(.*)\/(.*)$/$2/g;
 # Initialize logfile
 if ($debug) {
 	$logname = "$installfolder/log/plugins/$pluginname/start_instances.log";
-	open ($loghandle, '>>' , $logname) or print "Cannot open logfile for writing (Permission?) - Continuing without log\n";
-	chmod (0666, $loghandle) or print "Cannot change logfile permissions\n";	
+	open ($loghandle, '>>' , $logname); # or warn "Cannot open logfile for writing (Permission?) - Continuing without log\n";
+	chmod (0666, $loghandle); # or warn "Cannot change logfile permissions\n";	
 }
 # Read plugin settings
 tolog("INFORMATION", "Reading Plugin config");
@@ -127,7 +127,7 @@ if ($loghandle) {
 exit;
 
 sub tolog {
-  print strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " $_[0]: $_[1]\n";
+  # print strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " $_[0]: $_[1]\n";
   if ($debug) {
 	if ($loghandle) {
 		print $loghandle strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " $_[0]: $_[1]\n";
