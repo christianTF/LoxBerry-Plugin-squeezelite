@@ -12,11 +12,14 @@ fi
 
 pluginname = $(basename $0 .sh)
 
-# Add Squeezelite to sudoers (need root permission)
+# Remove Squeezelite from sudoers (need root permission)
 if [! -w /etc/sudoers.d/$pluginname ]
 	then
 		rm -f /etc/sudoers.d/$pluginname
 fi
+
+# Remove squeezelox user
+deluser --remove-all-files squeezelox
 
 # Currently service is not re-enabled to avoid confusion
 # /usr/bin/logger "loxberry-plugin-$pluginname - Disabling squeezelite.service"

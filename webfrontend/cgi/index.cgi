@@ -501,8 +501,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		my $killscript = "sudo /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh";
 		system($killscript);
 		
-		# For any reason, this call does not come back and browser is awaiting response.
-		my $startscript = "$installfolder/webfrontend/cgi/plugins/squeezelite/start_instances.cgi";
+		my $startscript = "sudo $installfolder/webfrontend/cgi/plugins/squeezelite/start_instances.cgi > /dev/null";
 		system($startscript);
 	
 	}
