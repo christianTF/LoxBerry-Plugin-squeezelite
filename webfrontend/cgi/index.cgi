@@ -420,7 +420,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		# Read global plugin values from form and write to config
 		
 		$cfg_version 	= param('ConfigVersion');
-		$squ_server		= param('LMSServer');
+		$squ_server		= trim(param('LMSServer'));
 		$squ_instances	= param('Instances');
 		$squ_debug		= param('debug');
 		
@@ -447,12 +447,12 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		
 		for ($instance = 1; $instance <= $squ_instances; $instance++) {
 			my $enabled = param("Enabled$instance");
-			my $name = param("Name$instance");
-			my $MAC = lc param("MAC$instance");
+			my $name = trim(param("Name$instance"));
+			my $MAC = lc trim(param("MAC$instance"));
 			
 			my $output = param("Output$instance");
-			my $params = param("Parameters$instance");
-			my $desc = param("Descriptiom$instance");
+			my $params = trim(param("Parameters$instance"));
+			my $desc = trim(param("Descriptiom$instance"));
 
 			# Possible validations here
 			
