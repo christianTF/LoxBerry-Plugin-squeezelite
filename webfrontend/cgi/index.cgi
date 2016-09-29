@@ -101,7 +101,7 @@ my $logmessage;
 ##########################################################################
 
 # Version of this script
-$version = "0.1.1";
+$version = "0.1.5";
 
 # Figure out in which subfolder we are installed
 $pluginname = abs_path($0);
