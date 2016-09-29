@@ -1,36 +1,33 @@
-<font size="-1">
-<p>
-<b><i>Start Backup now!</i></b> Starting a Backup of all configured Miniservers.
+<h3 class="western">General</h3>
+<p>To use this plug-in, Logitech Media Server (henceforth abbreviated
+as LMS) is required.</p>
+<h3 class="western">Basic Settings</h3>
+<p><b>LMS </b><b>address</b><b>: </b>Leaving this field empty will
+force Squeezelite to search for LMS in your network automatically. If
+you provide a hostname or IP address, below you will get two links to
+your LMS web interface and LMS configuration. Port is not that from
+web interface (9000), but LMS stream communication. Usually you don't
+need to enter a port.</p>
+<h3 class="western">Zones</h3>
+<p><b>Active:</b> Every zone can be activated or
+disabled.<br/>
+<b>Zone Name:</b> This name is used in LMS and
+LMS apps.<br/>
+<b>MAC address:</b> You
+<i>must</i> provide different MAC addresses for multiple zones. The
+MAC is the unique identifier in your LMS network.<br/>
+<b>Roll a MAC address:</b> Generates a random MAC.<br/>
+<b>Output:</b>
+Displays all outputs of your LoxBerry.<br/>
+<b>Additional parameters:</b>
+Use this field for additional parameters starting Squeezelite. 
 </p>
-<p>
-<b><i>Downloads:</i></b> To dowlload existing Backup-Archives in a new Window.
+<h3 class="western">Add and delete zones</h3>
+<p>You can add any number of zones by the Add button. You only can
+delete the last entry a time. The full configuration is saved with
+adding and deleting.</p>
+<h3 class="western">Save, Save and apply</h3>
+<p>Save will save your configuration.<br/>
+Save and apply saves your configuration and
+restarts all zones with the new configuration. </font>
 </p>
-<p>
-<b><i>Save Logfile:</i></b> Shows the Lofile of the last Backup-Runs in a new Window.
-</p>
-<p>
-<b><i>Scheduled Backups:</i></b> Enables automatic, scheduled Backups.
-</p>
-<p>
-<b><i>Interval:</i></b> Defines the Interval for the scheduled Backups.
-</p>
-<p>
-<b><i>Number of backups to be stored in the archive:</i></b> Number of older Backups to be kept. Please ensure, the the storage device has enough capacity.
-</p>
-<p>
-<b><i>Logging-Level:</i></b> Select, how detailed the Logfile should be.
-</p>
-<p>
-<b><i>Logdatei Liveview:</i></b> Shows the current Logfile starting at the time of your click.
-</p>
-<p>
-<b><i>Refresh Logfile:</i></b> Refreshs the current Logfile continously.<br>The refresh is paused by clicking again or automatically after 15 minutes.
-</p>
-<p>
-<b><i>Autoscroll Logfile:</i></b> The Logfiles is automatically scrolled to the bottom, if a new line is added.
-</p>
-<p>
-<b><i>Restart Debug-Session:</i></b> Starts a new Debug-Session. That means, the position in the Logfile is set to the time of your click. If the Logview was paused before, the lines during the pause will be supressed. (In the normal case the logfile continues at the pause timestamp.)
-</p>
-<small>Changing the Logging-Level has no effect on already running Backups! It will be taken into account for the next run.</small>
-</font>

@@ -1,0 +1,28 @@
+[BASIC]
+HEADING_BASICSETTINGS="Basic Settings"
+LMSADDRESS="Logitech Media Server address"
+LMSADDRESS_FORMAT="Format: server or server:port<br />If this field stays empty, Squeezelite will seek for the server."
+DEBUGMODE="Debug mode"
+DEBUG_USEWITHCARE="Use with care! Should only be activated for troubleshooting."
+
+[INSTANCES]
+HEADING="Zones"
+PREAMBLE="Multiple instances of Squeezelite can be run. Stability is dependend on your LoxBerry hardware."
+TABLE_HEAD_INSTANCE="Zone"
+TABLE_HEAD_ACTIVE="Active"
+TABLE_HEAD_INSTANCE_NAME="Zone name"
+TABLE_HEAD_MAC_ADDRESS="MAC address"
+INSTANCE_NAME_HINT="Name of the zone"
+MAC_HINT="Used MAC address"
+MAC_DICE_HINT="Roll a random MAC address"
+OUTPUT_CURRENT="(currently)"
+ADDITIONAL_PARAMETERS_HINT="Additional parameters"
+INSTANCE_DESCRIPTION_HINT="Your description"
+CURRENTLY_RUNNING="Currently <font color="#008040"><!--$runningInstances--></font> Squeezelite processes are running."
+
+[BUTTON]
+ADD_INSTANCE="Add instance"
+CANCEL="Cancel"
+SAVE="Save"
+SAVE_AND_APPLY="Save and apply"
+DELETE="Delete"

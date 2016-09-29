@@ -5,38 +5,39 @@
 	<input type="hidden" name="saveformdata" value="1">
 	<input type="hidden" name="ConfigVersion" value="<!--$cfgversion-->">
 	<input type="hidden" name="Instances" value="<!--$squ_instances-->">
-	<h1>Grundeinstellungen</h1>
+	<h1><!--$T::HEADING_BASIC_BASICSETTINGS--></h1>
 	<div style="align: center text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><table border="1" cellpadding="2" cellspacing="2" style="background-color: #ffffff;">
 	  <tr>
-	  <td style="border-width : 0px;">Logitech Media Server Adresse</td>
+	  <td style="border-width : 0px;"><!--Logitech Media Server Adresse--><!--$T::BASIC_LMSADDRESS--></td>
 	  <td style="border-width : 0px;"><input type="text" name="LMSServer" value="<!--$squ_server-->"></td>
-	  <td style="border-width : 0px;">Format: server oder server:port<br />Bleibt das Feld leer, sucht Squeezelite automatisch nach dem Server.</td>
+	  <td style="border-width : 0px;"><!--$T::BASIC_LMSADDRESS_FORMAT--></td>
 	  </tr>
 	  <tr style="display:none;">
-	  <td style="border-width : 0px;">Debug Mode</td>
+	  <td style="border-width : 0px;"><!--$T::BASIC_DEBUGMODE--></td>
 	  <td style="border-width : 0px;"><input type="checkbox" data-role="flipswitch" name="debug" id="switch" value="Yes" <!--$squ_debug_enabled--></td>
-	  <td style="border-width : 0px;">Mit Vorsicht verwenden! Sollte nur im Fehlerfall aktiviert werden.</td> 
+	  <td style="border-width : 0px;"><!--$T::BASIC_DEBUG_USEWITHCARE--></td> 
 	  </table>
 	</div>
 	<p><!--$lmslink-->&nbsp;|&nbsp;<!--$lmssettingslink--></p>
-	<h1>Instanzen</h1>
-	Es k&ouml;nnen mehrere Instanzen von Squeezelite betrieben werden. Ob es stabil funktioniert, ist von der 
-	Leistungsf&auml;higkeit der LoxBerry-Hardware abh&auml;ngig.<br /><br />
+	<h1><!--$T::INSTANCES_HEADING--></h1>
+	<!--$T::INSTANCES_PREAMBLE--><br /><br />
 
 	<div style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
 	
 	<!--$htmlout-->
 	
 	</div>
-	<p style="font-size:12px; font-style: italic;">Aktuell laufen <font color="#008040"><!--$runningInstances--></font> Squeezelite Prozesse.</p>
+	<p style="font-size:12px; font-style: italic;">
+	<!--$T::INSTANCES_CURRENTLY_RUNNING-->
+	</p>
 
 <p>
 <center>
-<p><button type="submit" tabindex="-1" form="main_form" name="addbtn" value="add" id="btnadd" data-role="button" data-inline="true" data-mini="true" data-icon="plus">Instanz hinzuf&uuml;gen</button></p>
+<p><button type="submit" tabindex="-1" form="main_form" name="addbtn" value="add" id="btnadd" data-role="button" data-inline="true" data-mini="true" data-icon="plus"><!--$T::BUTTON_ADD_INSTANCE--></button></p>
 
-<a id="btncancel" data-role="button" data-inline="true" data-mini="true" data-icon="delete" href="/admin/index.cgi">Abbrechen</a>
-<button type="submit" form="main_form" name="submitbtn" value="submit" id="btnsubmit" data-role="button" data-inline="true" data-mini="true" data-icon="check">Speichern</button>
-<button type="submit" tabindex="-1" form="main_form" name="applybtn" value="apply" id="btnapply" data-role="button" data-inline="true" data-mini="true" data-icon="refresh">Speichern und ausf&uuml;hren</button>
+<a id="btncancel" data-role="button" data-inline="true" data-mini="true" data-icon="delete" href="/admin/index.cgi"><!--$T::BUTTON_CANCEL--></a>
+<button type="submit" form="main_form" name="submitbtn" value="submit" id="btnsubmit" data-role="button" data-inline="true" data-mini="true" data-icon="check"><!--$T::BUTTON_SAVE--></button>
+<button type="submit" tabindex="-1" form="main_form" name="applybtn" value="apply" id="btnapply" data-role="button" data-inline="true" data-mini="true" data-icon="refresh"><!--$T::BUTTON_SAVE_AND_APPLY--></button>
 </form>
 
 </center>

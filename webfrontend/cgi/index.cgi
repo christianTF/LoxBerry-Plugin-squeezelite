@@ -64,6 +64,8 @@ our $pname;
 our $debug=1;
 our $languagefileplugin;
 our $phraseplugin;
+our $plglang;
+
 our $selectedverbose;
 our $selecteddebug;
 our $header_already_sent=0;
@@ -101,7 +103,7 @@ my $logmessage;
 ##########################################################################
 
 # Version of this script
-$version = "0.1.5";
+$version = "0.1.1";
 
 # Figure out in which subfolder we are installed
 $pluginname = abs_path($0);
@@ -184,17 +186,35 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 # Init Language
 	# Clean up lang variable
 	$lang         =~ tr/a-z//cd; $lang         = substr($lang,0,2);
-  # If there's no language phrases file for choosed language, use german as default
-		if (!-e "$installfolder/templates/system/$lang/language.dat") 
-		{
+# If there's no language phrases file for choosed language, use german as default
+	if (!-e "$installfolder/templates/system/$lang/language.dat") 
+	{
   		$lang = "de";
 	}
-	# Read translations / phrases
-		$languagefile 			= "$installfolder/templates/system/$lang/language.dat";
-		$phrase 				= new Config::Simple($languagefile);
-		$languagefileplugin 	= "$installfolder/templates/plugins/$pluginname/$lang/language.dat";
-		$phraseplugin 			= new Config::Simple($languagefileplugin);
+# Read LoxBerry system translations / phrases
+	$languagefile 			= "$installfolder/templates/system/$lang/language.dat";
+	$phrase 				= new Config::Simple($languagefile);
+	
+# Read Plugin transations
+# Read English language as default
+# Missing phrases in foreign language will fall back to English	
+	
+	$languagefileplugin 	= "$installfolder/templates/plugins/$pluginname/en/language.txt";
+	$plglang = new Config::Simple($languagefileplugin);
+	$plglang->import_names('T');
 
+#	$lang = 'en'; # DEBUG
+	
+# Read foreign language if exists and not English
+	$languagefileplugin = "$installfolder/templates/plugins/$pluginname/$lang/language.txt";
+	 if ((-e $languagefileplugin) and ($lang ne 'en')) {
+		# Now overwrite phrase variables with user language
+		$plglang = new Config::Simple($languagefileplugin);
+		$plglang->import_names('T');
+	}
+	
+#	$lang = 'de'; # DEBUG
+	
 ##########################################################################
 # Main program
 ##########################################################################
@@ -330,13 +350,11 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		$htmlout .= '
 		<table width="100%" cellpadding="2" cellspacing="0" border="1px">
 		<tr valign="top">
-		<th width="5%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">Instanz</p></th>
-		<th width="5%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">Aktiv</p></th>
-		<th width="40%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">Name der Zone</p></th>
-		<th width="47%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">MAC-Adresse</p></th>
+		<th width="5%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_INSTANCE--></p></th>
+		<th width="5%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_ACTIVE--></p></th>
+		<th width="40%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_INSTANCE_NAME--></p></th>
+		<th width="47%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_MAC_ADDRESS--></p></th>
 		<th width="3%"></th>
-		<!--<th style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">Audio-Ausgang</p></th>-->
-		<!--<th style="border-width : 0px;"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">Zus&auml;tzliche Parameter</p></th>-->
 		</tr>
 	
 		<tr class="top row">
@@ -348,26 +366,26 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		$enabled . '></p>
 		</td>
 		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
-		<input type="text" placeholder="Name der Zone" name="Name' . $instnr . '" value="' . 
+		<input type="text" placeholder="<!--$T::INSTANCES_INSTANCE_NAME_HINT-->" name="Name' . $instnr . '" value="' . 
 		$inst_name[$inst] . '"></p>
 		</td>
 		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
-		<input type="text" placeholder="Verwendete MAC-Adresse" onkeyup="checkMAC(\'MAC' . $instnr . '\')"w id="MAC' . $instnr . '" name="MAC' . $instnr . '" value="' . 
+		<input type="text" placeholder="<!--$T::INSTANCES_MAC_HINT-->" onkeyup="checkMAC(\'MAC' . $instnr . '\')"w id="MAC' . $instnr . '" name="MAC' . $instnr . '" value="' . 
 		$inst_mac[$inst] . '"></p>
 		</td>
-		<td><a href="JavaScript:setRandomMAC(\'MAC' . $instnr . '\');" id="randommac' . $instnr . '"><img src="/plugins/' . $pluginname . '/images/dice_30_30.png" alt="Random MAC" /></a>
+		<td><a href="JavaScript:setRandomMAC(\'MAC' . $instnr . '\');" id="randommac' . $instnr . '"><img src="/plugins/' . $pluginname . '/images/dice_30_30.png" alt="<!--$T::INSTANCES_MAC_DICE_HINT-->" title="<!--$T::INSTANCES_MAC_DICE_HINT-->"/></a>
 		</td>
 		</tr>
 		<tr class="bottom row">
 		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">';
 		if ( ($instnr eq $squ_instances) and ($instnr > 1) ){
-			$htmlout .= '<button type="submit" tabindex="-1" form="main_form" name="delbtn" value="del" id="btndel" data-role="button" data-inline="true" data-mini="true" data-iconpos="top" data-icon="delete">L&ouml;schen</button>';
+			$htmlout .= '<button type="submit" tabindex="-1" form="main_form" name="delbtn" value="del" id="btndel" data-role="button" data-inline="true" data-mini="true" data-iconpos="top" data-icon="delete"><!--$T::BUTTON_DELETE--></button>';
 		}
 		$htmlout .= '
-		<!-- Delete-Button --></p></td>
+		</p></td>
 		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
 		<select name="Output' . $instnr . '" align="left">
-			<option value="' . $inst_output[$inst] . '">' . $inst_output[$inst] . ' (aktuell) </option>';
+			<option value="' . $inst_output[$inst] . '">' . $inst_output[$inst] . ' <!--$T::INSTANCES_OUTPUT_CURRENT--></option>';
 		
 		my $outputnr = 0 ;
 		foreach $output (@outputdevs) { 
@@ -379,29 +397,30 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		</p>
 		</td>
 		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
-		<input type="text" placeholder="Zus&auml;tzliche Parameter" name="Parameters' . $instnr . '" value="' . $inst_params[$inst] . '"></span></p>
+		<input type="text" placeholder="<!--$T::INSTANCES_ADDITIONAL_PARAMETERS_HINT-->" name="Parameters' . $instnr . '" value="' . $inst_params[$inst] . '"></span></p>
 		</td>
 		<td>
 		</td>
-		<input type="hidden" placeholder="Eigene Beschreibung" name="Description' . $instnr . '" value="' . $inst_desc[$inst] . '">
+		<input type="hidden" placeholder="<!--$T::INSTANCES_INSTANCE_DESCRIPTION_HINT-->" name="Description' . $instnr . '" value="' . $inst_desc[$inst] . '">
 		</tr>
 		</table>';
 		
 	}
-			
+	
 		if ( !$header_already_sent ) { print "Content-Type: text/html\n\n"; }
 		
 		#$template_title = $phrase->param("TXT0000") . ": " . $phrase->param("TXT0040");
-		$template_title = "Squeezelite Plugin";
+		$template_title = "Squeezelite Player Plugin";
 		
 		# Get number of running Squeezelite processes
 		$runningInstances = `pgrep --exact -c squeezelite`;
 		
 		# Print Template
 		&lbheader;
-		open(F,"$installfolder/templates/plugins/$pluginname/$lang/settings.html") || die "Missing template plugins/$pluginname/$lang/settings.html";
+		open(F,"$installfolder/templates/plugins/$pluginname/multi/settings.html") || die "Missing template plugins/$pluginname/multi/settings.html";
 		  while (<F>) 
 		  {
+		    $_ =~ s/<!--\$(.*?)-->/${$1}/g;
 		    $_ =~ s/<!--\$(.*?)-->/${$1}/g;
 		    print $_;
 		  }
