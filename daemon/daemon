@@ -34,15 +34,22 @@ fi
 # fi
 
 # Add Squeezelite to sudoers (need root permission)
-if [ ! -e /etc/sudoers.d/$pluginname ]
+
+# Sudoers V2
+sudoversion=2
+
+if [ ! -e /opt/loxberry/config/plugins/$pluginname/sudoers.v$sudoversion ]
 	then
 		if [ -x /usr/bin/logger ]; then 
 			/usr/bin/logger "loxberry-plugin-$pluginname - Adding sudoers permissions"
 		fi
 		echo %loxberry ALL = NOPASSWD: /usr/bin/squeezelite > /etc/sudoers.d/$pluginname
+		echo %loxberry ALL = NOPASSWD: /usr/bin/amixer >> /etc/sudoers.d/$pluginname
 		echo %loxberry ALL = NOPASSWD: /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh >> /etc/sudoers.d/$pluginname
 		echo %loxberry ALL = NOPASSWD: /opt/loxberry/webfrontend/cgi/plugins/$pluginname/start_instances.cgi >> /etc/sudoers.d/$pluginname
 		chmod 0440 /etc/sudoers.d/$pluginname
+		rm /opt/loxberry/config/plugins/$pluginname/sudoers.*
+		echo Sudoers V2 > /opt/loxberry/config/plugins/$pluginname/sudoers.v$sudoversion
 fi
 
 # Change permissions

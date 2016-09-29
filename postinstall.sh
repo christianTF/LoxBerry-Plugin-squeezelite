@@ -38,6 +38,25 @@ ARGV4=$4 # Forth argument is Plugin version
 
 ARGV5=$5 # Fifth argument is Base folder of LoxBerry
 # echo "<INFO> Base folder is: $ARGV5"
+
+echo "<INFO> Determining if we are running on Raspberry"
+cat /etc/os-release | grep "ID=raspbian" > /dev/null
+if [ $? -eq 0 ] ; then
+	echo "Raspbian" > $ARGV5/config/plugins/$ARGV2/is_raspbian.info
+	echo "<OK> Running on a Raspberry Pi"
+else
+	echo "<OK> This is not Raspberry hardware"
+fi
+
+echo "<INFO> Determining if we are running on a LoxBerry image"
+uname -a | grep "loxberry" > /dev/null
+if [ $? -eq 0 ] ; then
+	echo "LoxBerry" > $ARGV5/config/plugins/$ARGV2/is_loxberry.info
+	echo "<OK> Running in a LoxBerry image"
+else
+	echo "<OK> This is not a LoxBerry image"
+fi
+
 if [ ! -x /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh ]; then 
 	echo "<WARNING> ================================================="
 	echo "<WARNING> Please REBOOT your LoxBerry after installation."
