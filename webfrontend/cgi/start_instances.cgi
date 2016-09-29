@@ -108,7 +108,7 @@ for ($instance = 0; $instance < $instcount; $instance++) {
 		$command .= " -m $inst_mac[$instance]";
 	}
 	if ($inst_name[$instance] ne "") {
-		$command .= " -n \"$inst_name[$instance]\"";
+		$command .= " -n \"\"$inst_name[$instance]\"\"";
 	}
 	if ($inst_params[$instance] ne "") {
 		$command .= " " . $inst_params[$instance];

@@ -352,7 +352,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		$inst_name[$inst] . '"></p>
 		</td>
 		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
-		<input type="text" placeholder="Verwendete MAC-Adresse" id="MAC' . $instnr . '" name="MAC' . $instnr . '" value="' . 
+		<input type="text" placeholder="Verwendete MAC-Adresse" onkeyup="checkMAC(\'MAC' . $instnr . '\')"w id="MAC' . $instnr . '" name="MAC' . $instnr . '" value="' . 
 		$inst_mac[$inst] . '"></p>
 		</td>
 		<td><a href="JavaScript:setRandomMAC(\'MAC' . $instnr . '\');" id="randommac' . $instnr . '"><img src="/plugins/' . $pluginname . '/images/dice_30_30.png" alt="Random MAC" /></a>
