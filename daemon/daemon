@@ -11,15 +11,27 @@ fi
 
 pluginname=$(basename $0 .sh)
 
+# Correct permissions of logs of older versions
+chmod a+w /opt/loxberry/log/plugins/$pluginname/*
+
 # Testing and installing Perl Modules
 # perl -MNet::Address::Ethernet -e 1 &> /dev/null || cpanm -i Net::Address::Ethernet
 
+# Creating own user for Squeezelite
+id -u "squeezelox" > /dev/null
+if [ $? -ne 0 ] ; then
+	if [ -x /usr/bin/logger ]; then 
+			/usr/bin/logger "loxberry-plugin-$pluginname - Creating user squeezelox"
+	fi
+	useradd squeezelox -g loxberry -G audio > /dev/null
+fi
+
 # Adding user loxberry to group audio
 # Exit code: 0 -> found; other -> not found
-id -Gn "loxberry" | grep "audio" > /dev/nul
-if [ $? -ne 0 ] ; then
-	gpasswd -a loxberry audio
-fi
+# id -Gn "loxberry" | grep "audio" > /dev/nul
+# if [ $? -ne 0 ] ; then
+#	gpasswd -a loxberry audio
+# fi
 
 # Add Squeezelite to sudoers (need root permission)
 if [ ! -e /etc/sudoers.d/$pluginname ]
@@ -27,10 +39,13 @@ if [ ! -e /etc/sudoers.d/$pluginname ]
 		if [ -x /usr/bin/logger ]; then 
 			/usr/bin/logger "loxberry-plugin-$pluginname - Adding sudoers permissions"
 		fi
-		echo loxberry ALL = NOPASSWD: /usr/bin/squeezelite > /etc/sudoers.d/$pluginname
-		echo loxberry ALL = NOPASSWD: /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh >> /etc/sudoers.d/$pluginname
+		echo %loxberry ALL = NOPASSWD: /usr/bin/squeezelite > /etc/sudoers.d/$pluginname
+		echo %loxberry ALL = NOPASSWD: /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh >> /etc/sudoers.d/$pluginname
+		echo %loxberry ALL = NOPASSWD: /opt/loxberry/webfrontend/cgi/plugins/$pluginname/start_instances.cgi >> /etc/sudoers.d/$pluginname
 		chmod 0440 /etc/sudoers.d/$pluginname
 fi
+
+# Change permissions
 if [ ! -x /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh ]; then 
 		if [ -x /usr/bin/logger ]; then 
 			/usr/bin/logger "loxberry-plugin-$pluginname - Setting kill_squeezelite +x permissions"
@@ -56,6 +71,6 @@ if [ -s /opt/loxberry/config/plugins/$pluginname/plugin_squeezelite.cfg ]
 	then
 	# If a configuration file exists, run Perl script to read config and start Player instances
 	# Run forked to do not delay startup
-	/opt/loxberry/webfrontend/cgi/plugins/$pluginname/start_instances.cgi >/opt/loxberry/log/plugins/$pluginname/start_instances.log 2>&1 &
+	/opt/loxberry/webfrontend/cgi/plugins/$pluginname/start_instances.cgi >/opt/loxberry/log/plugins/$pluginname/start_instances.log > /dev/null
 fi		
 exit 0

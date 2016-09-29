@@ -238,7 +238,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		# Prepare form defaults
 		# Read Squeezelite possible sound outputs
 		tolog("INFORMATION", "Calling squeezelite to get outputs");
-		my $squ_outputs = `squeezelite -l` or tolog("ERROR", "Failed to run squeezelite.");
+		my $squ_outputs = `sudo squeezelite -l` or tolog("ERROR", "Failed to run squeezelite.");
 		
 		# Sample output:
 
@@ -501,8 +501,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		my $killscript = "sudo /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh";
 		system($killscript);
 		
-		# For any reason, this call does not come back and browser is awaiting response.
-		my $startscript = "$installfolder/webfrontend/cgi/plugins/squeezelite/start_instances.cgi";
+		my $startscript = "sudo $installfolder/webfrontend/cgi/plugins/squeezelite/start_instances.cgi > /dev/null";
 		system($startscript);
 	
 	}
