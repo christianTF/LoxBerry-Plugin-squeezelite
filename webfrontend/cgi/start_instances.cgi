@@ -108,15 +108,16 @@ for ($instance = 0; $instance < $instcount; $instance++) {
 		$command .= " -m $inst_mac[$instance]";
 	}
 	if ($inst_name[$instance] ne "") {
-		$command .= " -n $inst_name[$instance]";
+		$command .= " -n \\\"$inst_name[$instance]\\\"";
 	}
 	if ($inst_params[$instance] ne "") {
 		$command .= " " . $inst_params[$instance];
 	}
-	$command .= " -f $installfolder/log/plugins/$pluginname/squeezelite_" . ($instance+1) . ".log > /dev/null 2>&1 &";
+	$command .= " -f $installfolder/log/plugins/$pluginname/squeezelite_" . ($instance+1) . ".log > /dev/null &";
+	
 	# Starten
 	tolog("DEBUG", "Starting instance $instance with: $command");
-	system($command);
+	system("su -c \"$command\" squeezelox > /dev/null");
 	tolog("DEBUG", "Starting instance $instance returned");
 }
 

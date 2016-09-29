@@ -61,4 +61,23 @@ function setRandomMAC(fieldname) {
 	var elem = document.getElementById(fieldname);
 	elem.value = genMAC();
 }
+
+function checkMAC(fieldname) {
+	var MACAddress = document.getElementById(fieldname);
+	var MACvalue = MACAddress.value.trim();
+	//var MACRegex=new RegExp('/^(([A-Fa-f0-9]{2}[:]){5}[A-Fa-f0-9]{2}[,]?)+$/');
+	var MACRegex = /^(([A-Fa-f0-9]{2}[:]){5}[A-Fa-f0-9]{2}[,]?)+$/;
+	
+	if (MACAddress != null && !MACRegex.test(MACvalue)) {
+		// Color red
+		MACAddress.style.color = "red";
+	} 
+	else {
+		MACAddress.style.color = "black";
+	}
+}
+
+	
+
 </script> 
+
