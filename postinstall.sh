@@ -57,7 +57,7 @@ else
 	echo "<OK> This is not a LoxBerry image"
 fi
 
-if [ ! -x /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh ]; then 
+if [ ! -x /opt/loxberry/webfrontend/cgi/plugins/$pluginname/kill_squeezelite.sh ]; then 
 	echo "<WARNING> ================================================="
 	echo "<WARNING> Please REBOOT your LoxBerry after installation."
 	echo "<WARNING> Bitte LoxBerry nach der Installation REBOOTEN."

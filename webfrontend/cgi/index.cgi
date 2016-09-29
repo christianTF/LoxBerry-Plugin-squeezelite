@@ -517,10 +517,10 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	sub restartSqueezelite	
 	{
 		
-		my $killscript = "sudo /opt/loxberry/data/plugins/$pluginname/kill_squeezelite.sh";
+		my $killscript = "sudo $installfolder/webfrontend/cgi/plugins/$pluginname/kill_squeezelite.sh";
 		system($killscript);
 		
-		my $startscript = "sudo $installfolder/webfrontend/cgi/plugins/squeezelite/start_instances.cgi > /dev/null";
+		my $startscript = "sudo $installfolder/webfrontend/cgi/plugins/$pluginname/start_instances.cgi > /dev/null";
 		system($startscript);
 	
 	}
