@@ -77,6 +77,10 @@ our $cfgversion=0;
 our $cfg_version;
 our $squ_instances=0;
 our $squ_server;
+our $squ_lmswebport;
+our $squ_lmscliport;
+our $squ_lmsdataport;
+
 our $squ_debug;
 our $lmslink;
 our $lmssettingslink;
@@ -296,6 +300,10 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		$cfgversion = $cfg->param("Main.ConfigVersion");
 		$squ_instances = $cfg->param("Main.Instances");
 		$squ_server = $cfg->param("Main.LMSServer");
+		$squ_lmswebport = $cfg->param("Main.LMSWebPort");
+		$squ_lmscliport = $cfg->param("Main.LMSCLIPort");
+		$squ_lmsdataport = $cfg->param("Main.LMSDataPort");
+		
 		$squ_debug = $cfg->param("Main.debug");
 		if (($squ_debug eq "True") || ($squ_debug eq "Yes")) {
 			$squ_debug_enabled = 'checked';
@@ -307,12 +315,13 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 
 		# Generate links to LMS and LMS settings $lmslink and $lmssettingslink
 		if ($squ_server) {
-			my @splitlms = split(/:/, $squ_server);
-			$lmslink 			= "<a target=\"_blank\" href=\"http://@splitlms[0]:9000/\">Logitech Media Server</a>";
-			$lmssettingslink 	= "<a target=\"_blank\" href=\"http://@splitlms[0]:9000/settings/index.html\">LMS Settings</a>";
-			
+			my $webport = 9000;
+			if ($squ_lmswebport) {
+				$webport = $squ_lmswebport;
+			} 
+			$lmslink 			= "<a target=\"_blank\" href=\"http://$squ_server:$webport/\">Logitech Media Server</a>";
+			$lmssettingslink 	= "<a target=\"_blank\" href=\"http://$squ_server:$webport/settings/index.html\">LMS Settings</a>";
 		}
-		
 		
 		# Read the Instances config file section
 		for ($instance = 1; $instance <= $squ_instances; $instance++) {
@@ -441,6 +450,9 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		$cfg_version 	= param('ConfigVersion');
 		$squ_server		= trim(param('LMSServer'));
 		$squ_instances	= param('Instances');
+		$squ_lmswebport = param("LMSWebPort");
+		$squ_lmscliport = param("LMSCLIPort");
+		$squ_lmsdataport = param("LMSDATAPort");
 		$squ_debug		= param('debug');
 		
 		if ( $_[0] eq 1) {
@@ -454,6 +466,9 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		
 		$cfg->param("Main.ConfigVersion", $cfg_version);
 		$cfg->param("Main.LMSServer", $squ_server);
+		$cfg->param("Main.LMSWebPort", $squ_lmswebport);
+		$cfg->param("Main.LMSCLIPort", $squ_lmscliport);
+		$cfg->param("Main.LMSDataPort", $squ_lmsdataport);
 		$cfg->param("Main.Instances", $squ_instances);
 		if ($squ_debug) {
 			$cfg->param("Main.debug", "Yes");
@@ -487,24 +502,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			
 		}
 		$cfg->save();
-		
-		# if ( !$header_already_sent ) { print "Content-Type: text/html\n\n"; }
-		
-		#$template_title = $phrase->param("TXT0000") . ": " . $phrase->param("TXT0040");
-		#$message 				= $phraseplugin->param("TXT0002");
-		#$nexturl 				= "./index.cgi?do=form";
-		
-		# Print Template
-		# &lbheader;
-		# open(F,"$installfolder/templates/system/$lang/success.html") || die "Missing template system/$lang/succses.html";
-		  # while (<F>) 
-		  # {
-		    # $_ =~ s/<!--\$(.*?)-->/${$1}/g;
-		    # print $_;
-		  # }
-		# close(F);
-		# &footer;
-		# exit;
 	}
 
 	

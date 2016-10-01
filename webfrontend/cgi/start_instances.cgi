@@ -30,6 +30,11 @@ my $logmessage;
 my $cfgversion=0;
 my $squ_instances=0;
 my $squ_server;
+our $squ_lmswebport;
+our $squ_lmscliport;
+our $squ_lmsdataport;
+
+
 my $instance;
 my $enabled;
 my $instcount;
@@ -69,7 +74,10 @@ if (not defined($cfg)) {
 $cfgversion = $cfg->param("Main.ConfigVersion");
 $squ_instances = $cfg->param("Main.Instances");
 $squ_server = $cfg->param("Main.LMSServer");
-
+$squ_lmswebport = $cfg->param("Main.LMSWebPort");
+$squ_lmscliport = $cfg->param("Main.LMSCLIPort");
+$squ_lmsdataport = $cfg->param("Main.LMSDataPort");
+		
 tolog("INFORMATION", "Check if instances are defined in config file");
 tolog("DEBUG", "Number of instances: $squ_instances");
 if ( $squ_instances < 1 ) {
@@ -96,10 +104,23 @@ for ($instance = 1; $instance <= $squ_instances; $instance++) {
 # Create the command line
 tolog("INFORMATION", "Creating the command lines for squeezelite");
 $instcount = scalar @inst_name;
+
+my $server_and_port;
+if ($squ_server ne "") {
+	$server_and_port = $squ_server);
+	if ($squ_lmsdataport ne "") {
+		$server_and_port .= ":$squ_lmsdataport";
+	}
+}
+
 for ($instance = 0; $instance < $instcount; $instance++) {
-	$command = 	"squeezelite -a 80 ";
-	if ($squ_server ne "") {
-		$command .= " -s $squ_server";
+	$command = 	"squeezelite";
+	# Wird in den Parametern kein -a gefunden, senden wir per Default -a 80 (ALSA-Buffer)
+	if (index($inst_params[$instance], "-a ") == -1) {
+		$command .= " -a 80";
+	}
+	if ($server_and_port ne "") {
+		$command .= " -s $server_and_port";
 	}
 	if ($inst_output[$instance] ne "") {
 		$command .= " -o $inst_output[$instance]";

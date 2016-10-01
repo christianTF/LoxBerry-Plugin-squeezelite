@@ -5,13 +5,29 @@
 	<input type="hidden" name="saveformdata" value="1">
 	<input type="hidden" name="ConfigVersion" value="<!--$cfgversion-->">
 	<input type="hidden" name="Instances" value="<!--$squ_instances-->">
-	<h1><!--$T::HEADING_BASIC_BASICSETTINGS--></h1>
+	<h1><!--$T::BASIC_HEADING_BASICSETTINGS--></h1>
 	<div style="align: center text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><table border="1" cellpadding="2" cellspacing="2" style="background-color: #ffffff;">
 	  <tr>
-	  <td style="border-width : 0px;"><!--Logitech Media Server Adresse--><!--$T::BASIC_LMSADDRESS--></td>
+	  <td style="border-width : 0px;"><!--$T::BASIC_LMSADDRESS--></td>
 	  <td style="border-width : 0px;"><input type="text" name="LMSServer" value="<!--$squ_server-->"></td>
 	  <td style="border-width : 0px;"><!--$T::BASIC_LMSADDRESS_FORMAT--></td>
 	  </tr>
+	  <tr>
+	  <td style="border-width : 0px;"><!--$T::BASIC_LMSWEBPORT--></td>
+	  <td style="border-width : 0px;"><input type="text" name="LMSWebPort" value="<!--$squ_lmswebport-->"></td>
+	  <td style="border-width : 0px;"><!--$T::BASIC_LMSWEBPORT_FORMAT--></td>
+	  </tr>
+	  <tr>
+	  <td style="border-width : 0px;"><!--$T::BASIC_LMSCLIPORT--></td>
+	  <td style="border-width : 0px;"><input type="text" name="LMSCLIPort" value="<!--$squ_lmscliport-->"></td>
+	  <td style="border-width : 0px;"><!--$T::BASIC_LMSCLIPORT_FORMAT--></td>
+	  </tr>
+	  <tr>
+	  <td style="border-width : 0px;"><!--$T::BASIC_LMSDATAPORT--></td>
+	  <td style="border-width : 0px;"><input type="text" name="LMSDATAPort" value="<!--$squ_lmsdataport-->"></td>
+	  <td style="border-width : 0px;"><!--$T::BASIC_LMSDATAPORT_FORMAT--></td>
+	  </tr>
+
 	  <tr style="display:none;">
 	  <td style="border-width : 0px;"><!--$T::BASIC_DEBUGMODE--></td>
 	  <td style="border-width : 0px;"><input type="checkbox" data-role="flipswitch" name="debug" id="switch" value="Yes" <!--$squ_debug_enabled--></td>

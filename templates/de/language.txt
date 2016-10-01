@@ -1,7 +1,13 @@
 [BASIC]
 HEADING_BASICSETTINGS="Grundeinstellungen"
 LMSADDRESS="Logitech Media Server Adresse"
-LMSADDRESS_FORMAT="Format: server oder server:port<br />Bleibt das Feld leer, sucht Squeezelite automatisch nach dem Server."
+LMSADDRESS_FORMAT="Dein LMS Hostname oder IP-Adresse<br />Bleibt das Feld leer, sucht Squeezelite automatisch nach dem Server."
+LMSWEBPORT="LMS Webinterface Port"
+LMSWEBPORT_FORMAT="Standardport ist 9000 wenn leer<br />Gib den Port nur an, wenn du das Webinterface mit einem anderen Port aufrufst."
+LMSDATAPORT="LMS Data Port"
+LMSDATAPORT_FORMAT="Standardport ist 3483 wenn leer<br />Hier solltest du nie etwas eingeben müssen."
+LMSCLIPORT="LMS CLI Port"
+LMSCLIPORT_FORMAT="Standardport ist 9090 wenn leer<br />Die Befehlszeilenschnittstelle (CLI) des LMS."
 DEBUGMODE="Debug Mode"
 DEBUG_USEWITHCARE="Mit Vorsicht verwenden! Sollte nur im Fehlerfall aktiviert werden."
 
