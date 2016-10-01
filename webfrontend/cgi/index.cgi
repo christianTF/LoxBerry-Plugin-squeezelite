@@ -357,7 +357,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		}
 		my $instnr = $inst + 1;
 		$htmlout .= '
-		<table width="100%" cellpadding="2" cellspacing="0" border="1px">
+		<table width="100%" cellpadding="2" cellspacing="0" border="1px" style="background-color: #ffffff;">
 		<tr valign="top">
 		<th width="5%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_INSTANCE--></p></th>
 		<th width="5%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_ACTIVE--></p></th>
