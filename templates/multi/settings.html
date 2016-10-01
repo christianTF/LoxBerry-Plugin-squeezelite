@@ -6,12 +6,21 @@
 	<input type="hidden" name="ConfigVersion" value="<!--$cfgversion-->">
 	<input type="hidden" name="Instances" value="<!--$squ_instances-->">
 	<h1><!--$T::BASIC_HEADING_BASICSETTINGS--></h1>
-	<div style="align: center text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><table border="1" cellpadding="2" cellspacing="2" style="background-color: #ffffff;">
+		
+	<div style="align: center text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
+	  
+
+	<table border="1" cellpadding="2" cellspacing="2" style="background-color: #ffffff;">
 	  <tr>
 	  <td style="border-width : 0px;"><!--$T::BASIC_LMSADDRESS--></td>
 	  <td style="border-width : 0px;"><input type="text" name="LMSServer" value="<!--$squ_server-->"></td>
 	  <td style="border-width : 0px;"><!--$T::BASIC_LMSADDRESS_FORMAT--></td>
 	  </tr>
+	</table>
+	</div>
+	<a href="#" id="basic_showmore"><!--$T::BASIC_SHOWMORE--></a>
+	<div style="align: center text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px; display:none;" id="basic_table_advanced">
+	<table border="1" cellpadding="2" cellspacing="2" style="background-color: #ffffff;" >
 	  <tr>
 	  <td style="border-width : 0px;"><!--$T::BASIC_LMSWEBPORT--></td>
 	  <td style="border-width : 0px;"><input type="text" name="LMSWebPort" value="<!--$squ_lmswebport-->"></td>
@@ -32,7 +41,7 @@
 	  <td style="border-width : 0px;"><!--$T::BASIC_DEBUGMODE--></td>
 	  <td style="border-width : 0px;"><input type="checkbox" data-role="flipswitch" name="debug" id="switch" value="Yes" <!--$squ_debug_enabled--></td>
 	  <td style="border-width : 0px;"><!--$T::BASIC_DEBUG_USEWITHCARE--></td> 
-	  </table>
+	</table>
 	</div>
 	<p><!--$lmslink-->&nbsp;|&nbsp;<!--$lmssettingslink--></p>
 	<h1><!--$T::INSTANCES_HEADING--></h1>
@@ -74,11 +83,13 @@ function genMAC(){
     return macAddress;
 }
 
+// Sets a random MAC to the value field
 function setRandomMAC(fieldname) {
 	var elem = document.getElementById(fieldname);
 	elem.value = genMAC();
 }
 
+// Colors MAC address red if format not correct
 function checkMAC(fieldname) {
 	var MACAddress = document.getElementById(fieldname);
 	var MACvalue = MACAddress.value.trim();
@@ -94,7 +105,13 @@ function checkMAC(fieldname) {
 	}
 }
 
-	
+// Animation for the "show more" link
+    $("body").off("click", "#basic_showmore");
+    $("body").on("click", "#basic_showmore",
+        function(){
+            $("#basic_table_advanced").slideToggle("fast");
+        }
+    );
 
 </script> 
 

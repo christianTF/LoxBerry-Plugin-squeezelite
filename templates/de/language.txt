@@ -10,6 +10,7 @@ LMSCLIPORT="LMS CLI Port"
 LMSCLIPORT_FORMAT="Standardport ist 9090 wenn leer<br />Die Befehlszeilenschnittstelle (CLI) des LMS."
 DEBUGMODE="Debug Mode"
 DEBUG_USEWITHCARE="Mit Vorsicht verwenden! Sollte nur im Fehlerfall aktiviert werden."
+SHOWMORE="Mehr anzeigen"
 
 [INSTANCES]
 HEADING="Zonen"
