@@ -117,7 +117,7 @@ for ($instance = 0; $instance < $instcount; $instance++) {
 	$command = 	"squeezelite";
 	# Wird in den Parametern kein -a gefunden, senden wir per Default -a 80 (ALSA-Buffer)
 	if (index($inst_params[$instance], "-a ") == -1) {
-		$command .= " -a 80";
+		$command .= " -a 160";
 	}
 	if ($server_and_port ne "") {
 		$command .= " -s $server_and_port";
