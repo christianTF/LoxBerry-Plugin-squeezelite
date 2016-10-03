@@ -1,0 +1,18 @@
+[BASIC]
+HELP_INTRODUCTION="To use this plug-in, <i>Logitech Media Server</i> (henceforth abbreviated as <i>LMS</i>) is required."
+HELP_LMSADDRESS="Leaving this field empty will force Squeezelite to search for LMS in your network automatically. If you provide a hostname or IP address, below you will get two links to your LMS web interface and LMS configuration."
+
+[INSTANCES]
+HELP_TABLE_HEAD_ACTIVE="Every zone can be activated or disabled."
+HELP_TABLE_HEAD_INSTANCE_NAME="This name is used in LMS and LMS apps."
+HELP_TABLE_HEAD_MAC_ADDRESS="You
+<i>must</i> provide different MAC addresses for multiple zones. The MAC is the unique identifier in your LMS network."
+HELP_MAC_DICE_HINT="Generates a random MAC."
+HELP_OUTPUT_HINT="Displays all outputs of your LoxBerry."
+HELP_ADDITIONAL_PARAMETERS_HINT="Use this field for additional parameters starting Squeezelite. "
+
+[BUTTON]
+HELP_INSTANCES_HEADING="Add and delete zones"
+HELP_INSTANCES_INTRODUCTION="You can add any number of zones by the Add button. You only can delete the last entry a time. The full configuration is saved with adding and deleting."
+HELP_INSTANCES_SAVE="will save your configuration."
+HELP_INSTANCES_SAVE_AND_APPLY="saves your configuration and restarts all zones with the new configuration."

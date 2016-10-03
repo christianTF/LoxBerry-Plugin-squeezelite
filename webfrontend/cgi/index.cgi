@@ -551,17 +551,34 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	{
 		 # Create Help page
 	  $helplink = "http://www.loxwiki.eu:80/x/_4Cm";
-	  open(F,"$installfolder/templates/plugins/$pluginname/$lang/help.html") || die "Missing template plugins/$pluginname/$lang/help.html";
-	    @help = <F>;
-	    foreach (@help)
-	    {
-	      s/[\n\r]/ /g;
-	      $helptext = $helptext . $_;
-	    }
-	  close(F);
-	  open(F,"$installfolder/templates/system/$lang/header.html") || die "Missing template system/$lang/header.html";
-	    while (<F>) 
-	    {
+	  
+	  	
+	# Read Plugin Help transations
+	# Read English language as default
+	# Missing phrases in foreign language will fall back to English	
+	
+	$languagefileplugin	= "$installfolder/templates/plugins/$pluginname/en/help.txt";
+	$plglang = new Config::Simple($languagefileplugin);
+	$plglang->import_names('T');
+
+	# Read foreign language if exists and not English
+	$languagefileplugin = "$installfolder/templates/plugins/$pluginname/$lang/help.txt";
+	 if ((-e $languagefileplugin) and ($lang ne 'en')) {
+		# Now overwrite phrase variables with user language
+		$plglang = new Config::Simple($languagefileplugin);
+		$plglang->import_names('T');
+	}
+	  
+	# Parse help template
+	open(F,"$installfolder/templates/plugins/$pluginname/multi/help.html") || die "Missing template plugins/$pluginname/multi/help.html";
+		while (<F>) {
+			$_ =~ s/<!--\$(.*?)-->/${$1}/g;
+		    $helptext = $helptext . $_;
+		}
+	close(F);
+	open(F,"$installfolder/templates/system/$lang/header.html") || die "Missing template system/$lang/header.html";
+	while (<F>) 
+		{
 	      $_ =~ s/<!--\$(.*?)-->/${$1}/g;
 	      print $_;
 	    }
