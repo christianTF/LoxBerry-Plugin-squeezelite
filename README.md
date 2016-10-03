@@ -7,13 +7,20 @@ About LoxBerry http://www.loxwiki.eu/display/LOXBERRY/LoxBerry
 This project is in development. Please use the issue tracker for bugs and feature requests.
 
 ## Roadmap
-### Shorthand
-* Running Alpha and Beta releases
-* First Release
+### 0.2 Release (Start of October 2016)
+* Working and stable plugin
+* Multi-language support
+
+### 0.4 Release (around X-mas 2016)
+* Recognize and save player name changes by the server
+* Changing default output for Raspberry
+* Possibly: UI update
+* Possibly: Send player status to MS (UDP)
+* Possibly: Web-based ALSA mixer 
+* Possibly: JiveLite
+* Possibly: EQ integration
 
 ### Possible later improvements
-* Recognize and save player name changes by the server
 * Support of custom Squeezelite runtimes (newer versions, possibly compile own executable)
 
 ### Possible Long Term Evolution
-* LMS Proxy to feed Loxone with status information (volume...)

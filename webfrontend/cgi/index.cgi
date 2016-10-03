@@ -128,8 +128,8 @@ if ($debug) {
 
 
 # Read plugin settings
-tolog("INFORMATION", "Reading Plugin config $cfgfilename");
 $cfgfilename = "$installfolder/config/plugins/$pluginname/plugin_squeezelite.cfg";
+tolog("INFORMATION", "Reading Plugin config $cfgfilename");
 if (-e $cfgfilename) {
 	tolog("INFORMATION", "Plugin config existing - loading");
 	$cfg = new Config::Simple($cfgfilename);
@@ -630,7 +630,6 @@ sub getMAC {
 	}
   }
 
-  undef $s, @interfaces;
   return $mac;
 }
 

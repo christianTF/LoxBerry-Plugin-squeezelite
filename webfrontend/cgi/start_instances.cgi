@@ -107,7 +107,7 @@ $instcount = scalar @inst_name;
 
 my $server_and_port;
 if ($squ_server ne "") {
-	$server_and_port = $squ_server);
+	$server_and_port = $squ_server;
 	if ($squ_lmsdataport ne "") {
 		$server_and_port .= ":$squ_lmsdataport";
 	}
