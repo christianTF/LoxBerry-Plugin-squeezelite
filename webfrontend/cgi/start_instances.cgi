@@ -114,7 +114,7 @@ if ($squ_server ne "") {
 }
 
 for ($instance = 0; $instance < $instcount; $instance++) {
-	$command = 	"$installfolder/data/plugins/$pluginname/squeezelite";
+	$command = 	"squeezelite";
 	# Wird in den Parametern kein -a gefunden, senden wir per Default -a 80 (ALSA-Buffer)
 	if (index($inst_params[$instance], "-a ") == -1) {
 		$command .= " -a 160";
