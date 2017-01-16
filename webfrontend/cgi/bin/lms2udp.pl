@@ -1,26 +1,28 @@
 #!/usr/bin/perl
 # Christian Fenzl, christiantf@gmx.at 2017
-# This program provides the following features:
-# 1. It can connect to a remote TCP system and mirrors the stream to a UDP guest (TCP -> UDP gateway)
-# 2. It can listens to the guest TCP stream, mirrors to a remote TCP stream and mirrors back to the UDP guest (TCP -> TCP -> UDP gateway)
-# You can implement an initalization stream and stream processing functions
+# This script is a gateway from Logitech Media TCP CLI to Loxone Miniserver UDP (for values) and http REST (for text).
+# It acts as a proxy with intelligence - LMS-information with missing data is re-collected from LMS first,
+# before the full data are sent to the Miniserver.
 
 # Debian Packages required
 # - libswitch-perl
 # - libio-socket-timeout-perl
-# - libfile-pid-perl
+
+# Version of this script
+my $version = "0.3.1";
+
 
 use strict;
 use warnings;
 
 use Config::Simple;
 use Cwd 'abs_path';
-# use File::Pid;
 use File::HomeDir;
 use HTML::Entities;
 use IO::Select;
 use IO::Socket;
 use IO::Socket::Timeout;
+use LWP::UserAgent;
 use POSIX qw/ strftime /;
 use Switch;
 use Time::HiRes qw(usleep);
@@ -55,13 +57,13 @@ our ($psubfolder) = (split(/\//, $part))[3];
 # Read plugin settings
 $cfgfilename = "$installfolder/config/plugins/$pluginname/plugin_squeezelite.cfg";
 # tolog("INFORMATION", "Reading Plugin config $cfgfilename");
-if (-e $cfgfilename) {
+if (! (-e $cfgfilename)) {
 	print STDERR "Squeezelite Player Plugin LMS2UDP configuration does not exist. Terminating.";
 	unlink $pidfile;
 	exit(0);
 }
 
-my  $syscfg             = new Config::Simple("$home/config/system/general.cfg");
+my  $syscfg = new Config::Simple("$home/config/system/general.cfg");
 
 # Read the Plugin config file 
 my $cfgversion = trim($cfg->param("Main.ConfigVersion"));
@@ -72,8 +74,22 @@ my $lms2udp_msnr = trim($cfg->param("LMS2UDP.msnr"));
 my $lms2udp_udpport = trim($cfg->param("LMS2UDP.udpport"));
 my $lms2udp_berrytcpport = trim($cfg->param("LMS2UDP.berrytcpport"));
 
-my $lms2udp_mshost = $syscfg->param("MINISERVER$lms2udp_msnr.IPADDRESS")); 
+# Miniserver data
+my $miniserver = $lms2udp_msnr;
+our $miniserverip        = $cfg->param("MINISERVER$miniserver.IPADDRESS");
+our	$miniserverport      = $cfg->param("MINISERVER$miniserver.PORT");
+our	$miniserveradmin     = $cfg->param("MINISERVER$miniserver.ADMIN");
+our	$miniserverpass      = $cfg->param("MINISERVER$miniserver.PASS");
+my	$miniserverclouddns  = $cfg->param("MINISERVER$miniserver.USECLOUDDNS");
+my	$miniservermac       = $cfg->param("MINISERVER$miniserver.CLOUDURL");
 
+	# Use Cloud DNS?
+	if ($miniserverclouddns) {
+		my $output = qx($home/bin/showclouddns.pl $miniservermac);
+		my @fields2 = split(/:/,$output);
+		$miniserverip   =  @fields2[0];
+		$miniserverport = @fields2[1];
+	}
 
 if ((lc($lms2udp_activated) ne "true") && (lc($lms2udp_activated) ne "yes") && ($lms2udp_activated ne "1")) {
 	print STDERR "Squeezelite Player Plugin LMS2UDP is NOT activated in config file. That's ok. Terminating.";
@@ -81,7 +97,7 @@ if ((lc($lms2udp_activated) ne "true") && (lc($lms2udp_activated) ne "yes") && (
 	exit(0);
 }
 
-if ((! $squ_server) || (! $squ_lmscliport) || (! $lms2udp_mshost) || (! $lms2udp_udpport) || (! $lms2udp_berrytcpport)) {
+if ((! $squ_server) || (! $squ_lmscliport) || (! $miniserverip) || (! $lms2udp_udpport) || (! $lms2udp_berrytcpport)) {
 	print STDERR "Squeezelite Player Plugin LMS2UDP is activated but configuration incomplete. Terminating.";
 	unlink $pidfile;
 	exit(1);
@@ -307,7 +323,8 @@ sub process_line
 					}
 				}
 		case 'client'	{ return client(); }
-		case 'name'		{ return uri_unescape($line); }
+		case 'name'		{ to_ms($parts[0], "name", $parts[2]);
+						  return uri_unescape($line); }
 		case 'remote'	{ print "$parts[0] DEBUG: remote #$parts[2]#\n";
 						  if ($parts[2]) { return "$parts[0] is_stream $parts[2]\n"; } 
 						  else { return "$parts[0] is_stream 0\n"; }
@@ -347,6 +364,7 @@ sub playlist
 				} else { 
 					print $udpout_sock "$parts[0] is_stream 1\n";
 					print "DEBUG: Playlist thinks $parts[0] is a stream #$rawparts[4]#";
+					to_ms($parts[0], "title", $parts[3]);
 					return uri_unescape($line);}
 			}	
 		case 'title' {
@@ -390,11 +408,11 @@ sub send_state
 {
 	my ($state) = @_;
 	switch ($state) {
-		case -3		{ print $udpout_sock "$parts[0] mode_text Nicht verbunden\n$parts[0] mode_value -3\n$parts[0] playlist newsong Nicht verbunden\n"; }
-		case -2		{ print $udpout_sock "$parts[0] mode_text Aus\n$parts[0] mode_value -2\n$parts[0] playlist newsong Zone ausgeschalten\n"; }
-		case -1		{ print $udpout_sock "$parts[0] mode_text Stop\n$parts[0] mode_value -1\n$parts[0] playlist newsong Zone gestoppt\n"; }
-		case 0		{ print $udpout_sock "$parts[0] mode_text Pause\n$parts[0] mode_value 0\n"; }
-		case 1		{ print $udpout_sock "$parts[0] mode_text Play\n$parts[0] mode_value 1\n"; }
+		case -3		{ 	print $udpout_sock "$parts[0] mode_text Nicht verbunden\n$parts[0] mode_value -3\n$parts[0] playlist newsong Nicht verbunden\n"; to_ms($parts[0], "mode", "Nicht verbunden"); }
+		case -2		{ print $udpout_sock "$parts[0] mode_text Aus\n$parts[0] mode_value -2\n$parts[0] playlist newsong Zone ausgeschalten\n"; to_ms($parts[0], "mode", "Zone ausgeschalten");}
+		case -1		{ print $udpout_sock "$parts[0] mode_text Stop\n$parts[0] mode_value -1\n$parts[0] playlist newsong Zone gestoppt\n"; to_ms($parts[0], "mode", "Zone gestoppt");}
+		case 0		{ print $udpout_sock "$parts[0] mode_text Pause\n$parts[0] mode_value 0\n"; to_ms($parts[0], "mode", "Pause");}
+		case 1		{ print $udpout_sock "$parts[0] mode_text Play\n$parts[0] mode_value 1\n"; to_ms($parts[0], "mode", "Play");}
 	}
 }
 
@@ -438,7 +456,7 @@ sub players
 			next;
 		} elsif ($curr_player) {
 			switch ($tagname) {
-				case 'name' 		{ $out_string .= "$curr_player name $tagvalue\n";	}
+				case 'name' 		{ $out_string .= "$curr_player name $tagvalue\n"; to_ms($curr_player, "name", $tagvalue);	}
 				case 'connected'	{ $out_string .= "$curr_player connected $tagvalue\n"; }
 			}
 		}
@@ -519,3 +537,27 @@ sub create_in_socket
 #####################################################
 
 sub trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
+
+#####################################################
+# Miniserver REST Calls for Strings
+# Used for 
+#	- Title
+#	- Mode
+#	- Player name
+#####################################################
+sub to_ms 
+{
+	my ($playerid, $label, $text) = @_;
+	
+	my $playeridenc = uri_escape( $playerid );
+	my $labelenc = uri_escape ( $label );
+	my $textenc = uri_escape( $text );
+	
+	$url = "http://$miniserveradmin:$miniserverpass\@$miniserverip\:$miniserverport/dev/sps/io/$playeridenc_$labelenc/$textenc";
+	$ua = LWP::UserAgent->new;
+	$ua->timeout(1);
+	$response = $ua->get($url);
+}
+
+
+}
