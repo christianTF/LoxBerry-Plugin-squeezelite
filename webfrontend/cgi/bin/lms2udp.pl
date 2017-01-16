@@ -12,8 +12,8 @@
 my $version = "0.3.1";
 
 
-use strict;
-use warnings;
+# use strict;
+# use warnings;
 
 use Config::Simple;
 use Cwd 'abs_path';
@@ -47,58 +47,91 @@ our $line;
 my $pidfile = "/var/run/lms2udp.$$";
 open(my $fh, '>', $pidfile);
 print $fh "$$";
-close $ph;
+close $fh;
+
+# Read global settings
+my  $syscfg             = new Config::Simple("$home/config/system/general.cfg");
+our $installfolder   = $syscfg->param("BASE.INSTALLFOLDER");
+our $lang            = $syscfg->param("BASE.LANG");
+our $miniservercount = $syscfg->param("BASE.MINISERVERS");
+our $clouddnsaddress = $syscfg->param("BASE.CLOUDDNS");
+
+
 
 # Figure out in which subfolder we are installed
 my $part = substr ((abs_path($0)), (length($home)+1));
 our ($psubfolder) = (split(/\//, $part))[3];
+our $pluginname = $psubfolder;
 
 # Load Configuration from config file
 # Read plugin settings
-$cfgfilename = "$installfolder/config/plugins/$pluginname/plugin_squeezelite.cfg";
-# tolog("INFORMATION", "Reading Plugin config $cfgfilename");
+my $cfgfilename = "$installfolder/config/plugins/$pluginname/plugin_squeezelite.cfg";
+# tolog("INFORMATION", "Reading Plugin config $cfg");
 if (! (-e $cfgfilename)) {
-	print STDERR "Squeezelite Player Plugin LMS2UDP configuration does not exist. Terminating.";
+	print STDERR "Squeezelite Player Plugin LMS2UDP configuration does not exist. Terminating.\n";
 	unlink $pidfile;
 	exit(0);
 }
 
-my  $syscfg = new Config::Simple("$home/config/system/general.cfg");
-
 # Read the Plugin config file 
-my $cfgversion = trim($cfg->param("Main.ConfigVersion"));
-my $squ_server = trim($cfg->param("Main.LMSServer"));
-my $squ_lmscliport = trim($cfg->param("Main.LMSCLIPort"));
-my $lms2udp_activated = trim($cfg->param("LMS2UDP.activated"));
-my $lms2udp_msnr = trim($cfg->param("LMS2UDP.msnr"));
-my $lms2udp_udpport = trim($cfg->param("LMS2UDP.udpport"));
-my $lms2udp_berrytcpport = trim($cfg->param("LMS2UDP.berrytcpport"));
+our $cfg = new Config::Simple($cfgfilename);
+
+my $lms2udp_activated = $cfg->param("LMS2UDP.activated");
+our $cfgversion = $cfg->param("Main.ConfigVersion");
+my $squ_server = $cfg->param("Main.LMSServer");
+my $squ_lmswebport = $cfg->param("Main.LMSWebPort");
+my $squ_lmscliport = $cfg->param("Main.LMSCLIPort");
+my $squ_lmsdataport = $cfg->param("Main.LMSDataPort");
+my $lms2udp_msnr = $cfg->param("LMS2UDP.msnr");
+my $lms2udp_udpport = $cfg->param("LMS2UDP.udpport");
+my $lms2udp_berrytcpport = $cfg->param("LMS2UDP.berrytcpport");
+our $lms2udp_usehttpfortext = $cfg->param("LMS2UDP.useHTTPfortext");
+my $lms2udp_forcepolldelay = $cfg->param("LMS2UDP.forcepolldelay");
+my $lms2udp_refreshdelayms = $cfg->param("LMS2UDP.refreshdelayms");
+
+if(! is_true($lms2udp_activated)) {	
+	print STDERR "Squeezelite Player Plugin LMS2UDP is NOT activated in config file. That's ok. Terminating.\n";
+	unlink $pidfile;
+	exit(0);
+}
+
+if (is_true($lms2udp_usehttpfortext) || (! $lms2udp_usehttpfortext)) {
+	$lms2udp_usehttpfortext = 1; }
+else {
+	$lms2udp_usehttpfortext = undef;
+}
+
+
+
+# Init default values if empty
+if (! $squ_lmscliport) { $squ_lmscliport = 9090; }
+if (! $lms2udp_berrytcpport) { $lms2udp_berrytcpport = 9092; }
+if (! $lms2udp_udpport) { $lms2udp_udpport = 9093; }
+if (! $lms2udp_forcepolldelay) { $lms2udp_forcepolldelay = 300; }
+if (! $lms2udp_refreshdelayms) { $lms2udp_refreshdelayms = 200000; }
 
 # Miniserver data
 my $miniserver = $lms2udp_msnr;
-our $miniserverip        = $cfg->param("MINISERVER$miniserver.IPADDRESS");
-our	$miniserverport      = $cfg->param("MINISERVER$miniserver.PORT");
-our	$miniserveradmin     = $cfg->param("MINISERVER$miniserver.ADMIN");
-our	$miniserverpass      = $cfg->param("MINISERVER$miniserver.PASS");
-my	$miniserverclouddns  = $cfg->param("MINISERVER$miniserver.USECLOUDDNS");
-my	$miniservermac       = $cfg->param("MINISERVER$miniserver.CLOUDURL");
+our $miniserverip        = $syscfg->param("MINISERVER$miniserver.IPADDRESS");
+our	$miniserverport      = $syscfg->param("MINISERVER$miniserver.PORT");
+our	$miniserveradmin     = $syscfg->param("MINISERVER$miniserver.ADMIN");
+our	$miniserverpass      = $syscfg->param("MINISERVER$miniserver.PASS");
+my	$miniserverclouddns  = $syscfg->param("MINISERVER$miniserver.USECLOUDDNS");
+my	$miniservermac       = $syscfg->param("MINISERVER$miniserver.CLOUDURL");
 
-	# Use Cloud DNS?
-	if ($miniserverclouddns) {
-		my $output = qx($home/bin/showclouddns.pl $miniservermac);
-		my @fields2 = split(/:/,$output);
-		$miniserverip   =  @fields2[0];
-		$miniserverport = @fields2[1];
-	}
-
-if ((lc($lms2udp_activated) ne "true") && (lc($lms2udp_activated) ne "yes") && ($lms2udp_activated ne "1")) {
-	print STDERR "Squeezelite Player Plugin LMS2UDP is NOT activated in config file. That's ok. Terminating.";
-	unlink $pidfile;
-	exit(0);
+# Use Cloud DNS?
+if ($miniserverclouddns) {
+	my $output = qx($home/bin/showclouddns.pl $miniservermac);
+	my @fields2 = split(/:/,$output);
+	$miniserverip   =  $fields2[0];
+	$miniserverport = $fields2[1];
 }
 
-if ((! $squ_server) || (! $squ_lmscliport) || (! $miniserverip) || (! $lms2udp_udpport) || (! $lms2udp_berrytcpport)) {
-	print STDERR "Squeezelite Player Plugin LMS2UDP is activated but configuration incomplete. Terminating.";
+print "MSIP $miniserverip MSPORT $miniserverport LMS $squ_server\n";
+
+
+if ((! $squ_server) || (! $miniserverip) || (! $miniserverport)) {
+	print STDERR "Squeezelite Player Plugin LMS2UDP is activated but configuration incomplete. Terminating.\n";
 	unlink $pidfile;
 	exit(1);
 }
@@ -109,7 +142,7 @@ my $tcpout_port = $squ_lmscliport;
 # This ist the host we are mirroring commands to the remote machine. Incoming commands from Loxone are mirrored to the remote machine.
 my $tcpin_port = $lms2udp_berrytcpport;
 # This is the host we mirror the TCP incoming messages to (usually the Miniserver)
-my $udpout_host = $lms2udp_mshost;
+my $udpout_host = $miniserverip;
 my $udpout_port = $lms2udp_udpport;
 
 # Create sockets
@@ -136,8 +169,8 @@ tcpout_initialization();
 
 our $guest;
 my $lastpoll = time;
-my $pollinterval = 300;
-
+my $pollinterval = $lms2udp_forcepolldelay;
+my $loopdelay = $lms2udp_refreshdelayms/1000;
 
 while (1)
 {
@@ -214,17 +247,16 @@ while (1)
 		print $tcpout_sock "players 0\n";
 		$lastpoll = time;
 	}
-	usleep(200000);
+	usleep($loopdelay);
 }
 
+	close $tcpout_sock;
+	close $udpout_sock;
+	close $tcpin_sock;
 # and terminate the connection when we're done
 
 END 
 {
-	close($tcpout_sock);
-	close($udpout_sock);
-	close($tcpin_sock);
-	
 	# Delete pid file
 	if (-e "$pidfile") {
 		unlink "$pidfile";
@@ -524,7 +556,7 @@ sub create_in_socket
 		Reuse      => 1,
 		Blocking   => 0
 	);
-	my $socket = new IO::Socket::INET ( %params );
+	$socket = new IO::Socket::INET ( %params );
 	die "cannot create socket $!\n" unless $socket;
 	# In some OS blocking mode must be expricitely disabled
 	IO::Handle::blocking($socket, 0);
@@ -547,7 +579,10 @@ sub trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
 #####################################################
 sub to_ms 
 {
+	
 	my ($playerid, $label, $text) = @_;
+	
+	if (! $lms2udp_usehttpfortext) { return; }
 	
 	my $playeridenc = uri_escape( $playerid );
 	my $labelenc = uri_escape ( $label );
@@ -556,8 +591,21 @@ sub to_ms
 	$url = "http://$miniserveradmin:$miniserverpass\@$miniserverip\:$miniserverport/dev/sps/io/$playeridenc_$labelenc/$textenc";
 	$ua = LWP::UserAgent->new;
 	$ua->timeout(1);
-	$response = $ua->get($url);
+	return $response = $ua->get($url);
 }
 
-
+####################################################
+# is_true - tries to detect if a string says 'True'
+####################################################
+sub is_true
+{ 
+	my ($text) = @_;
+	$text =~ s/^\s+|\s+$//g;
+	$text = lc $text;
+	if ($text eq "true") { return 1;}
+	if ($text eq "yes") { return 1;}
+	if ($text eq "on") { return 1;}
+	if ($text eq "enabled") { return 1;}
+	if ($text eq "1") { return 1;}
+	return 0;
 }

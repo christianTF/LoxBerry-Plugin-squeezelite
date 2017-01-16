@@ -268,7 +268,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		$lms2udp_berrytcpport = $cfg->param("LMS2UDP.berrytcpport");
 		
 		$squ_debug = $cfg->param("Main.debug");
-		if (($squ_debug eq "True") || ($squ_debug eq "Yes")) {
+		if (is_true($squ_debug)) {
 			$squ_debug_enabled = 'checked';
 			# $debug = 1;
 		} else {
@@ -276,6 +276,16 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			# $debug = 0;
 		}
 
+		if (is_true($lms2udp_activated)) {
+			$lms2udp_activated = 'checked';
+			# $debug = 1;
+		} else {
+			$lms2udp_activated = '';
+			# $debug = 0;
+		}
+
+		
+		
 		# Generate links to LMS and LMS settings $lmslink and $lmssettingslink in topmenu
 		if ($squ_server) {
 			my $webport = 9000;
@@ -366,32 +376,32 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		
 		# Read global plugin values from form and write to config
 		
+		# Hidden form fields
 		$cfg_version 		= trim(param('ConfigVersion'));
+		$squ_debug			= trim(param('debug'));
+		
+		# Visible form fields
+		$lms2udp_activated 	= trim(param("LMS2UDP_activated"));
+		$lms2udp_msnr 		= trim(param("Miniserver"));
+		$lms2udp_udpport 	= trim(param("UDPPORT"));
 		$squ_server			= trim(param('LMSServer'));
 		$squ_lmswebport 	= trim(param("LMSWebPort"));
 		$squ_lmscliport 	= trim(param("LMSCLIPort"));
 		$squ_lmsdataport 	= trim(param("LMSDATAPort"));
-		$squ_debug			= trim(param('debug'));
-		$lms2udp_activated 	= trim(param("LMS2UDP_activated"));
-		$lms2udp_msnr 		= trim(param("Miniserver"));
-		$lms2udp_udpport 	= trim(param("UDPPORT"));
 		$lms2udp_berrytcpport = trim(param("LOXBERRYPort"));
 		
-		# Parse all input (OFFEN)
-		
-		# Parse finished
-		
 		$cfg->param("Main.ConfigVersion", $cfg_version);
+		$cfg->param("LMS2UDP.activated", $lms2udp_activated);
 		$cfg->param("Main.LMSServer", $squ_server);
 		$cfg->param("Main.LMSWebPort", $squ_lmswebport);
 		$cfg->param("Main.LMSCLIPort", $squ_lmscliport);
 		$cfg->param("Main.LMSDataPort", $squ_lmsdataport);
-		
-		$cfg->param("LMS2UDP.activated", $lms2udp_activated);
 		$cfg->param("LMS2UDP.msnr", $lms2udp_msnr);
 		$cfg->param("LMS2UDP.udpport", $lms2udp_udpport);
 		$cfg->param("LMS2UDP.berrytcpport", $lms2udp_berrytcpport);
 
+		
+		
 		if ($squ_debug) {
 			$cfg->param("Main.debug", "Yes");
 		} else {
@@ -541,4 +551,20 @@ sub tolog {
 		print $loghandle strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " $_[0]: $_[1]\n";
 	}
   }
+}
+
+####################################################
+# is_true - tries to detect if a string says 'True'
+####################################################
+sub is_true
+{ 
+	my ($text) = @_;
+	$text =~ s/^\s+|\s+$//g;
+	$text = lc $text;
+	if ($text eq "true") { return 1;}
+	if ($text eq "yes") { return 1;}
+	if ($text eq "on") { return 1;}
+	if ($text eq "enabled") { return 1;}
+	if ($text eq "1") { return 1;}
+	return 0;
 }
