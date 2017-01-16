@@ -83,8 +83,7 @@ our $lms2udp_udpport;
 our $lms2udp_berrytcpport;
 
 our $squ_debug;
-our $lmslink;
-our $lmssettingslink;
+our $lmslinks;
 our $squ_debug_enabled;
 our $instance;
 our $enabled;
@@ -115,6 +114,7 @@ $version = "0.3.1";
 # Figure out in which subfolder we are installed
 my $part = substr ((abs_path($0)), (length($home)+1));
 our ($psubfolder) = (split(/\//, $part))[3];
+our $pluginname = $psubfolder;
 
 # Read global settings
 my  $syscfg             = new Config::Simple("$home/config/system/general.cfg");
@@ -276,16 +276,16 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			# $debug = 0;
 		}
 
-		# Generate links to LMS and LMS settings $lmslink and $lmssettingslink
+		# Generate links to LMS and LMS settings $lmslink and $lmssettingslink in topmenu
 		if ($squ_server) {
 			my $webport = 9000;
 			if ($squ_lmswebport) {
 				$webport = $squ_lmswebport;
 			} 
-			$lmslink 			= "<a target=\"_blank\" href=\"http://$squ_server:$webport/\">Logitech Media Server</a>";
-			$lmssettingslink 	= "<a target=\"_blank\" href=\"http://$squ_server:$webport/settings/index.html\">LMS Settings</a>";
+			$lmslinks = "				<li><a target=\"_blank\" href=\"http://$squ_server:$webport/\">Logitech Media Server</a></li>\n" . 
+						"				<li><a target=\"_blank\" href=\"http://$squ_server:$webport/settings/index.html\">LMS Settings</a></li>";
 		}
-
+	
 		if (! $lms2udp_msnr) {
 			$lms2udp_msnr = 1;
 		}
@@ -333,7 +333,8 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		&lbheader;
 		
 		# Print Menu selection
-		open(F,"$installfolder/templates/plugins/$psubfolder/multi/topmenu_lms2udp.html") || die "Missing template plugins/$psubfolder/multi/topmenu_lms2udp.html";
+		our $class_lms2udp = 'class="ui-btn-active ui-state-persist"';
+		open(F,"$installfolder/templates/plugins/$psubfolder/multi/topmenu.html") || die "Missing template plugins/$psubfolder/multi/topmenu.html";
 		  while (<F>) 
 		  {
 		    $_ =~ s/<!--\$(.*?)-->/${$1}/g;

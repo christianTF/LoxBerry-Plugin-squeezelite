@@ -70,8 +70,6 @@ our $selectedverbose;
 our $selecteddebug;
 our $header_already_sent=0;
 
-our $pluginname;
-
 our $cfgfilename;
 our $cfgversion=0;
 our $cfg_version;
@@ -82,8 +80,7 @@ our $squ_lmscliport;
 our $squ_lmsdataport;
 
 our $squ_debug;
-our $lmslink;
-our $lmssettingslink;
+our $lmslinks;
 our $squ_debug_enabled;
 our $instance;
 our $enabled;
@@ -110,8 +107,9 @@ my $logmessage;
 $version = "0.3.1";
 
 # Figure out in which subfolder we are installed
-$pluginname = abs_path($0);
-$pluginname =~ s/(.*)\/(.*)\/(.*)$/$2/g;
+my $part = substr ((abs_path($0)), (length($home)+1));
+our ($psubfolder) = (split(/\//, $part))[3];
+our $pluginname = $psubfolder;
 
 # Read global settings
 
@@ -121,14 +119,14 @@ $lang            = $cfg->param("BASE.LANG");
 
 # Initialize logfile
 if ($debug) {
-	$logname = "$installfolder/log/plugins/$pluginname/index.log";
+	$logname = "$installfolder/log/plugins/$psubfolder/index.log";
 	open ($loghandle, '>>' , $logname); # or warn "Cannot open logfile for writing (Permission?) - Continuing without log\n";
 	chmod (0666, $loghandle); # or warn "Cannot change logfile permissions\n";	
 }
 
 
 # Read plugin settings
-$cfgfilename = "$installfolder/config/plugins/$pluginname/plugin_squeezelite.cfg";
+$cfgfilename = "$installfolder/config/plugins/$psubfolder/plugin_squeezelite.cfg";
 tolog("INFORMATION", "Reading Plugin config $cfgfilename");
 if (-e $cfgfilename) {
 	tolog("INFORMATION", "Plugin config existing - loading");
@@ -203,14 +201,14 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 # Read English language as default
 # Missing phrases in foreign language will fall back to English	
 	
-	$languagefileplugin 	= "$installfolder/templates/plugins/$pluginname/en/language.txt";
+	$languagefileplugin 	= "$installfolder/templates/plugins/$psubfolder/en/language.txt";
 	$plglang = new Config::Simple($languagefileplugin);
 	$plglang->import_names('T');
 
 #	$lang = 'en'; # DEBUG
 	
 # Read foreign language if exists and not English
-	$languagefileplugin = "$installfolder/templates/plugins/$pluginname/$lang/language.txt";
+	$languagefileplugin = "$installfolder/templates/plugins/$psubfolder/$lang/language.txt";
 	 if ((-e $languagefileplugin) and ($lang ne 'en')) {
 		# Now overwrite phrase variables with user language
 		$plglang = new Config::Simple($languagefileplugin);
@@ -313,14 +311,14 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			# $debug = 0;
 		}
 
-		# Generate links to LMS and LMS settings $lmslink and $lmssettingslink
+		# Generate links to LMS and LMS settings $lmslink and $lmssettingslink in topmenu
 		if ($squ_server) {
 			my $webport = 9000;
 			if ($squ_lmswebport) {
 				$webport = $squ_lmswebport;
 			} 
-			$lmslink 			= "<a target=\"_blank\" href=\"http://$squ_server:$webport/\">Logitech Media Server</a>";
-			$lmssettingslink 	= "<a target=\"_blank\" href=\"http://$squ_server:$webport/settings/index.html\">LMS Settings</a>";
+			$lmslinks = "				<li><a target=\"_blank\" href=\"http://$squ_server:$webport/\">Logitech Media Server</a></li>\n" . 
+						"				<li><a target=\"_blank\" href=\"http://$squ_server:$webport/settings/index.html\">LMS Settings</a></li>";
 		}
 		
 		# Read the Instances config file section
@@ -382,7 +380,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		<input type="text" placeholder="<!--$T::INSTANCES_MAC_HINT-->" onkeyup="checkMAC(\'MAC' . $instnr . '\')"w id="MAC' . $instnr . '" name="MAC' . $instnr . '" value="' . 
 		$inst_mac[$inst] . '"></p>
 		</td>
-		<td><a href="JavaScript:setRandomMAC(\'MAC' . $instnr . '\');" id="randommac' . $instnr . '"><img src="/plugins/' . $pluginname . '/images/dice_30_30.png" alt="<!--$T::INSTANCES_MAC_DICE_HINT-->" title="<!--$T::INSTANCES_MAC_DICE_HINT-->"/></a>
+		<td><a href="JavaScript:setRandomMAC(\'MAC' . $instnr . '\');" id="randommac' . $instnr . '"><img src="/plugins/' . $psubfolder . '/images/dice_30_30.png" alt="<!--$T::INSTANCES_MAC_DICE_HINT-->" title="<!--$T::INSTANCES_MAC_DICE_HINT-->"/></a>
 		</td>
 		</tr>
 		<tr class="bottom row">
@@ -428,7 +426,9 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		&lbheader;
 		
 		# Print Menu selection
-		open(F,"$installfolder/templates/plugins/$pluginname/multi/topmenu_player.html") || die "Missing template plugins/$pluginname/multi/topmenu_player.html";
+		our $class_player = 'class="ui-btn-active ui-state-persist"';
+		#open(F,"$installfolder/templates/plugins/$psubfolder/multi/topmenu_player.html") || die "Missing template plugins/$psubfolder/multi/topmenu_player.html";
+		open(F,"$installfolder/templates/plugins/$psubfolder/multi/topmenu.html") || die "Missing template plugins/$psubfolder/multi/topmenu.html";
 		  while (<F>) 
 		  {
 		    $_ =~ s/<!--\$(.*?)-->/${$1}/g;
@@ -437,9 +437,10 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		  }
 		close(F);
 		
+		
 		# Print Player setting
 			
-		open(F,"$installfolder/templates/plugins/$pluginname/multi/settings.html") || die "Missing template plugins/$pluginname/multi/settings.html";
+		open(F,"$installfolder/templates/plugins/$psubfolder/multi/settings.html") || die "Missing template plugins/$psubfolder/multi/settings.html";
 		  while (<F>) 
 		  {
 		    $_ =~ s/<!--\$(.*?)-->/${$1}/g;
@@ -527,10 +528,10 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	sub restartSqueezelite	
 	{
 		
-		my $killscript = "sudo $installfolder/webfrontend/cgi/plugins/$pluginname/kill_squeezelite.sh";
+		my $killscript = "sudo $installfolder/webfrontend/cgi/plugins/$psubfolder/kill_squeezelite.sh";
 		system($killscript);
 		
-		my $startscript = "sudo $installfolder/webfrontend/cgi/plugins/$pluginname/start_instances.cgi > /dev/null";
+		my $startscript = "sudo $installfolder/webfrontend/cgi/plugins/$psubfolder/start_instances.cgi > /dev/null";
 		system($startscript);
 	
 	}
@@ -570,12 +571,12 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	# Read English language as default
 	# Missing phrases in foreign language will fall back to English	
 	
-	$languagefileplugin	= "$installfolder/templates/plugins/$pluginname/en/help.txt";
+	$languagefileplugin	= "$installfolder/templates/plugins/$psubfolder/en/help.txt";
 	$plglang = new Config::Simple($languagefileplugin);
 	$plglang->import_names('T');
 
 	# Read foreign language if exists and not English
-	$languagefileplugin = "$installfolder/templates/plugins/$pluginname/$lang/help.txt";
+	$languagefileplugin = "$installfolder/templates/plugins/$psubfolder/$lang/help.txt";
 	 if ((-e $languagefileplugin) and ($lang ne 'en')) {
 		# Now overwrite phrase variables with user language
 		$plglang = new Config::Simple($languagefileplugin);
@@ -583,7 +584,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	}
 	  
 	# Parse help template
-	open(F,"$installfolder/templates/plugins/$pluginname/multi/help.html") || die "Missing template plugins/$pluginname/multi/help.html";
+	open(F,"$installfolder/templates/plugins/$psubfolder/multi/help.html") || die "Missing template plugins/$psubfolder/multi/help.html";
 		while (<F>) {
 			$_ =~ s/<!--\$(.*?)-->/${$1}/g;
 		    $helptext = $helptext . $_;
