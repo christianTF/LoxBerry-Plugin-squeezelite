@@ -3,24 +3,34 @@
 <center>
 <p><!--$lmslink-->&nbsp;|&nbsp;<!--$lmssettingslink--></p>
 	
-<form method="post" data-ajax="false" name="main_form" id="main_form" action="./index.cgi">
+<form method="post" data-ajax="false" name="main_form" id="main_form" action="./lms2udp.cgi">
 	<input type="hidden" name="saveformdata" value="1">
 	<input type="hidden" name="ConfigVersion" value="<!--$cfgversion-->">
-	<input type="hidden" name="Instances" value="<!--$squ_instances-->">
-	<h1><!--$T::BASIC_HEADING_BASICSETTINGS--></h1>
+	<h1><!--$T::LMS2UDP_HEADING_BASICSETTINGS--></h1>
 		
 	<div style="align: center text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
 	  
 
 	<table border="1" cellpadding="2" cellspacing="2" style="background-color: #ffffff;">
 	  <tr>
-	  <td style="border-width : 0px;"><!--$T::BASIC_LMSADDRESS--></td>
+	  <td style="border-width : 0px;"><!--$T::LMS2UDP_ACTIVATE--></td>
+	  <td style="border-width : 0px;"><input type="checkbox" name="LMS2UDP_activated" value="True" <!--$lms2udp_activated-->></p></td>
+	  <td style="border-width : 0px;"><!--$T::LMS2UDP_ACTIVATE_FORMAT--></td>
+	  </tr>
+	  <!--$html_miniserver-->
+	  <tr>
+	  <td style="border-width : 0px;"><!--$T::LMS2UDP_UDPPORT--></td>
+	  <td style="border-width : 0px;"><input type="text" name="UDPPORT" <!--$lms2udp_udpport-->></p></td>
+	  <td style="border-width : 0px;"><!--$T::LMS2UDP_UDPPORT_FORMAT--></td>
+	  </tr>
+	  <tr>
+	  <td style="border-width : 0px;"><!--$T::LMS2UDP_LMSADDRESS--></td>
 	  <td style="border-width : 0px;"><input type="text" name="LMSServer" value="<!--$squ_server-->"></td>
-	  <td style="border-width : 0px;"><!--$T::BASIC_LMSADDRESS_FORMAT--></td>
+	  <td style="border-width : 0px;"><!--$T::LMS2UDP_LMSADDRESS_FORMAT--></td>
 	  </tr>
 	</table>
 	</div>
-	<a href="#" id="basic_showmore"><!--$T::BASIC_SHOWMORE--></a>
+	<a href="#" id="basic_showmore"><!--$T::LMS2UDP_SHOWMORE--></a>
 	<div style="align: center text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px; display:none;" id="basic_table_advanced">
 	<table border="1" cellpadding="2" cellspacing="2" style="background-color: #ffffff;" >
 	  <tr>
@@ -38,6 +48,11 @@
 	  <td style="border-width : 0px;"><input type="text" name="LMSDATAPort" value="<!--$squ_lmsdataport-->"></td>
 	  <td style="border-width : 0px;"><!--$T::BASIC_LMSDATAPORT_FORMAT--></td>
 	  </tr>
+	  <tr>
+	  <td style="border-width : 0px;"><!--$T::LMS2UDP_LOXBERRYTCPPORT--></td>
+	  <td style="border-width : 0px;"><input type="text" name="LOXBERRYPort" value="<!--$lms2udp_berrytcpport-->"></td>
+	  <td style="border-width : 0px;"><!--$T::LMS2UDP_LOXBERRYTCPPORT_FORMAT--></td>
+	  </tr>
 
 	  <tr style="display:none;">
 	  <td style="border-width : 0px;"><!--$T::BASIC_DEBUGMODE--></td>
@@ -45,31 +60,19 @@
 	  <td style="border-width : 0px;"><!--$T::BASIC_DEBUG_USEWITHCARE--></td> 
 	</table>
 	</div>
-	<h1><!--$T::INSTANCES_HEADING--></h1>
-	<!--$T::INSTANCES_PREAMBLE--><br /><br />
-
-	<div style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
-	
-	<!--$htmlout-->
-	
-	</div>
-	<p style="font-size:12px; font-style: italic;">
-	<!--$T::INSTANCES_CURRENTLY_RUNNING-->
-	</p>
 
 <p>
 <center>
-<p><button type="submit" tabindex="-1" form="main_form" name="addbtn" value="add" id="btnadd" data-role="button" data-inline="true" data-mini="true" data-icon="plus"><!--$T::BUTTON_ADD_INSTANCE--></button></p>
-
-<a id="btncancel" data-role="button" data-inline="true" data-mini="true" data-icon="delete" href="/admin/index.cgi"><!--$T::BUTTON_CANCEL--></a>
+<a id="btncancel" data-role="button" data-inline="true" data-mini="true" data-icon="delete" href="/admin/lms2udp.cgi"><!--$T::BUTTON_CANCEL--></a>
 <button type="submit" form="main_form" name="submitbtn" value="submit" id="btnsubmit" data-role="button" data-inline="true" data-mini="true" data-icon="check"><!--$T::BUTTON_SAVE--></button>
-<button type="submit" tabindex="-1" form="main_form" name="applybtn" value="apply" id="btnapply" data-role="button" data-inline="true" data-mini="true" data-icon="refresh"><!--$T::BUTTON_SAVE_AND_APPLY--></button>
+<button type="submit" tabindex="-1" form="main_form" name="applybtn" value="apply" id="btnapply" data-role="button" data-inline="true" data-mini="true" data-icon="refresh"><!--$T::BUTTON_TEMPLATE_DOWNLOAD--></button>
 </form>
+<p><!--$T::LMS2UDP_DOWNLOAD_HINT--></p>
 
 </center>
 </p>
 
-<img src="/plugins/<!--$pluginname-->/images/icon_256.png">
+<img src="/plugins/<!--$psubfolder-->/images/icon_256.png">
 
 <script type="text/javascript">
 function genMAC(){

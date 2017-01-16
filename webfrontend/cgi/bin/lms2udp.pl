@@ -7,22 +7,26 @@
 
 # Debian Packages required
 # - libswitch-perl
-# - libio-socket-timeout-perl (only with IO::Socket::Timeout)
-
-
+# - libio-socket-timeout-perl
+# - libfile-pid-perl
 
 use strict;
+use warnings;
 
+use Config::Simple;
+use Cwd 'abs_path';
+# use File::Pid;
+use File::HomeDir;
+use HTML::Entities;
 use IO::Select;
 use IO::Socket;
 use IO::Socket::Timeout;
-use URI::Escape;
 use POSIX qw/ strftime /;
-use HTML::Entities;
-use Config::Simple;
-use Time::HiRes qw(usleep);
 use Switch;
+use Time::HiRes qw(usleep);
+use URI::Escape;
 
+my $home = "/opt/loxberry";
 our $tcpin_sock;
 our $tcpout_sock;
 our $udpout_sock;
@@ -36,19 +40,61 @@ our @parts;
 our %playerstates;
 our $line;
 
-# Load Configuration from config file
-our $cfg = new Config::Simple("tcp2udp.cfg");
 
-# read_config();
+# Creating pid
+my $pidfile = "/var/run/lms2udp.$$";
+open(my $fh, '>', $pidfile);
+print $fh "$$";
+close $ph;
+
+# Figure out in which subfolder we are installed
+my $part = substr ((abs_path($0)), (length($home)+1));
+our ($psubfolder) = (split(/\//, $part))[3];
+
+# Load Configuration from config file
+# Read plugin settings
+$cfgfilename = "$installfolder/config/plugins/$pluginname/plugin_squeezelite.cfg";
+# tolog("INFORMATION", "Reading Plugin config $cfgfilename");
+if (-e $cfgfilename) {
+	print STDERR "Squeezelite Player Plugin LMS2UDP configuration does not exist. Terminating.";
+	unlink $pidfile;
+	exit(0);
+}
+
+my  $syscfg             = new Config::Simple("$home/config/system/general.cfg");
+
+# Read the Plugin config file 
+my $cfgversion = trim($cfg->param("Main.ConfigVersion"));
+my $squ_server = trim($cfg->param("Main.LMSServer"));
+my $squ_lmscliport = trim($cfg->param("Main.LMSCLIPort"));
+my $lms2udp_activated = trim($cfg->param("LMS2UDP.activated"));
+my $lms2udp_msnr = trim($cfg->param("LMS2UDP.msnr"));
+my $lms2udp_udpport = trim($cfg->param("LMS2UDP.udpport"));
+my $lms2udp_berrytcpport = trim($cfg->param("LMS2UDP.berrytcpport"));
+
+my $lms2udp_mshost = $syscfg->param("MINISERVER$lms2udp_msnr.IPADDRESS")); 
+
+
+if ((lc($lms2udp_activated) ne "true") && (lc($lms2udp_activated) ne "yes") && ($lms2udp_activated ne "1")) {
+	print STDERR "Squeezelite Player Plugin LMS2UDP is NOT activated in config file. That's ok. Terminating.";
+	unlink $pidfile;
+	exit(0);
+}
+
+if ((! $squ_server) || (! $squ_lmscliport) || (! $lms2udp_mshost) || (! $lms2udp_udpport) || (! $lms2udp_berrytcpport)) {
+	print STDERR "Squeezelite Player Plugin LMS2UDP is activated but configuration incomplete. Terminating.";
+	unlink $pidfile;
+	exit(1);
+}
 
 # This is host and port of the remote machine we are communicating with.
-my $tcpout_host = 'homews';
-my $tcpout_port = 9090;
+my $tcpout_host = $squ_server;
+my $tcpout_port = $squ_lmscliport;
 # This ist the host we are mirroring commands to the remote machine. Incoming commands from Loxone are mirrored to the remote machine.
-my $tcpin_port = 7777;
+my $tcpin_port = $lms2udp_berrytcpport;
 # This is the host we mirror the TCP incoming messages to (usually the Miniserver)
-my $udpout_host = 'loxberry-test';
-my $udpout_port = 5000;
+my $udpout_host = $lms2udp_mshost;
+my $udpout_port = $lms2udp_udpport;
 
 # Create sockets
 # Connection to the remote TCP host
@@ -156,7 +202,20 @@ while (1)
 }
 
 # and terminate the connection when we're done
-close($tcpout_sock);
+
+END 
+{
+	close($tcpout_sock);
+	close($udpout_sock);
+	close($tcpin_sock);
+	
+	# Delete pid file
+	if (-e "$pidfile") {
+		unlink "$pidfile";
+	}
+}		
+
+
 
 
 
@@ -455,3 +514,8 @@ sub create_in_socket
 	return $socket;
 }
 
+#####################################################
+# Strings trimmen
+#####################################################
+
+sub trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };

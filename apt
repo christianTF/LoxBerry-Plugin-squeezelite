@@ -6,4 +6,6 @@
 
 # cpanminus
 
-libio-interface-perl squeezelite
+squeezelite
+libio-interface-perl libswitch-perl libio-socket-timeout-perl
+# libfile-pid-perl 

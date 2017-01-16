@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Copyright 2016-2017 Christian Fenzl, christiantf@gmx.at
+# Copyright 2017 Christian Fenzl, christiantf@gmx.at
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,13 +40,11 @@ our $phrase;
 our $namef;
 our $value;
 our %query;
-our $lang;
 our $template_title;
 our $help;
 our @help;
 our $helptext;
 our $helplink;
-our $installfolder;
 our $languagefile;
 our $version;
 our $error;
@@ -70,8 +68,6 @@ our $selectedverbose;
 our $selecteddebug;
 our $header_already_sent=0;
 
-our $pluginname;
-
 our $cfgfilename;
 our $cfgversion=0;
 our $cfg_version;
@@ -80,6 +76,11 @@ our $squ_server;
 our $squ_lmswebport;
 our $squ_lmscliport;
 our $squ_lmsdataport;
+
+our $lms2udp_activated;
+our $lms2udp_msnr;
+our $lms2udp_udpport;
+our $lms2udp_berrytcpport;
 
 our $squ_debug;
 our $lmslink;
@@ -97,6 +98,8 @@ our @inst_params;
 our @commandline;
 our $htmlout;
 
+our %cfg_mslist;
+
 my $logname;
 my $loghandle;
 my $logmessage;
@@ -110,25 +113,25 @@ my $logmessage;
 $version = "0.3.1";
 
 # Figure out in which subfolder we are installed
-$pluginname = abs_path($0);
-$pluginname =~ s/(.*)\/(.*)\/(.*)$/$2/g;
+my $part = substr ((abs_path($0)), (length($home)+1));
+our ($psubfolder) = (split(/\//, $part))[3];
 
 # Read global settings
-
-$cfg             = new Config::Simple("$home/config/system/general.cfg");
-$installfolder   = $cfg->param("BASE.INSTALLFOLDER");
-$lang            = $cfg->param("BASE.LANG");
+my  $syscfg             = new Config::Simple("$home/config/system/general.cfg");
+our $installfolder   = $syscfg->param("BASE.INSTALLFOLDER");
+our $lang            = $syscfg->param("BASE.LANG");
+our $miniservercount = $syscfg->param("BASE.MINISERVERS");
+our $clouddnsaddress = $syscfg->param("BASE.CLOUDDNS");
 
 # Initialize logfile
 if ($debug) {
-	$logname = "$installfolder/log/plugins/$pluginname/index.log";
+	$logname = "$installfolder/log/plugins/$psubfolder/lms2udp_cgi.log";
 	open ($loghandle, '>>' , $logname); # or warn "Cannot open logfile for writing (Permission?) - Continuing without log\n";
 	chmod (0666, $loghandle); # or warn "Cannot change logfile permissions\n";	
 }
 
-
 # Read plugin settings
-$cfgfilename = "$installfolder/config/plugins/$pluginname/plugin_squeezelite.cfg";
+$cfgfilename = "$installfolder/config/plugins/$psubfolder/plugin_squeezelite.cfg";
 tolog("INFORMATION", "Reading Plugin config $cfgfilename");
 if (-e $cfgfilename) {
 	tolog("INFORMATION", "Plugin config existing - loading");
@@ -140,7 +143,6 @@ unless (-e $cfgfilename) {
 	$cfg->param("Main.ConfigVersion", 2);
 	$cfg->write($cfgfilename);
 }
-	
 
 
 #########################################################################
@@ -180,9 +182,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 #	if ( !$query{'do'} )           { if ( param('do')           ) { $do           = quotemeta(param('do'));           } else { $do           = "form"; } } else { $do           = quotemeta($query{'do'});           }
 
 	if 	( param('applybtn') ) 	{ $doapply = 1; }
-	elsif ( param('addbtn') ) 	{ $doadd = 1; }
-	elsif ( param('delbtn') )	{ $dodel = 1; }
-	
 	
 # Clean up saveformdata variable
 	$saveformdata =~ tr/0-1//cd; $saveformdata = substr($saveformdata,0,1);
@@ -203,14 +202,14 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 # Read English language as default
 # Missing phrases in foreign language will fall back to English	
 	
-	$languagefileplugin 	= "$installfolder/templates/plugins/$pluginname/en/language.txt";
+	$languagefileplugin 	= "$installfolder/templates/plugins/$psubfolder/en/language.txt";
 	$plglang = new Config::Simple($languagefileplugin);
 	$plglang->import_names('T');
 
 #	$lang = 'en'; # DEBUG
 	
 # Read foreign language if exists and not English
-	$languagefileplugin = "$installfolder/templates/plugins/$pluginname/$lang/language.txt";
+	$languagefileplugin = "$installfolder/templates/plugins/$psubfolder/$lang/language.txt";
 	 if ((-e $languagefileplugin) and ($lang ne 'en')) {
 		# Now overwrite phrase variables with user language
 		$plglang = new Config::Simple($languagefileplugin);
@@ -227,11 +226,8 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	{
 		if ($doapply) 		{ 	tolog("DEBUG", "doapply triggered - save, restart, refresh form");
 									&save;
-									&restartSqueezelite; }
-		elsif ($doadd)	{ 	tolog("DEBUG", "doaadd triggered - save with +1, refresh form");
-							&save(1); }
-		elsif ($dodel)	{ 	tolog("DEBUG", "doadel triggered - save with -1, refresh form");
-							&save(-1); }
+									#&restartSqueezelite; 
+							}
 		else { 				tolog("DEBUG", "save triggered - save, refresh form");
 							&save; }
 	  &form;
@@ -259,50 +255,17 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		# $debug     = quotemeta($debug);
 		tolog("INFORMATION", "save triggered - save, refresh form");
 							
-		# Prepare form defaults
-		# Read Squeezelite possible sound outputs
-		tolog("INFORMATION", "Calling squeezelite to get outputs");
-		my $squ_outputs = `sudo squeezelite -l` or tolog("ERROR", "Failed to run squeezelite.");
-		
-		# Sample output:
-
-# Output devices:
-#  null                           - Discard all samples (playback) or generate zero samples (capture)
-#  default:CARD=ALSA              - bcm2835 ALSA, bcm2835 ALSA - Default Audio Device
-#  sysdefault:CARD=ALSA           - bcm2835 ALSA, bcm2835 ALSA - Default Audio Device
-#  dmix:CARD=ALSA,DEV=0           - bcm2835 ALSA, bcm2835 ALSA - Direct sample mixing device
-#  dmix:CARD=ALSA,DEV=1           - bcm2835 ALSA, bcm2835 IEC958/HDMI - Direct sample mixing device
-#  dsnoop:CARD=ALSA,DEV=0         - bcm2835 ALSA, bcm2835 ALSA - Direct sample snooping device
-#  dsnoop:CARD=ALSA,DEV=1         - bcm2835 ALSA, bcm2835 IEC958/HDMI - Direct sample snooping device
-#  hw:CARD=ALSA,DEV=0             - bcm2835 ALSA, bcm2835 ALSA - Direct hardware device without any conversions
-#  hw:CARD=ALSA,DEV=1             - bcm2835 ALSA, bcm2835 IEC958/HDMI - Direct hardware device without any conversions
-#  plughw:CARD=ALSA,DEV=0         - bcm2835 ALSA, bcm2835 ALSA - Hardware device with all software conversions
-#  plughw:CARD=ALSA,DEV=1         - bcm2835 ALSA, bcm2835 IEC958/HDMI - Hardware device with all software conversions
-#
-
-
-		# Splits the outputs
-		# Possibly there is a better solution in Perl with RegEx
-		my @outputlist = split(/\n/, $squ_outputs, -1);
-		my $line;
-		my @outputdevs;
-		my @outputdescs;
-
-		foreach $line (@outputlist) {
-				my @splitoutputs = split(/-/, $line, 2);
-				if ((length(trim($splitoutputs[0])) ne 0) && (defined $splitoutputs[1])) {
-						push (@outputdevs, trim($splitoutputs[0]));
-						push (@outputdescs, trim($splitoutputs[1]));
-				}
-		}
-
 		# Read the Main config file section
 		$cfgversion = $cfg->param("Main.ConfigVersion");
-		$squ_instances = $cfg->param("Main.Instances");
 		$squ_server = $cfg->param("Main.LMSServer");
 		$squ_lmswebport = $cfg->param("Main.LMSWebPort");
 		$squ_lmscliport = $cfg->param("Main.LMSCLIPort");
 		$squ_lmsdataport = $cfg->param("Main.LMSDataPort");
+		
+		$lms2udp_activated = $cfg->param("LMS2UDP.activated");
+		$lms2udp_msnr = $cfg->param("LMS2UDP.msnr");
+		$lms2udp_udpport = $cfg->param("LMS2UDP.udpport");
+		$lms2udp_berrytcpport = $cfg->param("LMS2UDP.berrytcpport");
 		
 		$squ_debug = $cfg->param("Main.debug");
 		if (($squ_debug eq "True") || ($squ_debug eq "Yes")) {
@@ -322,113 +285,55 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			$lmslink 			= "<a target=\"_blank\" href=\"http://$squ_server:$webport/\">Logitech Media Server</a>";
 			$lmssettingslink 	= "<a target=\"_blank\" href=\"http://$squ_server:$webport/settings/index.html\">LMS Settings</a>";
 		}
-		
-		# Read the Instances config file section
-		for ($instance = 1; $instance <= $squ_instances; $instance++) {
-			$enabled = undef;
-			$enabled = $cfg->param("Instance" . $instance . ".Enabled");
-			push(@inst_enabled, $cfg->param("Instance" . $instance . ".Enabled"));
-			push(@inst_name, $cfg->param("Instance" . $instance . ".Name"));
-			push(@inst_desc, $cfg->param("Instance" . $instance . ".Description"));
-			push(@inst_mac, $cfg->param("Instance" . $instance . ".MAC"));
-			tolog("DEBUG", "Instance$instance output from config: " . join(",", $cfg->param("Instance" . $instance . ".Output")));
-			push(@inst_output, join(",", $cfg->param("Instance" . $instance . ".Output")));
-			push(@inst_params, join(",", $cfg->param("Instance" . $instance . ".Parameters")));
+
+		if (! $lms2udp_msnr) {
+			$lms2udp_msnr = 1;
 		}
 		
-		# If no instances defined yet, show at least one input line
-		if ( $squ_instances < 1 ) {
-			$squ_instances = 1;
+		# HTML Miniserver
+		our $html_miniserver;
+		if ($miniservercount > 1) {
+			$html_miniserver = 
+				'	  <tr>' . 
+				'		<td style="border-width : 0px;"><!--$T::LMS2UDP_MSNR--></td>' . 
+				'		<td style="border-width : 0px;">' .
+				'			<select name="Miniserver">';
+			for (my $msnr = 1; $msnr <= $miniservercount; $msnr++) {
+				if ($msnr == $lms2udp_msnr) {
+					$html_miniserver .= '				<option value="' . $msnr . '" selected>' . $syscfg->param("MINISERVER$msnr.NAME") . " (" . $syscfg->param("MINISERVER$msnr.IPADDRESS") . ')</option>';
+				} else {
+					$html_miniserver .= '				<option value="' . $msnr . '">' . $syscfg->param("MINISERVER$msnr.NAME") . " (" . $syscfg->param("MINISERVER$msnr.IPADDRESS") . ')</option>';
+				}
+			}
+			
+			$html_miniserver .= 
+				'		</td>' .
+				'		<td style="border-width : 0px;"><!--$T::LMS2UDP_MSNR_FORMAT--></td>' .
+				'	  </tr>';
+	  	}
+		else {
+					$html_miniserver .= '			<input type="hidden" name="Miniserver" value="1">';
 		}
-		
-		# If first instance has no MAC address, get current system MAC
-		if (!defined $inst_mac[0] or length $inst_mac[0] eq 0) {
-			$inst_mac[0] = getMAC();
-		}
-		
-		# Generate instance table
 	
-	for (my $inst = 0; $inst < $squ_instances; $inst++) {
-		
-		if (($inst_enabled[$inst] eq "True") || ($inst_enabled[$inst] eq "Yes")) {
-			$enabled = 'checked';
-		} else {
-			$enabled = '';
-		}
-		my $instnr = $inst + 1;
-		$htmlout .= '
-		<table width="100%" cellpadding="2" cellspacing="0" border="1px" style="background-color: #ffffff;">
-		<tr valign="top">
-		<th width="5%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_INSTANCE--></p></th>
-		<th width="5%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_ACTIVE--></p></th>
-		<th width="40%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_INSTANCE_NAME--></p></th>
-		<th width="47%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_MAC_ADDRESS--></p></th>
-		<th width="3%"></th>
-		</tr>
+	# Do something with the template builder
+
+	#
+	#
+	#
+	#
 	
-		<tr class="top row">
-		<td rowspan="2"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><font size="6">' .
-		$instnr . '</font></p>
-		</td>
-		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
-		<input type="checkbox" name="Enabled' . $instnr . '" value="True" ' . 
-		$enabled . '></p>
-		</td>
-		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
-		<input type="text" placeholder="<!--$T::INSTANCES_INSTANCE_NAME_HINT-->" name="Name' . $instnr . '" value="' . 
-		$inst_name[$inst] . '"></p>
-		</td>
-		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
-		<input type="text" placeholder="<!--$T::INSTANCES_MAC_HINT-->" onkeyup="checkMAC(\'MAC' . $instnr . '\')"w id="MAC' . $instnr . '" name="MAC' . $instnr . '" value="' . 
-		$inst_mac[$inst] . '"></p>
-		</td>
-		<td><a href="JavaScript:setRandomMAC(\'MAC' . $instnr . '\');" id="randommac' . $instnr . '"><img src="/plugins/' . $pluginname . '/images/dice_30_30.png" alt="<!--$T::INSTANCES_MAC_DICE_HINT-->" title="<!--$T::INSTANCES_MAC_DICE_HINT-->"/></a>
-		</td>
-		</tr>
-		<tr class="bottom row">
-		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">';
-		if ( ($instnr eq $squ_instances) and ($instnr > 1) ){
-			$htmlout .= '<button type="submit" tabindex="-1" form="main_form" name="delbtn" value="del" id="btndel" data-role="button" data-inline="true" data-mini="true" data-iconpos="top" data-icon="delete"><!--$T::BUTTON_DELETE--></button>';
-		}
-		$htmlout .= '
-		</p></td>
-		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
-		<select name="Output' . $instnr . '" align="left">
-			<option value="' . $inst_output[$inst] . '">' . $inst_output[$inst] . ' <!--$T::INSTANCES_OUTPUT_CURRENT--></option>';
-		
-		my $outputnr = 0 ;
-		foreach $output (@outputdevs) { 
-			$htmlout .= "<option value=\"$output\">$output - $outputdescs[$outputnr]</option>";
-			$outputnr += 1;
-		}
-		$htmlout .= '
-		</select>
-		</p>
-		</td>
-		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
-		<input type="text" placeholder="<!--$T::INSTANCES_ADDITIONAL_PARAMETERS_HINT-->" name="Parameters' . $instnr . '" value="' . $inst_params[$inst] . '"></span></p>
-		</td>
-		<td>
-		</td>
-		<input type="hidden" placeholder="<!--$T::INSTANCES_INSTANCE_DESCRIPTION_HINT-->" name="Description' . $instnr . '" value="' . $inst_desc[$inst] . '">
-		</tr>
-		</table>';
-		
-	}
-	
+
+
 		if ( !$header_already_sent ) { print "Content-Type: text/html\n\n"; }
 		
 		#$template_title = $phrase->param("TXT0000") . ": " . $phrase->param("TXT0040");
 		$template_title = "Squeezelite Player Plugin";
 		
-		# Get number of running Squeezelite processes
-		$runningInstances = `pgrep --exact -c squeezelite`;
-		
 		# Print Header
 		&lbheader;
 		
 		# Print Menu selection
-		open(F,"$installfolder/templates/plugins/$pluginname/multi/topmenu_player.html") || die "Missing template plugins/$pluginname/multi/topmenu_player.html";
+		open(F,"$installfolder/templates/plugins/$psubfolder/multi/topmenu_lms2udp.html") || die "Missing template plugins/$psubfolder/multi/topmenu_lms2udp.html";
 		  while (<F>) 
 		  {
 		    $_ =~ s/<!--\$(.*?)-->/${$1}/g;
@@ -437,9 +342,9 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		  }
 		close(F);
 		
-		# Print Player setting
+		# Print LMS2UDP setting
 			
-		open(F,"$installfolder/templates/plugins/$pluginname/multi/settings.html") || die "Missing template plugins/$pluginname/multi/settings.html";
+		open(F,"$installfolder/templates/plugins/$psubfolder/multi/lms2udp.html") || die "Missing template plugins/$psubfolder/multi/settings.html";
 		  while (<F>) 
 		  {
 		    $_ =~ s/<!--\$(.*?)-->/${$1}/g;
@@ -460,60 +365,38 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		
 		# Read global plugin values from form and write to config
 		
-		$cfg_version 	= param('ConfigVersion');
-		$squ_server		= trim(param('LMSServer'));
-		$squ_instances	= param('Instances');
-		$squ_lmswebport = param("LMSWebPort");
-		$squ_lmscliport = param("LMSCLIPort");
-		$squ_lmsdataport = param("LMSDATAPort");
-		$squ_debug		= param('debug');
+		$cfg_version 		= trim(param('ConfigVersion'));
+		$squ_server			= trim(param('LMSServer'));
+		$squ_lmswebport 	= trim(param("LMSWebPort"));
+		$squ_lmscliport 	= trim(param("LMSCLIPort"));
+		$squ_lmsdataport 	= trim(param("LMSDATAPort"));
+		$squ_debug			= trim(param('debug'));
+		$lms2udp_activated 	= trim(param("LMS2UDP_activated"));
+		$lms2udp_msnr 		= trim(param("Miniserver"));
+		$lms2udp_udpport 	= trim(param("UDPPORT"));
+		$lms2udp_berrytcpport = trim(param("LOXBERRYPort"));
 		
-		if ( $_[0] eq 1) {
-			$squ_instances++;
-		}
-		if ( ( $_[0] eq -1) and ($squ_instances gt 1) ) {
-			$cfg->delete("Instance$squ_instances");
-			$squ_instances--;
-		}
+		# Parse all input (OFFEN)
 		
+		# Parse finished
 		
 		$cfg->param("Main.ConfigVersion", $cfg_version);
 		$cfg->param("Main.LMSServer", $squ_server);
 		$cfg->param("Main.LMSWebPort", $squ_lmswebport);
 		$cfg->param("Main.LMSCLIPort", $squ_lmscliport);
 		$cfg->param("Main.LMSDataPort", $squ_lmsdataport);
-		$cfg->param("Main.Instances", $squ_instances);
+		
+		$cfg->param("LMS2UDP.activated", $lms2udp_activated);
+		$cfg->param("LMS2UDP.msnr", $lms2udp_msnr);
+		$cfg->param("LMS2UDP.udpport", $lms2udp_udpport);
+		$cfg->param("LMS2UDP.berrytcpport", $lms2udp_berrytcpport);
+
 		if ($squ_debug) {
 			$cfg->param("Main.debug", "Yes");
 		} else {
 			$cfg->param("Main.debug", "False");
 		}
 		
-		
-		# Run through instance table
-		
-		for ($instance = 1; $instance <= $squ_instances; $instance++) {
-			my $enabled = param("Enabled$instance");
-			my $name = trim(param("Name$instance"));
-			my $MAC = lc trim(param("MAC$instance"));
-			
-			my $output = param("Output$instance");
-			my $params = trim(param("Parameters$instance"));
-			my $desc = trim(param("Descriptiom$instance"));
-
-			# Possible validations here
-			
-			# Write to config
-
-			$cfg->param("Instance$instance.Enabled", $enabled);
-			$cfg->param("Instance$instance.Name", $name);
-			$cfg->param("Instance$instance.MAC", $MAC);
-			tolog("DEBUG", "Instance$instance output from form: " . $output);
-			$cfg->param("Instance$instance.Output", $output);
-			$cfg->param("Instance$instance.Parameters", $params);
-			$cfg->param("Instance$instance.Description", $desc);
-			
-		}
 		$cfg->save();
 	}
 
@@ -527,10 +410,10 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	sub restartSqueezelite	
 	{
 		
-		my $killscript = "sudo $installfolder/webfrontend/cgi/plugins/$pluginname/kill_squeezelite.sh";
+		my $killscript = "sudo $installfolder/webfrontend/cgi/plugins/$psubfolder/kill_squeezelite.sh";
 		system($killscript);
 		
-		my $startscript = "sudo $installfolder/webfrontend/cgi/plugins/$pluginname/start_instances.cgi > /dev/null";
+		my $startscript = "sudo $installfolder/webfrontend/cgi/plugins/$psubfolder/start_instances.cgi > /dev/null";
 		system($startscript);
 	
 	}
@@ -570,12 +453,12 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	# Read English language as default
 	# Missing phrases in foreign language will fall back to English	
 	
-	$languagefileplugin	= "$installfolder/templates/plugins/$pluginname/en/help.txt";
+	$languagefileplugin	= "$installfolder/templates/plugins/$psubfolder/en/help.txt";
 	$plglang = new Config::Simple($languagefileplugin);
 	$plglang->import_names('T');
 
 	# Read foreign language if exists and not English
-	$languagefileplugin = "$installfolder/templates/plugins/$pluginname/$lang/help.txt";
+	$languagefileplugin = "$installfolder/templates/plugins/$psubfolder/$lang/help.txt";
 	 if ((-e $languagefileplugin) and ($lang ne 'en')) {
 		# Now overwrite phrase variables with user language
 		$plglang = new Config::Simple($languagefileplugin);
@@ -583,7 +466,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	}
 	  
 	# Parse help template
-	open(F,"$installfolder/templates/plugins/$pluginname/multi/help.html") || die "Missing template plugins/$pluginname/multi/help.html";
+	open(F,"$installfolder/templates/plugins/$psubfolder/multi/help.html") || die "Missing template plugins/$psubfolder/multi/help.html";
 		while (<F>) {
 			$_ =~ s/<!--\$(.*?)-->/${$1}/g;
 		    $helptext = $helptext . $_;
