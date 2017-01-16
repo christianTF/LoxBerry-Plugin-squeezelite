@@ -74,23 +74,6 @@ fi
 # Possible solution 1: Write a static list at startup --> no PnP with USB devices
 # Possible solution 2: Elevate squeezelite
 
-# Use newer squeezelite version if available
-# Currently only for arm and x86 on Linux systems
-is_arm() {
-        /bin/uname -a | /bin/grep armv > /dev/null 2>&1
-}
-is_x86() {
-        /bin/uname -a | /bin/grep x86 > /dev/null 2>&1
-}
-rm /opt/loxberry/data/plugins/$pluginname/squeezelite
-if is_arm; then
-	ln -s /opt/loxberry/data/plugins/$pluginname/squeezelite-armv6hf /opt/loxberry/data/plugins/$pluginname/squeezelite
-elif is_x86; then
-	ln -s /opt/loxberry/data/plugins/$pluginname/squeezelite-x86 /opt/loxberry/data/plugins/$pluginname/squeezelite
-else
-	ln -s /usr/bin/squeezelite /opt/loxberry/data/plugins/$pluginname/squeezelite
-fi
-
 if [ -s /opt/loxberry/config/plugins/$pluginname/plugin_squeezelite.cfg ]
 	then
 	# If a configuration file exists, run Perl script to read config and start Player instances
