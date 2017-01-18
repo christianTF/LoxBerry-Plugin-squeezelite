@@ -47,7 +47,7 @@ my @inst_output;
 my @inst_params;
 my @commandline;
 
-$home =  = "REPLACEINSTALLFOLDER";
+$home = "REPLACEINSTALLFOLDER";
 
 # Directory/Pluginname fallback for test environment
 unless (-d $home) { 
