@@ -44,7 +44,7 @@ our $line;
 
 
 # Creating pid
-my $pidfile = "/var/run/lms2udp.$$";
+my $pidfile = "/run/shm/lms2udp.$$";
 open(my $fh, '>', $pidfile);
 print $fh "$$";
 close $fh;

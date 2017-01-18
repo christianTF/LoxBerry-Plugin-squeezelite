@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PIDFILES=/var/run/lms2udp.*
+PIDFILES=/run/shm/lms2udp.*
 
 # Check PIDs of PIDfiles and remove unused PIDs
 if [ -e  $PIDFILES ] ; then

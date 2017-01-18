@@ -2,6 +2,7 @@
 
 loxberryhome=REPLACEINSTALLFOLDER
 pluginname=REPLACEFOLDERNAME
+PIDFILES=/run/shm/lms2udp.*
 
 # Directory/Pluginname fallback for test environment
 if [ ! -d $loxberryhome ]; then
@@ -11,7 +12,6 @@ if [ ! -d $pluginname ]; then
 	pluginname=squeezelite
 fi
 
-PIDFILES=/var/run/lms2udp.*
 
 # Stop running processes
 if [ -e  $PIDFILES ] 
