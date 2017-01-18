@@ -77,11 +77,15 @@ is_x86() {
 rm $loxberryhome/data/plugins/$pluginname/squeezelite
 if is_arm; then
 	ln -s $loxberryhome/data/plugins/$pluginname/squeezelite-armv6hf $loxberryhome/data/plugins/$pluginname/squeezelite
+	chmod +x $loxberryhome/data/plugins/$pluginname/squeezelite-armv6hf
 elif is_x86; then
 	ln -s $loxberryhome/data/plugins/$pluginname/squeezelite-x86 $loxberryhome/data/plugins/$pluginname/squeezelite
+	chmod +x $loxberryhome/data/plugins/$pluginname/squeezelite-x86
 else
 	ln -s /usr/bin/squeezelite $loxberryhome/data/plugins/$pluginname/squeezelite
+	chmod +x /usr/bin/squeezelite
 fi
+
 
 if [ -s $loxberryhome/config/plugins/$pluginname/plugin_squeezelite.cfg ]
 	then
