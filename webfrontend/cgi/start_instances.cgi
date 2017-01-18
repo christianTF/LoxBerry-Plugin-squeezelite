@@ -13,8 +13,7 @@ no strict "refs"; # we need it for template system
 use Cwd 'abs_path';
 # use Tie::LogFile;
 
-# my $home = File::HomeDir->my_home;
-my $home = "/opt/loxberry";
+my  $home; 
 my  $lang;
 my  $installfolder;
 my  $cfg;
@@ -47,6 +46,13 @@ my @inst_mac;
 my @inst_output;
 my @inst_params;
 my @commandline;
+
+$home =  = "REPLACEINSTALLFOLDER";
+
+# Directory/Pluginname fallback for test environment
+unless (-d $home) { 
+	$home = "/opt/loxberry";
+}
 
 $pluginname = abs_path($0);
 $pluginname =~ s/(.*)\/(.*)\/(.*)$/$2/g;

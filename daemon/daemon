@@ -2,20 +2,27 @@
 
 # Will be executed as user "root".
 
-# Name this file "daemon.sh" in your plugin-archive. It will be renamed to NAME
+# Name this file "daemon" in your plugin-archive. It will be renamed to NAME
 # during installation
+
+loxberryhome=REPLACEINSTALLFOLDER
+pluginname=REPLACEFOLDERNAME
+
+# Directory/Pluginname fallback for test environment
+if [ ! -d $loxberryhome ]; then
+	loxberryhome=/opt/loxberry
+fi
+if [ ! -d $pluginname ]; then
+	pluginname=squeezelite
+fi
+
 
 if [ -x /usr/bin/logger ]; then
     /usr/bin/logger "loxberry-plugin-$pluginname - DAEMON Script from Squeezelite Plugin"
 fi
 
-pluginname=$(basename $0 .sh)
-
 # Correct permissions of logs of older versions
-chmod a+w /opt/loxberry/log/plugins/$pluginname/*
-
-# Testing and installing Perl Modules
-# perl -MNet::Address::Ethernet -e 1 &> /dev/null || cpanm -i Net::Address::Ethernet
+chmod a+w $loxberryhome/log/plugins/$pluginname/*
 
 # Creating own user for Squeezelite
 id -u "squeezelox" > /dev/null
@@ -26,38 +33,30 @@ if [ $? -ne 0 ] ; then
 	useradd squeezelox -g loxberry -G audio > /dev/null
 fi
 
-# Adding user loxberry to group audio
-# Exit code: 0 -> found; other -> not found
-# id -Gn "loxberry" | grep "audio" > /dev/nul
-# if [ $? -ne 0 ] ; then
-#	gpasswd -a loxberry audio
-# fi
-
 # Add Squeezelite to sudoers (need root permission)
-
 # Sudoers V2
 sudoversion=2
 
-if [ ! -e /opt/loxberry/config/plugins/$pluginname/sudoers.v$sudoversion ]
+if [ ! -e $loxberryhome/config/plugins/$pluginname/sudoers.v$sudoversion ]
 	then
 		if [ -x /usr/bin/logger ]; then 
 			/usr/bin/logger "loxberry-plugin-$pluginname - Adding sudoers permissions"
 		fi
 		echo %loxberry ALL = NOPASSWD: /usr/bin/squeezelite > /etc/sudoers.d/$pluginname
 		echo %loxberry ALL = NOPASSWD: /usr/bin/amixer >> /etc/sudoers.d/$pluginname
-		echo %loxberry ALL = NOPASSWD: /opt/loxberry/webfrontend/cgi/plugins/$pluginname/kill_squeezelite.sh >> /etc/sudoers.d/$pluginname
-		echo %loxberry ALL = NOPASSWD: /opt/loxberry/webfrontend/cgi/plugins/$pluginname/start_instances.cgi >> /etc/sudoers.d/$pluginname
+		echo %loxberry ALL = NOPASSWD: $loxberryhome/webfrontend/cgi/plugins/$pluginname/kill_squeezelite.sh >> /etc/sudoers.d/$pluginname
+		echo %loxberry ALL = NOPASSWD: $loxberryhome/webfrontend/cgi/plugins/$pluginname/start_instances.cgi >> /etc/sudoers.d/$pluginname
 		chmod 0440 /etc/sudoers.d/$pluginname
-		rm /opt/loxberry/config/plugins/$pluginname/sudoers.*
-		echo Sudoers V2 > /opt/loxberry/config/plugins/$pluginname/sudoers.v$sudoversion
+		rm $loxberryhome/config/plugins/$pluginname/sudoers.*
+		echo Sudoers V2 > $loxberryhome/config/plugins/$pluginname/sudoers.v$sudoversion
 fi
 
 # Change permissions
-if [ ! -x /opt/loxberry/webfrontend/cgi/plugins/$pluginname/kill_squeezelite.sh ]; then 
+if [ ! -x $loxberryhome/webfrontend/cgi/plugins/$pluginname/kill_squeezelite.sh ]; then 
 		if [ -x /usr/bin/logger ]; then 
 			/usr/bin/logger "loxberry-plugin-$pluginname - Setting kill_squeezelite +x permissions"
 		fi
-		chmod +x /opt/loxberry/webfrontend/cgi/plugins/$pluginname/kill_squeezelite.sh
+		chmod +x $loxberryhome/webfrontend/cgi/plugins/$pluginname/kill_squeezelite.sh
 fi
 
 if [ `systemctl is-active squeezelite.service` ]
@@ -67,13 +66,6 @@ if [ `systemctl is-active squeezelite.service` ]
 		systemctl disable squeezelite.service
 fi
 
-# ToDo: 
-# Permission issue:
-# Squeezelite has no permission to read output ports when not root
-# Squeezelite does not run without root permissions
-# Possible solution 1: Write a static list at startup --> no PnP with USB devices
-# Possible solution 2: Elevate squeezelite
-
 # Use newer squeezelite version if available
 # Currently only for arm and x86 on Linux systems
 is_arm() {
@@ -82,19 +74,25 @@ is_arm() {
 is_x86() {
         /bin/uname -a | /bin/grep x86 > /dev/null 2>&1
 }
-rm /opt/loxberry/data/plugins/$pluginname/squeezelite
+rm $loxberryhome/data/plugins/$pluginname/squeezelite
 if is_arm; then
-	ln -s /opt/loxberry/data/plugins/$pluginname/squeezelite-armv6hf /opt/loxberry/data/plugins/$pluginname/squeezelite
+	ln -s $loxberryhome/data/plugins/$pluginname/squeezelite-armv6hf $loxberryhome/data/plugins/$pluginname/squeezelite
 elif is_x86; then
-	ln -s /opt/loxberry/data/plugins/$pluginname/squeezelite-x86 /opt/loxberry/data/plugins/$pluginname/squeezelite
+	ln -s $loxberryhome/data/plugins/$pluginname/squeezelite-x86 $loxberryhome/data/plugins/$pluginname/squeezelite
 else
-	ln -s /usr/bin/squeezelite /opt/loxberry/data/plugins/$pluginname/squeezelite
+	ln -s /usr/bin/squeezelite $loxberryhome/data/plugins/$pluginname/squeezelite
 fi
 
-if [ -s /opt/loxberry/config/plugins/$pluginname/plugin_squeezelite.cfg ]
+if [ -s $loxberryhome/config/plugins/$pluginname/plugin_squeezelite.cfg ]
 	then
 	# If a configuration file exists, run Perl script to read config and start Player instances
 	# Run forked to do not delay startup
-	/opt/loxberry/webfrontend/cgi/plugins/$pluginname/start_instances.cgi >/opt/loxberry/log/plugins/$pluginname/start_instances.log > /dev/null
+	$loxberryhome/webfrontend/cgi/plugins/$pluginname/start_instances.cgi >$loxberryhome/log/plugins/$pluginname/start_instances.log > /dev/null
 fi		
+
+# Starting LMS2UDP
+su loxberry $loxberryhome/webfrontend/cgi/plugins/squeezelite/restart_lms2udp.sh & 1> /dev/null 2> $loxberryhome/log/plugins/$pluginname/start_lms2udp.log
+
+
+
 exit 0

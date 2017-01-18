@@ -1,0 +1,22 @@
+#!/bin/sh
+
+PIDFILES=/var/run/lms2udp.*
+
+# Check PIDs of PIDfiles and remove unused PIDs
+if [ -e  $PIDFILES ] ; then
+	for file in $PIDFILES
+	do
+		extension="${file##*.}"
+		echo "Processing PID $extension"
+		kill -n 0 $extension
+		if [ $? -ne 0 ] ; then
+			rm -f $file
+		fi
+	done
+fi
+
+# If no PID was remaining, restart LMS2UDP
+if [ ! -e  $PIDFILES ] ; then
+	# Starting LMS2UDP
+	$loxberryhome/webfrontend/cgi/plugins/squeezelite/restart_lms2udp.sh & 1> /dev/null 2> $loxberryhome/log/plugins/$pluginname/start_lms2udp.log
+fi

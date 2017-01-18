@@ -1,9 +1,17 @@
 #!/bin/sh
 
-# PID location from Perl
-# my $pidfile = "/var/run/lms2udp.$$";
+loxberryhome=REPLACEINSTALLFOLDER
+pluginname=REPLACEFOLDERNAME
+
+# Directory/Pluginname fallback for test environment
+if [ ! -d $loxberryhome ]; then
+	loxberryhome=/opt/loxberry
+fi
+if [ ! -d $pluginname ]; then
+	pluginname=squeezelite
+fi
+
 PIDFILES=/var/run/lms2udp.*
-PLUGINBASEPATH=/opt/loxberry/webfrontend/cgi/plugins/squeezelite
 
 # Stop running processes
 if [ -e  $PIDFILES ] 
@@ -17,6 +25,6 @@ then
 fi
 
 # Cleanup remaining pidfiles
-rm $PIDFILES
+rm -f $PIDFILES
 
-perl $PLUGINBASEPATH/bin/lms2udp.pl
+$loxberryhome/webfrontend/cgi/plugins/$pluginname/bin/lms2udp.pl & 1> /dev/null 2> $loxberryhome/log/plugins/$pluginname/lms2udp.log

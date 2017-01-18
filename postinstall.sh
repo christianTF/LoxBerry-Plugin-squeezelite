@@ -22,22 +22,28 @@
 
 # To use important variables from command line use the following code:
 ARGV0=$0 # Zero argument is shell command
-# echo "<INFO> Command is: $ARGV0"
-
 ARGV1=$1 # First argument is temp folder during install
-# echo "<INFO> Temporary folder is: $ARGV1"
-
 ARGV2=$2 # Second argument is Plugin-Name for scipts etc.
-# echo "<INFO> (Short) Name is: $ARGV2"
-
 ARGV3=$3 # Third argument is Plugin installation folder
-# echo "<INFO> Installation folder is: $ARGV3"
-
 ARGV4=$4 # Forth argument is Plugin version
-# echo "<INFO> Installation folder is: $ARGV4"
-
 ARGV5=$5 # Fifth argument is Base folder of LoxBerry
-# echo "<INFO> Base folder is: $ARGV5"
+
+echo "<INFO> Prepare daemon ..."
+/bin/sed -i "s:REPLACEFOLDERNAME:$ARGV3:g" $ARGV5/system/daemons/plugins/$ARGV2
+/bin/sed -i "s:REPLACEINSTALLFOLDER:$ARGV5:g" $ARGV5/system/daemons/plugins/$ARGV2
+
+echo "<INFO> Prepare LMS2UDP restart file ..."
+/bin/sed -i "s:REPLACEFOLDERNAME:$ARGV3:g" $ARGV5/webfrontend/cgi/plugins/$ARGV2/restart_lms2udp.sh
+/bin/sed -i "s:REPLACEINSTALLFOLDER:$ARGV5:g" $ARGV5/webfrontend/cgi/plugins/$ARGV2/restart_lms2udp.sh
+
+echo "<INFO> Prepare Squeezelite restart file ..."
+/bin/sed -i "s:REPLACEFOLDERNAME:$ARGV3:g" $ARGV5/webfrontend/cgi/plugins/$ARGV2/start_instances.cgi
+/bin/sed -i "s:REPLACEINSTALLFOLDER:$ARGV5:g" $ARGV5/webfrontend/cgi/plugins/$ARGV2/start_instances.cgi
+
+echo "<INFO> Prepare daemon watcher cronjob ..."
+/bin/sed -i "s:REPLACEFOLDERNAME:$ARGV3:g" $ARGV5/system/cron/cron.hourly/$ARGV2
+/bin/sed -i "s:REPLACEINSTALLFOLDER:$ARGV5:g" $ARGV5/system/cron/cron.hourly/$ARGV2
+
 
 echo "<INFO> Determining if we are running on Raspberry"
 cat /etc/os-release | grep "ID=raspbian" > /dev/null
@@ -57,7 +63,7 @@ else
 	echo "<OK> This is not a LoxBerry image"
 fi
 
-if [ ! -x /opt/loxberry/webfrontend/cgi/plugins/$pluginname/kill_squeezelite.sh ]; then 
+if [ ! -x $ARGV5/webfrontend/cgi/plugins/$ARGV2/kill_squeezelite.sh ]; then 
 	echo "<WARNING> ================================================="
 	echo "<WARNING> Please REBOOT your LoxBerry after installation."
 	echo "<WARNING> Bitte LoxBerry nach der Installation REBOOTEN."
