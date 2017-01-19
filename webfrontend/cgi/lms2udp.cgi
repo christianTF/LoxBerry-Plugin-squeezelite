@@ -19,6 +19,11 @@
 # Modules
 ##########################################################################
 
+# Own modules
+use lib './lib';
+use Basics;
+
+
 use POSIX 'strftime';
 use CGI::Carp qw(fatalsToBrowser);
 use CGI qw/:standard/;
@@ -509,12 +514,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 
 
 #####################################################
-# Strings trimmen
-#####################################################
-
-sub trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
-
-#####################################################
 # Lokale MAC-Adresse auslesen
 #####################################################
 
@@ -540,6 +539,7 @@ sub getMAC {
   return $mac;
 }
 
+
 #####################################################
 # Logging
 #####################################################
@@ -551,20 +551,4 @@ sub tolog {
 		print $loghandle strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " $_[0]: $_[1]\n";
 	}
   }
-}
-
-####################################################
-# is_true - tries to detect if a string says 'True'
-####################################################
-sub is_true
-{ 
-	my ($text) = @_;
-	$text =~ s/^\s+|\s+$//g;
-	$text = lc $text;
-	if ($text eq "true") { return 1;}
-	if ($text eq "yes") { return 1;}
-	if ($text eq "on") { return 1;}
-	if ($text eq "enabled") { return 1;}
-	if ($text eq "1") { return 1;}
-	return 0;
 }

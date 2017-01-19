@@ -1,4 +1,7 @@
 #!/usr/bin/perl
+# use lib '/opt/loxberry/webfrontend/cgi/plugins/squeezelite/lib';
+use lib '../lib';
+
 # Christian Fenzl, christiantf@gmx.at 2017
 # This script is a gateway from Logitech Media TCP CLI to Loxone Miniserver UDP (for values) and http REST (for text).
 # It acts as a proxy with intelligence - LMS-information with missing data is re-collected from LMS first,
@@ -15,6 +18,11 @@ my $version = "0.3.1";
 # use strict;
 # use warnings;
 
+# Own modules
+use Basics;
+
+# Perl modules
+
 use Config::Simple;
 use Cwd 'abs_path';
 use File::HomeDir;
@@ -27,6 +35,7 @@ use POSIX qw/ strftime /;
 use Switch;
 use Time::HiRes qw(usleep);
 use URI::Escape;
+# use TCPUDP;
 
 my $home = "/opt/loxberry";
 our $tcpin_sock;
@@ -565,13 +574,8 @@ sub create_in_socket
 }
 
 #####################################################
-# Strings trimmen
-#####################################################
-
-sub trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
-
-#####################################################
 # Miniserver REST Calls for Strings
+# Uses globals
 # Used for 
 #	- Title
 #	- Mode
@@ -584,28 +588,15 @@ sub to_ms
 	
 	if (! $lms2udp_usehttpfortext) { return; }
 	
-	my $playeridenc = uri_escape( $playerid );
-	my $labelenc = uri_escape ( $label );
+	#my $playeridenc = uri_escape( $playerid );
+	#my $labelenc = uri_escape ( $label );
 	my $textenc = uri_escape( $text );
 	
-	$url = "http://$miniserveradmin:$miniserverpass\@$miniserverip\:$miniserverport/dev/sps/io/$playeridenc_$labelenc/$textenc";
+	my $player_label = uri_escape( $playerid . ' ' . $label);
+	
+	
+	$url = "http://$miniserveradmin:$miniserverpass\@$miniserverip\:$miniserverport/dev/sps/io/$player$label/$textenc";
 	$ua = LWP::UserAgent->new;
 	$ua->timeout(1);
 	return $response = $ua->get($url);
-}
-
-####################################################
-# is_true - tries to detect if a string says 'True'
-####################################################
-sub is_true
-{ 
-	my ($text) = @_;
-	$text =~ s/^\s+|\s+$//g;
-	$text = lc $text;
-	if ($text eq "true") { return 1;}
-	if ($text eq "yes") { return 1;}
-	if ($text eq "on") { return 1;}
-	if ($text eq "enabled") { return 1;}
-	if ($text eq "1") { return 1;}
-	return 0;
 }
