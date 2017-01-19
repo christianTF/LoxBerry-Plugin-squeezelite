@@ -210,13 +210,13 @@ $html .=
 @media screen and (max-width: 767px) {.tg {width: auto !important;}.tg col {width: auto !important;}.tg-wrap {overflow-x: auto;-webkit-overflow-scrolling: touch;margin: auto 0px;}}</style>
 <div class="tg-wrap">';
 
-$html .='<table class="tg" style="undefined;table-layout: fixed; width: 882px">' .
+$html .='<table class="tg" style="undefined;table-layout: fixed; width: 782px">' .
 		'<colgroup>
-		<col style="width: 157px">
+		<col style="width: 120px">
 		<col style="width: 186px">
 		<col style="width: 154px">
 		<!-- <col style="width: 86px"> -->
-		<col style="width: 299px">
+		<col style="width: 170px">
 		</colgroup>' .
 		'	<tr>' .
 		'		<th class="tg-e3zv">Player-MAC</th>' . 
@@ -262,7 +262,9 @@ $html .= '</table>';
 $html .= '<br /><center><a href="data:application/octet-stream;charset=utf-8;base64,' ;
 $html .= encode_base64($xmlout);
 
-$html .= '">Download UDP-IN Template</a><center>';
+$html .='">Download UDP-IN Template</a><br /><br />' .
+		'<i>Was tun damit?</i> Bitte schau dir die <a href="http://www.loxwiki.eu:80/x/_4Cm#SqueezelitePlayer-templategeneratorEingangs-Assistent">Anleitung im LoxBerry Wiki</a> an.' .
+		'<center>';
 
 		
 print "Content-Type: text/html\n\n";
@@ -272,10 +274,8 @@ my $template_title = "Squeezelite Player Plugin";
 
 print $html;
 
-
-
-
-
+print 	'</body>' .
+		'</html>';
 	
 sub players
 {

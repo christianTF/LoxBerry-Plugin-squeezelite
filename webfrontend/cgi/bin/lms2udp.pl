@@ -1,6 +1,10 @@
 #!/usr/bin/perl
-# use lib '/opt/loxberry/webfrontend/cgi/plugins/squeezelite/lib';
-use lib '../lib';
+if (-d "REPLACEINSTALLFOLDER/webfrontend/cgi/plugins/REPLACEFOLDERNAME/lib") {
+	use lib 'REPLACEINSTALLFOLDER/webfrontend/cgi/plugins/REPLACEFOLDERNAME/lib';
+} else {
+	use lib '/opt/loxberry/webfrontend/cgi/plugins/squeezelite/lib';
+}
+use Basics;
 
 # Christian Fenzl, christiantf@gmx.at 2017
 # This script is a gateway from Logitech Media TCP CLI to Loxone Miniserver UDP (for values) and http REST (for text).
@@ -19,7 +23,6 @@ my $version = "0.3.1";
 # use warnings;
 
 # Own modules
-use Basics;
 
 # Perl modules
 
@@ -45,6 +48,10 @@ our $in_list;
 our $out_list;
 my $sel;
 my $client;
+
+
+
+
 
 our @rawparts;
 our @parts;
@@ -117,7 +124,7 @@ if (! $squ_lmscliport) { $squ_lmscliport = 9090; }
 if (! $lms2udp_berrytcpport) { $lms2udp_berrytcpport = 9092; }
 if (! $lms2udp_udpport) { $lms2udp_udpport = 9093; }
 if (! $lms2udp_forcepolldelay) { $lms2udp_forcepolldelay = 300; }
-if (! $lms2udp_refreshdelayms) { $lms2udp_refreshdelayms = 200000; }
+if (! $lms2udp_refreshdelayms) { $lms2udp_refreshdelayms = 150000; }
 
 # Miniserver data
 my $miniserver = $lms2udp_msnr;
@@ -179,7 +186,7 @@ tcpout_initialization();
 our $guest;
 my $lastpoll = time;
 my $pollinterval = $lms2udp_forcepolldelay;
-my $loopdelay = $lms2udp_refreshdelayms/1000;
+my $loopdelay = $lms2udp_refreshdelayms*1000;
 
 while (1)
 {

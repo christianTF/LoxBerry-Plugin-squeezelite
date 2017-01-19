@@ -182,9 +182,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 
 # Set parameters coming in - get over post
 # Don't know why this is so complicated...
-	if ( !$query{'saveformdata'} ) { if ( param('saveformdata') ) { $saveformdata = quotemeta(param('saveformdata')); } else { $saveformdata = 0;      } } else { $saveformdata = quotemeta($query{'saveformdata'}); }
 	if ( !$query{'lang'} )         { if ( param('lang')         ) { $lang         = quotemeta(param('lang'));         } else { $lang         = "de";   } } else { $lang         = quotemeta($query{'lang'});         }
-#	if ( !$query{'do'} )           { if ( param('do')           ) { $do           = quotemeta(param('do'));           } else { $do           = "form"; } } else { $do           = quotemeta($query{'do'});           }
 
 	if 	( param('applybtn') ) 	{ $doapply = 1; }
 	
@@ -227,21 +225,15 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 # Main program
 ##########################################################################
 
-	if ($saveformdata) 
+	if ($doapply) 
 	{
-		if ($doapply) 		{ 	tolog("DEBUG", "doapply triggered - save, restart, refresh form");
-									&save;
-									#&restartSqueezelite; 
-							}
-		else { 				tolog("DEBUG", "save triggered - save, refresh form");
-							&save; }
-	  &form;
+		tolog("DEBUG", "LMS2UDP - save form and restart");
+		&save;
+		&restartLMS2UDP; 
 	}
-	else 
-	{
-	  tolog("DEBUG", "form triggered - load form");
-	  &form;
-	}
+	tolog("DEBUG", "form triggered - load form");
+	&form;
+	
 	exit;
 
 #####################################################
@@ -330,15 +322,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 					$html_miniserver .= '			<input type="hidden" name="Miniserver" value="1">';
 		}
 	
-	# Do something with the template builder
-
-	#
-	#
-	#
-	#
-	
-
-
 		if ( !$header_already_sent ) { print "Content-Type: text/html\n\n"; }
 		
 		#$template_title = $phrase->param("TXT0000") . ": " . $phrase->param("TXT0040");
@@ -360,7 +343,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		
 		# Print LMS2UDP setting
 			
-		open(F,"$installfolder/templates/plugins/$psubfolder/multi/lms2udp.html") || die "Missing template plugins/$psubfolder/multi/settings.html";
+		open(F,"$installfolder/templates/plugins/$psubfolder/multi/lms2udp.html") || die "Missing template plugins/$psubfolder/multi/lms2udp.html";
 		  while (<F>) 
 		  {
 		    $_ =~ s/<!--\$(.*?)-->/${$1}/g;
@@ -414,24 +397,22 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		}
 		
 		$cfg->save();
+	
 	}
 
 	
 	
 	
 #####################################################
-# Apply-Sub
+# Restart-Sub
 #####################################################
 	
-	sub restartSqueezelite	
+	sub restartLMS2UDP
 	{
 		
-		my $killscript = "sudo $installfolder/webfrontend/cgi/plugins/$psubfolder/kill_squeezelite.sh";
-		system($killscript);
-		
-		my $startscript = "sudo $installfolder/webfrontend/cgi/plugins/$psubfolder/start_instances.cgi > /dev/null";
-		system($startscript);
-	
+		my $restartscript = "$installfolder/webfrontend/cgi/plugins/$psubfolder/restart_lms2udp.sh 1> /dev/null 2> $home/log/plugins/$psubfolder/lms2udp.log &";
+		system($restartscript);
+		return;
 	}
 	
 	
@@ -482,7 +463,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	}
 	  
 	# Parse help template
-	open(F,"$installfolder/templates/plugins/$psubfolder/multi/help.html") || die "Missing template plugins/$psubfolder/multi/help.html";
+	open(F,"$installfolder/templates/plugins/$psubfolder/multi/help_lms2udp.html") || die "Missing template plugins/$psubfolder/multi/help_lms2udp.html";
 		while (<F>) {
 			$_ =~ s/<!--\$(.*?)-->/${$1}/g;
 		    $helptext = $helptext . $_;

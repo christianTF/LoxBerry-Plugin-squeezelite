@@ -5,7 +5,6 @@ our @EXPORT = (
 	'is_true',
 	'is_false',
 	'trim',
-	'tolog'
 );
 
 

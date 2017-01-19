@@ -1,6 +1,6 @@
 [BASIC]
 HELP_INTRODUCTION="F&uuml;r die Verwendung ist ein Logitech Media Server erforderlich. Im folgenden wird <i>Logitech Media Server</i> mit <i>LMS</i> abgek&uuml;rzt."
-HELP_LMSADDRESS="Ohne Angabe suchen die Player den Server automatisch. Wird jedoch der Hostname oder die IP-Adresse eingetragen, erscheinen nach dem Speichern zwei Links f&uuml;r den Direktaufruf des LMS Webinterfaces und der Einstellungen."
+HELP_LMSADDRESS="Ohne Angabe suchen die Player (nicht das Plugin!) den Server automatisch. Wird jedoch der Hostname oder die IP-Adresse eingetragen, erscheinen nach dem Speichern zwei zus&auml;tzliche Men&uuml;punkte f&uuml;r den Direktaufruf des LMS Webinterfaces und der Einstellungen."
 
 [INSTANCES]
 HELP_TABLE_HEAD_ACTIVE="Jede Zone kann aktiviert und deaktiviert werden."
@@ -15,3 +15,14 @@ HELP_INSTANCES_HEADING="Hinzuf&uuml;gen und L&ouml;schen von Zonen"
 HELP_INSTANCES_INTRODUCTION="Es k&ouml;nnen beliebig viele Zonen mit dem <i>Hinzuf&uuml;gen</i>-Knopf erstellt werden. Es kann immer nur <i>die letzte Instanz</i> gel&ouml;scht werden. Ein Umsortieren ist nicht m&ouml;glich. Die <i>Hinzuf&uuml;gen</i>- und&nbsp;<i>L&ouml;schen</i>-Kn&ouml;pfe speichern die aktuelle Konfiguration!"
 HELP_INSTANCES_SAVE="&uuml;bernimmt die Einstellungen in die Konfiguration."
 HELP_INSTANCES_SAVE_AND_APPLY="&uuml;bernimmt die Konfiguration und startet alle Instanzen mit der neuen Konfiguration."
+HELP_LMS2UDP_SAVE="Speichert die Einstellungen und startet das Gateway (bzw. startet dieses neu). Bei aktivem Gateway wird dieses auch nach einem LoxBerry-Neustart wieder ausgef&uuml;hrt."
+HELP_LMS2UDP_WIZZARD="Der Eingangs-Assistent zeigt f&uuml;r die virtuellen Texteing&auml;nge die genauen Bezeichnungen pro Zone an, die du beim Anlegen direkt kopieren kannst. F&uuml;r die UDP-Eing&auml;nge kannst du direkt das erstellte Template herunterladen. Bitte achte auf die Infos im <a href=\"http://www.loxwiki.eu:80/x/_4Cm\" target=\"_blank\">LoxBerry Wiki</a>!"
+
+[LMS2UDP]
+HELP_INTRODUCTION="Das LMS Gateway &uuml;bertr&auml;gt den Status aller Zonen per UDP sowie Texte per HTTP-REST an den Miniserver."
+HELP_TABLE_ACTIVATE="Damit wird der Gateway-Dienst gestartet. Die &Auml;nderungen an den Einstellungen werden nach dem Speichern direkt aktiviert."
+HELP_TABLE_RECEIVER_MS="W&auml;hle aus, an welchen Miniserver die Daten gesendet werden sollen. Wenn du nur einen Miniserver hast, ist diese Einstellung ausgeblendet."
+HELP_TABLE_RECEIVER_MS_UDP="An diesen Port des Miniservers werden die Datem per UDP gesendet. Texte werden an den in LoxBerry konfigurierten Webservice-Port gesendet."
+HELP_TABLE_LMSADDRESS="F&uuml;r das LMS Gateway <b>muss</b> der Hostname oder die IP-Adresse des LMS festgelegt werden."
+HELP_ADDITIONAL_PARAMETERS_HINT="Mit <i>Mehr anzeigen</i> können weitere Port-Einstellungen getroffen werden."
+
