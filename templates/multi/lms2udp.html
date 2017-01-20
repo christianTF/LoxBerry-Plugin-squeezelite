@@ -64,17 +64,23 @@
 <center>
 <a id="btncancel" data-role="button" data-inline="true" data-mini="true" data-icon="delete" href="#"><!--$T::BUTTON_CANCEL--></a>
 <button type="submit" form="main_form" name="applybtn" value="submit" id="btnsubmit" data-role="button" data-inline="true" data-mini="true" data-icon="check"><!--$T::BUTTON_SAVE--></button>
-<button type="submit" tabindex="-1" form="main_form" name="wizzard" value="apply" id="btnwizzard" data-role="button" data-inline="true" data-mini="true" data-icon="grid"><!--$T::BUTTON_WIZZARD--></button>
+<button type="button" tabindex="-1" name="wizzard" value="apply" id="btnwizzard" data-role="button" data-inline="true" data-mini="true" data-icon="grid"><!--$T::BUTTON_WIZZARD--></button>
 </form>
 <!-- <p><!--$T::LMS2UDP_DOWNLOAD_HINT--></p> -->
 <script>
 $('#btncancel').click(function() {
     location.reload();
-});
-$('#btnwizzard').click(function() {
-	window.open('./templatebuilder.cgi', '_blank', 'menubar=0,scrollbars=1,status=0,toolbar=0', 'replace=false');
 	return false;
 });
+// Code opened the new window twice
+//$('#btnwizzard').click(function() {
+//	window.open('./templatebuilder.cgi', '_blank', 'menubar=0,scrollbars=1,status=0,toolbar=0', 'replace=false');
+//	return false;
+//});
+$('#btnwizzard').unbind('click').bind('click', function (e) {
+	window.open('./templatebuilder.cgi', '_blank', 'menubar=0,scrollbars=1,status=0,toolbar=0', 'replace=false');
+});
+
 </script>
 </center>
 </p>

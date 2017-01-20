@@ -130,6 +130,9 @@ $line = $tcpout_sock->getline;
 if (! $line) {
 	$errorstate = 1;
 }
+my $local_ip_address = $tcpout_sock->sockhost;
+print $tcpout_sock "exit\n";
+close $tcpout_sock;
 chomp $line;
 	
 @rawparts = split(/ /, $line);
@@ -143,18 +146,18 @@ if (! players()) {
 }
 
 $xmlout =  "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
-$xmlout .= "<VirtualInUdp Title=\"Logitech Media Server\" Comment=\"by LoxBerry Squeezeplayer Plugin\" Address=\"$miniserverip\" Port=\"$udpout_port\">\n";
+$xmlout .= "<VirtualInUdp Title=\"LMS Gateway\" Comment=\"by LoxBerry Squeezeplayer Plugin\" Address=\"$local_ip_address\" Port=\"$udpout_port\">\n";
 
    foreach my $player (sort(keys %playerstates)) {
         #print $player, '=', $playerstates{$player}{name}, "\n";
 		#print $player, '=', $playerstates{$player}{ip}, "\n";
-		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}_shuffle\" Comment=\"$playerstates{$player}{name} Zufallswiedergabe\" Address=\"\" Check=\"$player playlist shuffle \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"2\"/>\n";
-		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}_repeat\" Comment=\"$playerstates{$player}{name} Wiederholung\" Address=\"\" Check=\"$player playlist repeat \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"2\"/>\n";
-		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}_stream\" Comment=\"$playerstates{$player}{name} ist Stream\" Address=\"\" Check=\"$player is_stream \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
-		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}_mode_value\" Comment=\"$playerstates{$player}{name} Modus\" Address=\"\" Check=\"$player mode_value \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
-		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}_volume\" Comment=\"$playerstates{$player}{name} Lautstärke\" Address=\"\" Check=\"$player mixer volume \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"100\"/>\n";
-		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}_muting\" Comment=\"$playerstates{$player}{name} stumm\" Address=\"\" Check=\"$player mixer muting \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
-		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}_connected\" Comment=\"$playerstates{$player}{name} verbunden\" Address=\"\" Check=\"$player connected \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
+		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} shuffle\" Comment=\"$playerstates{$player}{name} Zufallswiedergabe\" Address=\"\" Check=\"$player playlist shuffle \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"2\"/>\n";
+		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} repeat\" Comment=\"$playerstates{$player}{name} Wiederholung\" Address=\"\" Check=\"$player playlist repeat \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"2\"/>\n";
+		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} stream\" Comment=\"$playerstates{$player}{name} ist Stream\" Address=\"\" Check=\"$player is_stream \\v\" Signed=\"true\" Analog=\"false\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
+		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} mode_value\" Comment=\"$playerstates{$player}{name} Modus\" Address=\"\" Check=\"$player mode_value \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
+		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} volume\" Comment=\"$playerstates{$player}{name} Lautstärke\" Address=\"\" Check=\"$player mixer volume \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"100\"/>\n";
+		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} muting\" Comment=\"$playerstates{$player}{name} stumm\" Address=\"\" Check=\"$player mixer muting \\v\" Signed=\"true\" Analog=\"false\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
+		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} connected\" Comment=\"$playerstates{$player}{name} verbunden\" Address=\"\" Check=\"$player connected \\v\" Signed=\"true\" Analog=\"false\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
 	}
 
 $xmlout .= "</VirtualInUdp>\n";
@@ -214,9 +217,9 @@ $html .='<table class="tg" style="undefined;table-layout: fixed; width: 782px">'
 		'<colgroup>
 		<col style="width: 120px">
 		<col style="width: 186px">
-		<col style="width: 154px">
+		<col style="width: 134px">
 		<!-- <col style="width: 86px"> -->
-		<col style="width: 170px">
+		<col style="width: 200px">
 		</colgroup>' .
 		'	<tr>' .
 		'		<th class="tg-e3zv">Player-MAC</th>' . 
@@ -240,9 +243,9 @@ $html .=
 	#	"<input type=\"text\" value=\"$player name\">" .
 	#	"<input type=\"text\" value=\"$player title\">" .
 	#	"<input type=\"text\" value=\"$player mode\">" .
-		"$player name<br />" .
-		"$player title<br />" .
-		"$player mode" .
+		"LMS $player name<br />" .
+		"LMS $player title<br />" .
+		"LMS $player mode" .
 		'</td>' .
 		'</tr></div>';
   }
@@ -259,11 +262,13 @@ $html .= '</table>';
 		# '"});' . 
 		# '</script>';
 
-$html .= '<br /><center><a href="data:application/octet-stream;charset=utf-8;base64,' ;
+$html .= '<br /><center><a download="VIU_LMSGateway.xml" href="data:application/octet-stream;charset=utf-8;base64,' ;
 $html .= encode_base64($xmlout);
 
-$html .='">Download UDP-IN Template</a><br /><br />' .
-		'<i>Was tun damit?</i> Bitte schau dir die <a href="http://www.loxwiki.eu:80/x/_4Cm#SqueezelitePlayer-templategeneratorEingangs-Assistent">Anleitung im LoxBerry Wiki</a> an.' .
+$html .='">Download VirtualIn-UDP Template</a><br /><br />' .
+		'Speichern unter:  C:\ProgramData\Loxone\Loxone Config <i>version</i>\Templates\VirtualIn\<b>VIU_LMSGateway.xml</b><br />' .
+		'<i>Der Dateiname muss unbedingt mit <b>VIU_</b> beginnen!</i> Danach Loxone Config neu starten.<br />' .
+		'Details findest du in der <a target="_blank" href="http://www.loxwiki.eu:80/x/_4Cm#SqueezelitePlayer-templategeneratorEingangs-Assistent">Anleitung im LoxBerry Wiki</a>.' .
 		'<center>';
 
 		

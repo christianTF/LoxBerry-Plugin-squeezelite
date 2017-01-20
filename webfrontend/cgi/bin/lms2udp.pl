@@ -124,7 +124,7 @@ if (! $squ_lmscliport) { $squ_lmscliport = 9090; }
 if (! $lms2udp_berrytcpport) { $lms2udp_berrytcpport = 9092; }
 if (! $lms2udp_udpport) { $lms2udp_udpport = 9093; }
 if (! $lms2udp_forcepolldelay) { $lms2udp_forcepolldelay = 300; }
-if (! $lms2udp_refreshdelayms) { $lms2udp_refreshdelayms = 150000; }
+if (! $lms2udp_refreshdelayms) { $lms2udp_refreshdelayms = 150; }
 
 # Miniserver data
 my $miniserver = $lms2udp_msnr;
@@ -187,10 +187,9 @@ our $guest;
 my $lastpoll = time;
 my $pollinterval = $lms2udp_forcepolldelay;
 my $loopdelay = $lms2udp_refreshdelayms*1000;
-
+print "Loop delay: $loopdelay microseconds\n";
 while (1)
 {
-
 	# This is the handling of incoming TCP connections (Guests)
 	###########################################################
 	if (my @in_ready = $in_list->can_read(0.1)) {
@@ -342,11 +341,15 @@ sub process_line
 						  print $tcpout_sock "$parts[0] artist ?\n$parts[0] remote ?\n";
 						  return undef;}
 		case 'artist'	{ 
-							if($parts[2]) {
+							if(defined $parts[2]) {
+								to_ms($parts[0], "title", $playerstates{$parts[0]}{Songtitle} . ' - ' .$parts[2]);
 								return "$parts[0] playlist newsong $playerstates{$parts[0]}{Songtitle} - $parts[2]\n";
-							} elsif ($playerstates{$parts[0]}{Songtitle}) {
+							} elsif (defined $playerstates{$parts[0]}{Songtitle}) {
+								to_ms($parts[0], "title", "$playerstates{$parts[0]}{Songtitle}");
 								return "$parts[0] playlist newsong $playerstates{$parts[0]}{Songtitle}\n"; 
-							} else { return "$parts[0] playlist newsong Aktuell kein Song\n"; 
+							} else { 
+								to_ms($parts[0], "title", "Aktuell kein Song");
+								return "$parts[0] playlist newsong Aktuell kein Song\n"; 
 							}
 					}
 		case 'power' 	{ # print "DEBUG: Power\n"; 
@@ -402,7 +405,7 @@ sub playlist
 	print "DEBUG playlist\n";
 	switch ($parts[2]) {
 		case 'newsong' {
-				if ($rawparts[4]) {
+				if (defined $rawparts[4]) {
 					print $udpout_sock "$parts[0] is_stream 0\n";
 					$playerstates{$parts[0]}{Songtitle} = $parts[3];
 					print $tcpout_sock "$rawparts[0] artist ?\n";
@@ -411,7 +414,8 @@ sub playlist
 					#return "$parts[0] $parts[1] $parts[2] $parts[3]\n";
 				} else { 
 					print $udpout_sock "$parts[0] is_stream 1\n";
-					print "DEBUG: Playlist thinks $parts[0] is a stream #$rawparts[4]#";
+					print "DEBUG: Playlist thinks $parts[0] is a stream #$rawparts[4]#\n";
+					send_state(1);
 					to_ms($parts[0], "title", $parts[3]);
 					return uri_unescape($line);}
 			}	
@@ -430,7 +434,8 @@ sub playlist
 				}
 				return uri_unescape ($line);
 			}
-		case 'stop' { send_state(-1);
+		case 'stop' { print $tcpout_sock "$rawparts[0] mode ?\n";
+					  #send_state(-1);
 					  return undef;
 			}
 		case 'shuffle' { return uri_unescape ($line); }
@@ -599,11 +604,13 @@ sub to_ms
 	#my $labelenc = uri_escape ( $label );
 	my $textenc = uri_escape( $text );
 	
-	my $player_label = uri_escape( $playerid . ' ' . $label);
+	my $player_label = uri_escape( 'LMS ' . $playerid . ' ' . $label);
 	
 	
-	$url = "http://$miniserveradmin:$miniserverpass\@$miniserverip\:$miniserverport/dev/sps/io/$player$label/$textenc";
+	$url = "http://$miniserveradmin:$miniserverpass\@$miniserverip\:$miniserverport/dev/sps/io/$player_label/$textenc";
 	$ua = LWP::UserAgent->new;
 	$ua->timeout(1);
+	# print "DEBUG: #$playerid# #$label# #$text#\n";
+	# print "DEBUG: -->URL #$url#\n";
 	return $response = $ua->get($url);
 }
