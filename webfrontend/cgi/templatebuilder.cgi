@@ -37,7 +37,7 @@ our $errortext;
 ##########################################################################
 
 # Version of this script
-our $version = "0.3.1";
+our $version = "0.3.2";
 
 # Read global settings
 my  $syscfg             = new Config::Simple("$home/config/system/general.cfg");
