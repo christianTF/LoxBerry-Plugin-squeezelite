@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="/plugins/<!--$pluginname-->/style.css">
+<script>$(document).ready(function(){
+		$("#btnmainmenu").hide();
+		$("#btninfo").hide(); 
+		});
+</script>
+
+<style type="text/css">
+.tg  {border-collapse:collapse;border-spacing:0;margin:0px auto;}
+.tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;}
+.tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;}
+.tg .tg-s6z2{text-align:center}
+.tg .tg-e3zv{font-weight:bold}
+.tg .tg-vkoh{font-family:"Lucida Console", Monaco, monospace !important;}
+.tg .tg-hgcj{font-weight:bold;text-align:center}
+@media screen and (max-width: 767px) {.tg {width: auto !important;}.tg col {width: auto !important;}.tg-wrap {overflow-x: auto;-webkit-overflow-scrolling: touch;margin: auto 0px;}}</style>
+<div class="tg-wrap">
+	<table class="tg" style="undefined;table-layout: fixed; width: 852px">
+	<colgroup>
+		<col style="width: 120px">
+		<col style="width: 186px">
+		<col style="width: 134px">
+		<!-- <col style="width: 86px"> -->
+		<col style="width: 200px">
+		<col style="width: 70px">
+	</colgroup>
+		<tr>
+			<th class="tg-e3zv">Player-MAC</th>
+			<th class="tg-e3zv">Name</th>
+			<th class="tg-e3zv">IP</th>
+			<!-- <th class="tg-hgcj">Verbunden</th> -->
+			<th class="tg-e3zv">Virtuelle Texteingänge<br>(manuell erzeugen)</th>
+			<th class="tg-e3zv">Ausgänge</th>
+		</tr>
+
+<!--$html-->
+
+	</table>
+</div>
+<br />
+<center>
+	<a download="VIU_LMSGateway.xml" href="data:application/octet-stream;charset=utf-8;base64,<!--$xmlin-->">Download des Templates für virtuelle Eing&auml;nge (f&uuml;r LMS Gateway)</a><br />
+	<font size="-1">
+	<b>Virtuelle Eing&auml;nge:</b> Speichern unter: <span class="fixed">C:\ProgramData\Loxone\Loxone Config <i>version</i>\Templates\VirtualIn\<b>VIU_LMSGateway.xml</span></b><br />
+	<i>Der Dateiname muss unbedingt mit <span class="fixed"><b>VIU_</b></span> beginnen!</i> Danach Loxone Config neu starten.<br />
+	<b>Virtuelle Ausg&auml;nge:</b> Speichern unter: <span class="fixed">C:\ProgramData\Loxone\Loxone Config <i>version</i>\Templates\VirtualOut\<b>VO_LMS Zone.xml</b></span><br />
+	<i>Der Dateiname muss unbedingt mit <span class="fixed"><b>VO_</b></span> beginnen!</i> Danach Loxone Config neu starten.<br />
+	</font>
+	Details findest du in der <a target="_blank" href="http://www.loxwiki.eu:80/x/_4Cm#SqueezelitePlayer-templategeneratorEingangs-Assistent">Anleitung im LoxBerry Wiki</a>.
+<center>
+</body>
+</html>

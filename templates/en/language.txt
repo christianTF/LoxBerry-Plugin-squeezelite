@@ -34,7 +34,7 @@ CANCEL="Cancel"
 SAVE="Save"
 SAVE_AND_APPLY="Save and apply"
 DELETE="Delete"
-WIZZARD="Input Wizzard"
+WIZZARD="Input and Output Wizzard"
 
 [LMS2UDP]
 HEADING_BASICSETTINGS="Logitech Media Server Gateway"
