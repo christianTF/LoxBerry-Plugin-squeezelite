@@ -16,7 +16,7 @@ use Basics;
 # - libio-socket-timeout-perl
 
 # Version of this script
-my $version = "0.3.1";
+my $version = "0.3.2";
 
 
 # use strict;
@@ -297,7 +297,7 @@ sub tcpout_initialization
 	# To get everything: "listen 1\n"
 	
 	# Possibly we also want to welcome Loxone in your nice, little network?
-	print $udpout_sock "Hello Loxone, everything perdendicular on your flash drive ? ;-)\n";
+	print $udpout_sock "Hello Loxone, everything perpendicular on your flash drive ? ;-)\n";
 
 	# Get current Players from LMS
 	print $tcpout_sock "players 0\n";
@@ -461,11 +461,11 @@ sub send_state
 {
 	my ($state) = @_;
 	switch ($state) {
-		case -3		{ 	print $udpout_sock "$parts[0] mode_text Nicht verbunden\n$parts[0] mode_value -3\n$parts[0] playlist newsong Nicht verbunden\n"; to_ms($parts[0], "mode", "Nicht verbunden"); }
-		case -2		{ print $udpout_sock "$parts[0] mode_text Aus\n$parts[0] mode_value -2\n$parts[0] playlist newsong Zone ausgeschalten\n"; to_ms($parts[0], "mode", "Zone ausgeschalten");}
-		case -1		{ print $udpout_sock "$parts[0] mode_text Stop\n$parts[0] mode_value -1\n$parts[0] playlist newsong Zone gestoppt\n"; to_ms($parts[0], "mode", "Zone gestoppt");}
-		case 0		{ print $udpout_sock "$parts[0] mode_text Pause\n$parts[0] mode_value 0\n"; to_ms($parts[0], "mode", "Pause");}
-		case 1		{ print $udpout_sock "$parts[0] mode_text Play\n$parts[0] mode_value 1\n"; to_ms($parts[0], "mode", "Play");}
+		case -3		{ 	print $udpout_sock "$parts[0] mode_text Nicht verbunden\n$parts[0] mode_value -3\n$parts[0] playlist newsong Nicht verbunden\n$parts[0] power 0\n"; to_ms($parts[0], "mode", "Nicht verbunden"); to_ms($parts[0], "title", "Nicht verbunden");}
+		case -2		{ print $udpout_sock "$parts[0] mode_text Aus\n$parts[0] mode_value -2\n$parts[0] playlist newsong Zone ausgeschalten\n$parts[0] power 0\n"; to_ms($parts[0], "mode", "Zone ausgeschalten"); to_ms($parts[0], "title", "Zone ausgeschalten");}
+		case -1		{ print $udpout_sock "$parts[0] mode_text Stop\n$parts[0] mode_value -1\n$parts[0] playlist newsong Zone gestoppt\n$parts[0] power $playerstates{$parts[0]}{Power}\n"; to_ms($parts[0], "mode", "Zone gestoppt"); to_ms($parts[0], "title", "Zone gestoppt");}
+		case 0		{ print $udpout_sock "$parts[0] mode_text Pause\n$parts[0] mode_value 0\n$parts[0] power $playerstates{$parts[0]}{Power}\n"; to_ms($parts[0], "mode", "Pause");}
+		case 1		{ print $udpout_sock "$parts[0] mode_text Play\n$parts[0] mode_value 1\n$parts[0] power $playerstates{$parts[0]}{Power}\n"; to_ms($parts[0], "mode", "Play");}
 	}
 }
 

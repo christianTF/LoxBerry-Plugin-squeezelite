@@ -34,7 +34,7 @@ CANCEL="Abbrechen"
 SAVE="Speichern"
 SAVE_AND_APPLY="Speichern und ausf&uuml;hren"
 DELETE="L&ouml;schen"
-WIZZARD="Eingangs-Assistent"
+WIZZARD="Eing&auml;nge und Ausg&auml;nge Assistent"
 
 [LMS2UDP]
 HEADING_BASICSETTINGS="Logitech Media Server Gateway"

@@ -28,7 +28,7 @@ our %playerstates;
 our @rawparts;
 our @parts;
 our $line;
-my $xmlout;
+our $xmlin;
 our $errorstate;
 our $errortext;
 
@@ -37,7 +37,7 @@ our $errortext;
 ##########################################################################
 
 # Version of this script
-our $version = "0.3.1";
+our $version = "0.3.2";
 
 # Read global settings
 my  $syscfg             = new Config::Simple("$home/config/system/general.cfg");
@@ -68,7 +68,7 @@ our $cfg = new Config::Simple($cfgfilename);
 
 my $lms2udp_activated = $cfg->param("LMS2UDP.activated");
 our $cfgversion = $cfg->param("Main.ConfigVersion");
-my $squ_server = $cfg->param("Main.LMSServer");
+our $squ_server = $cfg->param("Main.LMSServer");
 my $squ_lmswebport = $cfg->param("Main.LMSWebPort");
 my $squ_lmscliport = $cfg->param("Main.LMSCLIPort");
 my $squ_lmsdataport = $cfg->param("Main.LMSDataPort");
@@ -145,22 +145,24 @@ if (! players()) {
 	exit(1);
 }
 
-$xmlout =  "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
-$xmlout .= "<VirtualInUdp Title=\"LMS Gateway\" Comment=\"by LoxBerry Squeezeplayer Plugin\" Address=\"$local_ip_address\" Port=\"$udpout_port\">\n";
+$xmlin =  "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
+$xmlin .= "<VirtualInUdp Title=\"LMS Gateway\" Comment=\"by LoxBerry Squeezeplayer Plugin\" Address=\"$local_ip_address\" Port=\"$udpout_port\">\n";
 
    foreach my $player (sort(keys %playerstates)) {
         #print $player, '=', $playerstates{$player}{name}, "\n";
 		#print $player, '=', $playerstates{$player}{ip}, "\n";
-		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} shuffle\" Comment=\"$playerstates{$player}{name} Zufallswiedergabe\" Address=\"\" Check=\"$player playlist shuffle \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"2\"/>\n";
-		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} repeat\" Comment=\"$playerstates{$player}{name} Wiederholung\" Address=\"\" Check=\"$player playlist repeat \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"2\"/>\n";
-		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} stream\" Comment=\"$playerstates{$player}{name} ist Stream\" Address=\"\" Check=\"$player is_stream \\v\" Signed=\"true\" Analog=\"false\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
-		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} mode_value\" Comment=\"$playerstates{$player}{name} Modus\" Address=\"\" Check=\"$player mode_value \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
-		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} volume\" Comment=\"$playerstates{$player}{name} Lautstärke\" Address=\"\" Check=\"$player mixer volume \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"100\"/>\n";
-		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} muting\" Comment=\"$playerstates{$player}{name} stumm\" Address=\"\" Check=\"$player mixer muting \\v\" Signed=\"true\" Analog=\"false\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
-		$xmlout .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} connected\" Comment=\"$playerstates{$player}{name} verbunden\" Address=\"\" Check=\"$player connected \\v\" Signed=\"true\" Analog=\"false\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
+		$xmlin .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} shuffle\" Comment=\"$playerstates{$player}{name} Zufallswiedergabe\" Address=\"\" Check=\"$player playlist shuffle \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"2\"/>\n";
+		$xmlin .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} power\" Comment=\"$playerstates{$player}{name} Power\" Address=\"\" Check=\"$player power \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
+		$xmlin .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} repeat\" Comment=\"$playerstates{$player}{name} Wiederholung\" Address=\"\" Check=\"$player playlist repeat \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"2\"/>\n";
+		$xmlin .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} stream\" Comment=\"$playerstates{$player}{name} ist Stream\" Address=\"\" Check=\"$player is_stream \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
+		$xmlin .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} mode_value\" Comment=\"$playerstates{$player}{name} Modus\" Address=\"\" Check=\"$player mode_value \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
+		$xmlin .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} volume\" Comment=\"$playerstates{$player}{name} Lautstärke\" Address=\"\" Check=\"$player mixer volume \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"100\"/>\n";
+		$xmlin .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} muting\" Comment=\"$playerstates{$player}{name} stumm\" Address=\"\" Check=\"$player mixer muting \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
+		$xmlin .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} connected\" Comment=\"$playerstates{$player}{name} verbunden\" Address=\"\" Check=\"$player connected \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
 	}
 
-$xmlout .= "</VirtualInUdp>\n";
+$xmlin .= "</VirtualInUdp>\n";
+$xmlin .= "</VirtualInUdp>\n";
 
 
 ## Generate output html
@@ -194,46 +196,48 @@ $xmlout .= "</VirtualInUdp>\n";
 	# <body class="ui-mobile-viewport ui-overlay-a">
 		# <div id="lang" style="display: none">de</div>
 
-my $html;	
-$html = '<link rel="stylesheet" href="/plugins/' . $pluginname . '/style.css">' . 
-		'<script>$(document).ready(function(){ ' .
-		' $("#btnmainmenu").hide(); ' . 
-		' $("#btninfo").hide(); ' . 
-		'});' .
-		'</script>';
-$html .=
-'<style type="text/css">
-.tg  {border-collapse:collapse;border-spacing:0;margin:0px auto;}
-.tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;}
-.tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;}
-.tg .tg-s6z2{text-align:center}
-.tg .tg-e3zv{font-weight:bold}
-.tg .tg-vkoh{font-family:"Lucida Console", Monaco, monospace !important;}
-.tg .tg-hgcj{font-weight:bold;text-align:center}
-@media screen and (max-width: 767px) {.tg {width: auto !important;}.tg col {width: auto !important;}.tg-wrap {overflow-x: auto;-webkit-overflow-scrolling: touch;margin: auto 0px;}}</style>
-<div class="tg-wrap">';
+our $html;	
+# $html = '<link rel="stylesheet" href="/plugins/' . $pluginname . '/style.css">' . 
+		# '<script>$(document).ready(function(){ ' .
+		# ' $("#btnmainmenu").hide(); ' . 
+		# ' $("#btninfo").hide(); ' . 
+		# '});' .
+		# '</script>';
+# $html .=
+# '<style type="text/css">
+# .tg  {border-collapse:collapse;border-spacing:0;margin:0px auto;}
+# .tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;}
+# .tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;}
+# .tg .tg-s6z2{text-align:center}
+# .tg .tg-e3zv{font-weight:bold}
+# .tg .tg-vkoh{font-family:"Lucida Console", Monaco, monospace !important;}
+# .tg .tg-hgcj{font-weight:bold;text-align:center}
+# @media screen and (max-width: 767px) {.tg {width: auto !important;}.tg col {width: auto !important;}.tg-wrap {overflow-x: auto;-webkit-overflow-scrolling: touch;margin: auto 0px;}}</style>
+# <div class="tg-wrap">';
 
-$html .='<table class="tg" style="undefined;table-layout: fixed; width: 782px">' .
-		'<colgroup>
-		<col style="width: 120px">
-		<col style="width: 186px">
-		<col style="width: 134px">
-		<!-- <col style="width: 86px"> -->
-		<col style="width: 200px">
-		</colgroup>' .
-		'	<tr>' .
-		'		<th class="tg-e3zv">Player-MAC</th>' . 
-		'		<th class="tg-e3zv">Name</th>' .
-		'		<th class="tg-e3zv">IP</th>' .
-		'		<!-- <th class="tg-hgcj">Verbunden</th> -->'.
-		'		<th class="tg-e3zv">Virtuelle Texteingänge<br>(manuell erzeugen)</th>' .
-		'		</tr>';
+# $html .='<table class="tg" style="undefined;table-layout: fixed; width: 782px">' .
+		# '<colgroup>
+		# <col style="width: 120px">
+		# <col style="width: 186px">
+		# <col style="width: 134px">
+		# <!-- <col style="width: 86px"> -->
+		# <col style="width: 200px">
+		# </colgroup>' .
+		# '	<tr>' .
+		# '		<th class="tg-e3zv">Player-MAC</th>' . 
+		# '		<th class="tg-e3zv">Name</th>' .
+		# '		<th class="tg-e3zv">IP</th>' .
+		# '		<!-- <th class="tg-hgcj">Verbunden</th> -->'.
+		# '		<th class="tg-e3zv">Virtuelle Texteingänge<br>(manuell erzeugen)</th>' .
+		# '		</tr>';
   
 foreach my $player (sort(keys %playerstates)) {
         #print $player, '=', $playerstates{$player}{name}, "\n";
 		#print $player, '=', $playerstates{$player}{ip}, "\n";
 
-$html .= 
+	my $outxml = generateOutputTemplate($player);
+	
+	$html .= 
 		'<tr>' . 
 		"	<td class=\"tg-vkoh\">$player</td>" . 
 		"	<td class=\"tg-031e\">$playerstates{$player}{name}</td>" . 
@@ -247,10 +251,13 @@ $html .=
 		"LMS $player title<br />" .
 		"LMS $player mode" .
 		'</td>' .
-		'</tr></div>';
+		'<td class=\"tg-031e\">' . 
+		"<center><a download=\"VO_LMS_Zone_$playerstates{$player}{name}\"title=\"Ausgangs-Template für Zone $playerstates{$player}{name}\" data-role=\"button\" data-icon=\"arrow-r\" data-iconpos=\"notext\" href=\"data:application/octet-stream;charset=utf-8;base64,$outxml\" ></a><center>" .
+		'</td>' .
+		'</tr>';
   }
   
-$html .= '</table>';
+# $html .= '</table></div>';
 
 # $html .= '<br />' .
 		 # '<center><button type="submit" tabindex="-1" form="main_form" name="applybtn" value="apply" id="btntemplate" data-role="button" data-inline="true" data-mini="true" data-icon="grid">Template-Download</button></center>';
@@ -258,18 +265,19 @@ $html .= '</table>';
 # $html .= '<script>' .
 		# '$("#btntemplate").click(function() {' .
 		# '  window.location = "data:application/octet-stream;charset=utf-8;base64,' .
-		# encode_base64($xmlout) .
+		# encode_base64($xmlin) .
 		# '"});' . 
 		# '</script>';
 
-$html .= '<br /><center><a download="VIU_LMSGateway.xml" href="data:application/octet-stream;charset=utf-8;base64,' ;
-$html .= encode_base64($xmlout);
+# $html .= '<br /><center><a download="VIU_LMSGateway.xml" href="data:application/octet-stream;charset=utf-8;base64,' ;
 
-$html .='">Download VirtualIn-UDP Template</a><br /><br />' .
-		'Speichern unter:  C:\ProgramData\Loxone\Loxone Config <i>version</i>\Templates\VirtualIn\<b>VIU_LMSGateway.xml</b><br />' .
-		'<i>Der Dateiname muss unbedingt mit <b>VIU_</b> beginnen!</i> Danach Loxone Config neu starten.<br />' .
-		'Details findest du in der <a target="_blank" href="http://www.loxwiki.eu:80/x/_4Cm#SqueezelitePlayer-templategeneratorEingangs-Assistent">Anleitung im LoxBerry Wiki</a>.' .
-		'<center>';
+$xmlin = encode_base64($xmlin);
+
+# $html .='">Download VirtualIn-UDP Template</a><br /><br />' .
+		# 'Speichern unter:  C:\ProgramData\Loxone\Loxone Config <i>version</i>\Templates\VirtualIn\<b>VIU_LMSGateway.xml</b><br />' .
+		# '<i>Der Dateiname muss unbedingt mit <b>VIU_</b> beginnen!</i> Danach Loxone Config neu starten.<br />' .
+		# 'Details findest du in der <a target="_blank" href="http://www.loxwiki.eu:80/x/_4Cm#SqueezelitePlayer-templategeneratorEingangs-Assistent">Anleitung im LoxBerry Wiki</a>.' .
+		# '<center>';
 
 		
 print "Content-Type: text/html\n\n";
@@ -277,10 +285,23 @@ my $template_title = "Squeezelite Player Plugin";
 # Print Header
 &lbheader;
 
-print $html;
+# Print TEMPLATEBUILDER setting
+			
+open(F,"$installfolder/templates/plugins/$psubfolder/multi/templatebuilder.html") || die "Missing template plugins/$psubfolder/multi/templatebuilder.html";
+ while (<F>) 
+	{
+	    $_ =~ s/<!--\$(.*?)-->/${$1}/g;
+#	    $_ =~ s/<!--\$(.*?)-->/${$1}/g;
+		print $_;
+	}
+close(F);
 
-print 	'</body>' .
-		'</html>';
+
+
+# print $html;
+
+# print 	'</body>' .
+		# '</html>';
 	
 sub players
 {
@@ -318,7 +339,55 @@ sub players
 }
 
 	
-	
+sub generateOutputTemplate 
+
+{
+
+my ($player) = @_;
+
+print STDERR "Creating Output template for player $player\n";
+
+my $xml = 
+	"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" .
+	"<VirtualOut Title=\"LMS $playerstates{$player}{name}\" Comment=\"by LoxBerry Squeezelite Player Plugin\" Address=\"tcp://$squ_server:$squ_lmscliport\" CmdInit=\"$player \" CloseAfterSend=\"true\" CmdSep=\"\">" . '
+	<VirtualOutCmd Title="Play" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="play \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Stop" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="stop \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Pause" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="pause \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Poweroff" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="power 0 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Poweron" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="power 1 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Skip Next" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="playlist index +1 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Skip Previous" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="playlist index -1 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Volume" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="mixer volume &lt;v&gt; \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="true" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Volume Up" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="mixer volume +1 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Volume Down" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="mixer volume -1 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Mute" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="mixer muting toggle \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Shuffle On" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="playlist shuffle 1 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Shuffle Off" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="playlist shuffle 0 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Shuffle Toggle" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="playlist shuffle \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Play Random Songs" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="randomplay tracks \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Seek +10s" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="time +10 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Seek -10s" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="time -10 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Sleeptimer 1 Hour" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="sleep 3600 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Sync to <player>" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="sync <player:mac> \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Sync off" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="sync - \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Doorbell Start" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="playlist preview url:C:\music\Kalimba.mp3 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Doorbell Stop" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="playlist preview cmd:stop \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Play Favorite 1" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="favorites playlist play item_id:1 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Play Favorite 2" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="favorites playlist play item_id:2 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Play Favorite 3" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="favorites playlist play item_id:3 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Play Favorite 4" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="favorites playlist play item_id:4 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Play Favorite 5" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="favorites playlist play item_id:5 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Play specific folder" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="playlist play /path/to/your/folder \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Play specific artist" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="playlist loadalbum * Abba * \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Play specific genre" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="playlist loadalbum Pop * * \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="MusicIP Mood ItaloDance" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="musicip mood:ItaloDance \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Playlist Hitradio Ö3" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="playlist play http://opml.radiotime.com/Tune.ashx?id=s8007&amp;formats=aac,ogg,mp3,wmpro,wma,wmvoice&amp;partnerId=16&amp;serial=50e8f023e07550d9a6bafb389f370415 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Playlist Life Radio" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="playlist play http://opml.radiotime.com/Tune.ashx?id=s15592&amp;formats=aac,ogg,mp3,wmpro,wma,wmvoice&amp;partnerId=16&amp;serial=f0825444fcd3ba53b49c12c1a02f16f8 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Playlist Welle 1" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="playlist play http://opml.radiotime.com/Tune.ashx?id=s254362&amp;formats=aac,ogg,mp3,wmpro,wma,wmvoice&amp;partnerId=16&amp;serial=977e69e221e1df668964da983ff434f5 \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/>
+	<VirtualOutCmd Title="Playlist Happy FM" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="playlist play http://opml.radiotime.com/Tune.ashx?id=s152262&amp;formats=aac,ogg,mp3,wmpro,wma,wmvoice&amp;partnerId=16&amp;serial=ba366d4226553a750c41b58b859155dc&amp;filter=s:popular \n" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" Analog="false" Repeat="0" RepeatRate="0"/> ' .
+	"\n</VirtualOut>";
+return encode_base64($xml);
+}
 
 	
 
@@ -346,6 +415,7 @@ sub create_out_socket
 		# $params{'LocalAddr'} = 'localhost';
 	}
 	if($socket) {
+		close($socket);
 		close($socket);
 	}
 		
