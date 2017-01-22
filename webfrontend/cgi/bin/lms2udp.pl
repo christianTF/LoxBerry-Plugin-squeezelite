@@ -461,9 +461,9 @@ sub send_state
 {
 	my ($state) = @_;
 	switch ($state) {
-		case -3		{ 	print $udpout_sock "$parts[0] mode_text Nicht verbunden\n$parts[0] mode_value -3\n$parts[0] playlist newsong Nicht verbunden\n"; to_ms($parts[0], "mode", "Nicht verbunden"); }
-		case -2		{ print $udpout_sock "$parts[0] mode_text Aus\n$parts[0] mode_value -2\n$parts[0] playlist newsong Zone ausgeschalten\n"; to_ms($parts[0], "mode", "Zone ausgeschalten");}
-		case -1		{ print $udpout_sock "$parts[0] mode_text Stop\n$parts[0] mode_value -1\n$parts[0] playlist newsong Zone gestoppt\n"; to_ms($parts[0], "mode", "Zone gestoppt");}
+		case -3		{ 	print $udpout_sock "$parts[0] mode_text Nicht verbunden\n$parts[0] mode_value -3\n$parts[0] playlist newsong Nicht verbunden\n"; to_ms($parts[0], "mode", "Nicht verbunden"); to_ms($parts[0], "title", "Nicht verbunden");}
+		case -2		{ print $udpout_sock "$parts[0] mode_text Aus\n$parts[0] mode_value -2\n$parts[0] playlist newsong Zone ausgeschalten\n"; to_ms($parts[0], "mode", "Zone ausgeschalten"); to_ms($parts[0], "title", "Zone ausgeschalten");}
+		case -1		{ print $udpout_sock "$parts[0] mode_text Stop\n$parts[0] mode_value -1\n$parts[0] playlist newsong Zone gestoppt\n"; to_ms($parts[0], "mode", "Zone gestoppt"); to_ms($parts[0], "title", "Zone gestoppt");}
 		case 0		{ print $udpout_sock "$parts[0] mode_text Pause\n$parts[0] mode_value 0\n"; to_ms($parts[0], "mode", "Pause");}
 		case 1		{ print $udpout_sock "$parts[0] mode_text Play\n$parts[0] mode_value 1\n"; to_ms($parts[0], "mode", "Play");}
 	}
