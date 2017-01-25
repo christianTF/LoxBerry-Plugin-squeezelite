@@ -41,7 +41,7 @@ rm /run/shm/REPLACEFOLDERNAME/tempconfigfile.unix > /dev/null 2>&1
 # Config file parsing end
 
 # Should we power off idle players
-if [[ $PoweroffPlayers != "1" ]]
+if [[ $MainPoweroffPlayers != "1" ]]
         then
         exit
 fi
