@@ -78,7 +78,6 @@ do
                         echo "Player No. $i is not a squeezelite Session (model is $playermodel)" >> /run/shm/REPLACEFOLDERNAME/REPLACEFOLDERNAMEplayercheck.log
                 else
                         playername=$(printf "$playerID name ?\nexit\n" | /bin/nc $server $port | cut -d ' ' -f 3)
-			echo "$playername"
                         playermode=$(printf "$playerID mode ? \nexit\n" | /bin/nc $server $port | cut -d ' ' -f 3)
                                 if [[ $playermode == "pause" ]]
                                         then
