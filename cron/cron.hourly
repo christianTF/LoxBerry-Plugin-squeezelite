@@ -1,6 +1,8 @@
 #!/bin/sh
 
 PIDFILES=/run/shm/lms2udp.*
+loxberryhome=REPLACEINSTALLFOLDER
+pluginname=REPLACEFOLDERNAME
 
 # Check PIDs of PIDfiles and remove unused PIDs
 if [ -e  $PIDFILES ] ; then
@@ -18,5 +20,5 @@ fi
 # If no PID was remaining, restart LMS2UDP
 if [ ! -e  $PIDFILES ] ; then
 	# Starting LMS2UDP
-	REPLACEINSTALLFOLDER/webfrontend/cgi/plugins/REPLACEFOLDERNAME/restart_lms2udp.sh & 1> /dev/null 2> REPLACEINSTALLFOLDER/log/plugins/REPLACEFOLDERNAME/start_lms2udp.log
+	$loxberryhome/webfrontend/cgi/plugins/$pluginname/restart_lms2udp.sh & 1> /dev/null 2> $loxberryhome/log/plugins/$pluginname/start_lms2udp.log
 fi
