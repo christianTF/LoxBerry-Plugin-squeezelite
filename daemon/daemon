@@ -74,6 +74,8 @@ fi
 configfile="$loxberryhome/config/plugins/$pluginname/plugin_squeezelite.cfg" # set the actual path name of your (DOS or Unix) config file
 if [ -e $configfile ]; then
   mkdir /run/shm/$pluginname > /dev/null 2>&1
+  chown loxberry.loxberry /run/shm/$pluginname > /dev/null 2>&1
+  chmod a+w /run/shm/$pluginname > /dev/null 2>&1
   shopt -s extglob
   tr -d '\r' < $configfile > /run/shm/$pluginname/tempconfigfile.unix
   while IFS='= ' read lhs rhs
