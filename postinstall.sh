@@ -46,6 +46,10 @@ echo "<INFO> Prepare daemon watcher cronjob ..."
 /bin/sed -i "s:REPLACEFOLDERNAME:$ARGV3:g" $ARGV5/system/cron/cron.hourly/$ARGV2
 /bin/sed -i "s:REPLACEINSTALLFOLDER:$ARGV5:g" $ARGV5/system/cron/cron.hourly/$ARGV2
 
+echo "<INFO> Prepare player watcher cronjob ..."
+/bin/sed -i "s:REPLACEFOLDERNAME:$ARGV3:g" $ARGV5/system/cron/cron.15min/$ARGV2
+/bin/sed -i "s:REPLACEINSTALLFOLDER:$ARGV5:g" $ARGV5/system/cron/cron.15min/$ARGV2
+
 
 echo "<INFO> Determining if we are running on Raspberry"
 cat /etc/os-release | grep "ID=raspbian" > /dev/null

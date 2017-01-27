@@ -1,0 +1,106 @@
+#!/bin/bash
+
+## check if any player is playing
+## and restart squeezelite if timetoplay is equal on both checks
+
+loxberryhome=REPLACEINSTALLFOLDER
+pluginname=REPLACEFOLDERNAME
+
+# If no config exits, exit.
+configfile="$loxberryhome/config/plugins/$pluginname/plugin_squeezelite.cfg" # set the actual path name of your (DOS or Unix) config file
+if [ ! -e "$configfile" ]
+        then
+        exit
+fi
+
+# use a fresh logfile
+mkdir /run/shm/$pluginname > /dev/null 2>&1
+mv /run/shm/$pluginname/playercheck.log /run/shm/$pluginname/playercheck.log.old > /dev/null 2>&1
+
+# Config file parsing (based on http://stackoverflow.com/a/20815951/3466839)
+shopt -s extglob
+tr -d '\r' < $configfile > /run/shm/$pluginname/tempconfigfile.unix
+while IFS='= ' read lhs rhs
+do
+    if [[ ! $lhs =~ ^\ *# && -n $lhs ]]; then
+        rhs="${rhs%%\#*}"    # Del in line right comments
+        rhs="${rhs%%*( )}"   # Del trailing spaces
+        rhs="${rhs%\"*}"     # Del opening string quotes
+        rhs="${rhs#\"*}"     # Del closing string quotes
+        if [[ $lhs =~ ^\[ ]]; then # Set INI-like sections, e.g. [MAIN]
+          lhs="${lhs%\]*}"     # Del opening bracket
+          lhs="${lhs#\[*}"     # Del closing bracket
+          sec=$lhs
+        else
+          if [[ ! $lhs =~ ^\; ]]; then # Don't parse comments startet with ;
+            name="$sec$lhs"
+            declare ${name}="$rhs"
+            #echo "$name = $rhs" # for debugging only
+          fi
+        fi
+    fi
+done < /run/shm/$pluginname/tempconfigfile.unix
+rm /run/shm/$pluginname/tempconfigfile.unix > /dev/null 2>&1
+# Config file parsing end
+
+# Should we power off idle players
+if [[ $MainPoweroffPlayers != "1" ]]
+        then
+        exit
+fi
+
+# LMS Server
+port=$MainLMSCLIPort
+server=$MainLMSServer
+
+if [[ $server == "" ]]
+        then
+        exit
+fi
+
+if [[ $port == "" ]]
+        then
+        port=9090
+fi
+
+# Start logfile
+touch /run/shm/$pluginname/playercheck.log > /dev/null 2>&1
+echo "$(date)" > /run/shm/$pluginname/playercheck.log
+
+# get number of known players
+players=$(printf "player count ?\nexit\n" | /bin/nc $server $port | cut -d ' ' -f 3)
+
+## check all known players
+for((i=0; i<$players; i++));
+do
+        playerID=$(printf "player id $i ?\nexit\n" | /bin/nc $server $port | cut -d ' ' -f 4 | sed 's/%/%%/g')
+        playermodel=$(printf "player model $i ? \nexit\n" | /bin/nc $server $port |cut -d ' ' -f 4)
+        
+                if [[ $playermodel != "squeezelite" ]]
+                        then
+                        echo "Player No. $i is not a squeezelite Session (model is $playermodel)" >> /run/shm/$pluginname/playercheck.log
+                else
+                        playername=$(printf "$playerID name ?\nexit\n" | /bin/nc $server $port | cut -d ' ' -f 3)
+                        playermode=$(printf "$playerID mode ? \nexit\n" | /bin/nc $server $port | cut -d ' ' -f 3)
+                                if [[ $playermode == "pause" ]]
+                                        then
+                                        grep $playername:$playermode /run/shm/$pluginname/playercheck.log.old && result=$(printf "$playerID power 0 \nexit\n" | /bin/nc $server $port)
+                                        echo "$playername:$playermode" >> /run/shm/$pluginname/playercheck.log
+                                else
+                                        timetoplay1=$(printf "$playerID time ?\nexit\n" | /bin/nc $server $port | cut -d ' ' -f 3)
+                                        echo "$playername:Playtime:$timetoplay1" >> /run/shm/$pluginname/playercheck.log
+                                        timetoplay2=$(printf "$playerID time ?\nexit\n" | /bin/nc $server $port | cut -d ' ' -f 3)
+                                                if [ $timetoplay1 = $timetoplay2 ]
+                                                        then
+                                                        echo "No difference between 1st and 2nd check - will power off player" >> /run/shm/$pluginname/playercheck.log
+                                                        timetoplay3=$(printf "$playerID time ?\nexit\n" | /bin/nc $server $port | cut -d ' ' -f 3)
+                                                                if [ $timetoplay1 = $timetoplay3 ]
+                                                                        then
+                                                                        result=$(printf "$playerID power 0 \nexit\n" | /bin/nc $server $port)
+                                                                fi
+                                                else
+                                                echo "$playername is playing - will do nothing" >> /run/shm/$pluginname/playercheck.log
+                                                fi
+                                fi
+                fi
+done

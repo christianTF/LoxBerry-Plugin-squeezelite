@@ -80,8 +80,12 @@ our $squ_lmscliport;
 our $squ_lmsdataport;
 
 our $squ_debug;
+our $squ_poweroff;
+our $squ_altbinaries;
 our $lmslinks;
 our $squ_debug_enabled;
+our $squ_poweroff_enabled;
+our $squ_altbinaries_enabled;
 our $instance;
 our $enabled;
 our $runningInstances;
@@ -136,6 +140,9 @@ unless (-e $cfgfilename) {
 	tolog("INFORMATION", "Plugin config NOT existing - creating");
 	$cfg = new Config::Simple(syntax=>'ini');
 	$cfg->param("Main.ConfigVersion", 2);
+	$cfg->param("Main.ConfigVersion", 2);
+	$cfg->param("Main.PoweroffPlayers", 0);
+	$cfg->param("Main.UseAlternativeBinaries", 1);
 	$cfg->write($cfgfilename);
 }
 	
@@ -311,6 +318,20 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			# $debug = 0;
 		}
 
+		$squ_poweroff = $cfg->param("Main.PoweroffPlayers");
+		if ($squ_poweroff) {
+			$squ_poweroff_enabled = 'checked=checked';
+		} else {
+			$squ_poweroff_enabled = '';
+		}
+
+		$squ_altbinaries = $cfg->param("Main.UseAlternativeBinaries");
+		if ($squ_altbinaries) {
+			$squ_altbinaries_enabled = 'checked=checked';
+		} else {
+			$squ_altbinaries_enabled = '';
+		}
+
 		# Generate links to LMS and LMS settings $lmslink and $lmssettingslink in topmenu
 		if ($squ_server) {
 			my $webport = 9000;
@@ -468,6 +489,8 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		$squ_lmscliport = param("LMSCLIPort");
 		$squ_lmsdataport = param("LMSDATAPort");
 		$squ_debug		= param('debug');
+		$squ_poweroff		= param('poweroff');
+		$squ_altbinaries	= param('altbinaries');
 		
 		if ( $_[0] eq 1) {
 			$squ_instances++;
@@ -488,6 +511,16 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			$cfg->param("Main.debug", "Yes");
 		} else {
 			$cfg->param("Main.debug", "False");
+		}
+		if ($squ_poweroff) {
+			$cfg->param("Main.PoweroffPlayers", "1");
+		} else {
+			$cfg->param("Main.PoweroffPlayers", "0");
+		}
+		if ($squ_altbinaries) {
+			$cfg->param("Main.UseAlternativeBinaries", "1");
+		} else {
+			$cfg->param("Main.UseAlternativeBinaries", "0");
 		}
 		
 		

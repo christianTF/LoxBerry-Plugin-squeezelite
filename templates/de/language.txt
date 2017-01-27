@@ -11,6 +11,10 @@ LMSCLIPORT_FORMAT="Standardport ist 9090 wenn leer<br />Die Befehlszeilenschnitt
 DEBUGMODE="Debug Mode"
 DEBUG_USEWITHCARE="Mit Vorsicht verwenden! Sollte nur im Fehlerfall aktiviert werden."
 SHOWMORE="Mehr anzeigen"
+POWEROFFPLAYERS="Zonen im Leerlauf ausschalten"
+POWEROFFPLAYERS_FORMAT="Dazu muss die IP-Adresse des LMS eingetragen werden.<br>Gilt für alle Squeezelite-Instanzen am LMS!"
+ALTERNATIVEBINARIES="Alternative Squeezelite Binaries"
+ALTERNATIVEBINARIES_FORMAT="Verwendet eine neuere Version von Squeezelite. Kann Fehler beheben<br>oder neue Fehler hervorrufen :-) Reboot erforderlich!"
 
 [INSTANCES]
 HEADING="Zonen"
