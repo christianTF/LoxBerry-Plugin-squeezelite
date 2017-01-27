@@ -3,8 +3,8 @@
 ## check if any player is playing
 ## and restart squeezelite if timetoplay is equal on both checks
 
-loxberryhome=$loxberryhome
-pluginname=$pluginname
+loxberryhome=REPLACEINSTALLFOLDER
+pluginname=REPLACEFOLDERNAME
 
 # If no config exits, exit.
 configfile="$loxberryhome/config/plugins/$pluginname/plugin_squeezelite.cfg" # set the actual path name of your (DOS or Unix) config file
