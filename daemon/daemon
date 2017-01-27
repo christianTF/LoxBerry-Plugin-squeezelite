@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Will be executed as user "root".
 
@@ -68,24 +68,65 @@ fi
 
 # Use newer squeezelite version if available
 # Currently only for arm and x86 on Linux systems
-is_arm() {
+# use a fresh logfile
+
+# Config file parsing (based on http://stackoverflow.com/a/20815951/3466839)
+configfile="$loxberryhome/config/plugins/$pluginname/plugin_squeezelite.cfg" # set the actual path name of your (DOS or Unix) config file
+if [ -e $configfile ]; then
+  mkdir /run/shm/$pluginname > /dev/null 2>&1
+  chown loxberry.loxberry /run/shm/$pluginname > /dev/null 2>&1
+  chmod a+w /run/shm/$pluginname > /dev/null 2>&1
+  shopt -s extglob
+  tr -d '\r' < $configfile > /run/shm/$pluginname/tempconfigfile.unix
+  while IFS='= ' read lhs rhs
+  do
+      if [[ ! $lhs =~ ^\ *# && -n $lhs ]]; then
+          rhs="${rhs%%\#*}"    # Del in line right comments
+          rhs="${rhs%%*( )}"   # Del trailing spaces
+          rhs="${rhs%\"*}"     # Del opening string quotes
+          rhs="${rhs#\"*}"     # Del closing string quotes
+          if [[ $lhs =~ ^\[ ]]; then # Set INI-like sections, e.g. [MAIN]
+            lhs="${lhs%\]*}"     # Del opening bracket
+            lhs="${lhs#\[*}"     # Del closing bracket
+            sec=$lhs
+          else
+            if [[ ! $lhs =~ ^\; ]]; then # Don't parse comments startet with ;
+              name="$sec$lhs"
+              declare ${name}="$rhs"
+              #echo "$name = $rhs" # for debugging only
+            fi
+          fi
+      fi
+  done < /run/shm/$pluginname/tempconfigfile.unix
+  rm /run/shm/$pluginname/tempconfigfile.unix > /dev/null 2>&1
+  # Config file parsing end
+fi
+
+if [[ $MainUseAlternativeBinaries == "1" ]]; then
+
+  is_arm() {
         /bin/uname -a | /bin/grep armv > /dev/null 2>&1
-}
-is_x86() {
+  }
+  is_x86() {
         /bin/uname -a | /bin/grep x86 > /dev/null 2>&1
-}
-rm $loxberryhome/data/plugins/$pluginname/squeezelite
-if is_arm; then
+  }
+  rm $loxberryhome/data/plugins/$pluginname/squeezelite
+  if is_arm; then
 	ln -s $loxberryhome/data/plugins/$pluginname/squeezelite-armv6hf $loxberryhome/data/plugins/$pluginname/squeezelite
 	chmod +x $loxberryhome/data/plugins/$pluginname/squeezelite-armv6hf
-elif is_x86; then
+  elif is_x86; then
 	ln -s $loxberryhome/data/plugins/$pluginname/squeezelite-x86 $loxberryhome/data/plugins/$pluginname/squeezelite
 	chmod +x $loxberryhome/data/plugins/$pluginname/squeezelite-x86
+  else
+	ln -s /usr/bin/squeezelite $loxberryhome/data/plugins/$pluginname/squeezelite
+	chmod +x /usr/bin/squeezelite
+  fi
+
 else
+        rm $loxberryhome/data/plugins/$pluginname/squeezelite
 	ln -s /usr/bin/squeezelite $loxberryhome/data/plugins/$pluginname/squeezelite
 	chmod +x /usr/bin/squeezelite
 fi
-
 
 if [ -s $loxberryhome/config/plugins/$pluginname/plugin_squeezelite.cfg ]
 	then

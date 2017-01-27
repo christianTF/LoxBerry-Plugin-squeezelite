@@ -11,6 +11,10 @@ LMSCLIPORT_FORMAT="Default port is 9090 if empty<br />This is the Command Line I
 DEBUGMODE="Debug mode"
 DEBUG_USEWITHCARE="Use with care! Should only be activated for troubleshooting."
 SHOWMORE="Show more"
+POWEROFFPLAYERS="Poweroff idle zones"
+POWEROFFPLAYERS_FORMAT="You have to enter the LMS IP address. This will poweroff all suqeezelite instances of your LMS!"
+ALTERNATIVEBINARIES="Alternative Squeezelite Binaries"
+ALTERNATIVEBINARIES_FORMAT="Use newer version of Squeezelite. May solve some problems<br>or create new ones :-) Requires a reboot!"
 
 [INSTANCES]
 HEADING="Zones"
