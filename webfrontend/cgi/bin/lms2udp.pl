@@ -16,7 +16,7 @@ use Basics;
 # - libio-socket-timeout-perl
 
 # Version of this script
-my $version = "0.3.2";
+my $version = "0.3.3";
 
 
 # use strict;
@@ -262,7 +262,11 @@ while (1)
 		print $tcpout_sock "players 0\n";
 		$lastpoll = time;
 	}
-	usleep($loopdelay);
+	if ($input) {
+		usleep($loopdelay/8);
+	} else {
+		usleep($loopdelay);
+	}
 }
 
 	close $tcpout_sock;
@@ -343,13 +347,13 @@ sub process_line
 		case 'artist'	{ 
 							if(defined $parts[2]) {
 								to_ms($parts[0], "title", $playerstates{$parts[0]}{Songtitle} . ' - ' .$parts[2]);
-								return "$parts[0] playlist newsong $playerstates{$parts[0]}{Songtitle} - $parts[2]\n";
+								return "$parts[0] playlist newsong $playerstates{$parts[0]}{Songtitle} - $parts[2]";
 							} elsif (defined $playerstates{$parts[0]}{Songtitle}) {
 								to_ms($parts[0], "title", "$playerstates{$parts[0]}{Songtitle}");
-								return "$parts[0] playlist newsong $playerstates{$parts[0]}{Songtitle}\n"; 
+								return "$parts[0] playlist newsong $playerstates{$parts[0]}{Songtitle}"; 
 							} else { 
 								to_ms($parts[0], "title", "Aktuell kein Song");
-								return "$parts[0] playlist newsong Aktuell kein Song\n"; 
+								return "$parts[0] playlist newsong Aktuell kein Song"; 
 							}
 					}
 		case 'power' 	{ # print "DEBUG: Power\n"; 
@@ -377,8 +381,8 @@ sub process_line
 		case 'name'		{ to_ms($parts[0], "name", $parts[2]);
 						  return uri_unescape($line); }
 		case 'remote'	{ print "$parts[0] DEBUG: remote #$parts[2]#\n";
-						  if ($parts[2]) { return "$parts[0] is_stream $parts[2]\n"; } 
-						  else { return "$parts[0] is_stream 0\n"; }
+						  if ($parts[2]) { return "$parts[0] is_stream $parts[2]"; } 
+						  else { return "$parts[0] is_stream 0"; }
 				}
 	}	
 		
@@ -402,16 +406,16 @@ sub process_line
 # [0]               [1]      [2]     [3]   [4]
 sub playlist 
 {
-	print "DEBUG playlist\n";
+	print "DEBUG playlist #$parts[0]#$parts[1]#$parts[2]#$parts[3]#$parts[4]#\n";
 	switch ($parts[2]) {
 		case 'newsong' {
 				if (defined $rawparts[4]) {
-					print $udpout_sock "$parts[0] is_stream 0\n";
+					# print $udpout_sock "$parts[0] is_stream 0\n";
 					$playerstates{$parts[0]}{Songtitle} = $parts[3];
-					print $tcpout_sock "$rawparts[0] artist ?\n";
+					print $tcpout_sock "$rawparts[0] artist ?\n$rawparts[0] remote ?\n";
 					send_state(1);
 					return undef;
-					#return "$parts[0] $parts[1] $parts[2] $parts[3]\n";
+					#return "$parts[0] $parts[1] $parts[2] $parts[3]";
 				} else { 
 					print $udpout_sock "$parts[0] is_stream 1\n";
 					print "DEBUG: Playlist thinks $parts[0] is a stream #$rawparts[4]#\n";
@@ -421,7 +425,7 @@ sub playlist
 			}	
 		case 'title' {
 					$playerstates{$parts[0]}{Songtitle} = $parts[3];
-					print $tcpout_sock "$rawparts[0] artist ?\n$rawparts[0] remote ?";
+					print $tcpout_sock "$rawparts[0] artist ?\n$rawparts[0] remote ?\n";
 					return undef;
 			}
 		case 'pause' { 
@@ -461,20 +465,44 @@ sub send_state
 {
 	my ($state) = @_;
 	switch ($state) {
-		case -3		{ 	print $udpout_sock "$parts[0] mode_text Nicht verbunden\n$parts[0] mode_value -3\n$parts[0] playlist newsong Nicht verbunden\n$parts[0] power 0\n"; to_ms($parts[0], "mode", "Nicht verbunden"); to_ms($parts[0], "title", "Nicht verbunden");}
-		case -2		{ print $udpout_sock "$parts[0] mode_text Aus\n$parts[0] mode_value -2\n$parts[0] playlist newsong Zone ausgeschalten\n$parts[0] power 0\n"; to_ms($parts[0], "mode", "Zone ausgeschalten"); to_ms($parts[0], "title", "Zone ausgeschalten");}
-		case -1		{ print $udpout_sock "$parts[0] mode_text Stop\n$parts[0] mode_value -1\n$parts[0] playlist newsong Zone gestoppt\n$parts[0] power $playerstates{$parts[0]}{Power}\n"; to_ms($parts[0], "mode", "Zone gestoppt"); to_ms($parts[0], "title", "Zone gestoppt");}
-		case 0		{ print $udpout_sock "$parts[0] mode_text Pause\n$parts[0] mode_value 0\n$parts[0] power $playerstates{$parts[0]}{Power}\n"; to_ms($parts[0], "mode", "Pause");}
-		case 1		{ print $udpout_sock "$parts[0] mode_text Play\n$parts[0] mode_value 1\n$parts[0] power $playerstates{$parts[0]}{Power}\n"; to_ms($parts[0], "mode", "Play");}
+		case -3		{ 	print "$parts[0] mode_text Nicht verbunden\n$parts[0] mode_value -3\n$parts[0] playlist newsong Nicht verbunden\n$parts[0] power 0\n"; 
+						print $udpout_sock "$parts[0] mode_text Nicht verbunden\n$parts[0] mode_value -3\n$parts[0] playlist newsong Nicht verbunden\n$parts[0] power 0"; 
+						to_ms($parts[0], "mode", "Nicht verbunden"); 
+						to_ms($parts[0], "title", "Nicht verbunden");
+					}
+		case -2		{ 	print "$parts[0] mode_text Aus\n$parts[0] mode_value -2\n$parts[0] playlist newsong Zone ausgeschalten\n$parts[0] power 0\n"; 
+						print $udpout_sock "$parts[0] mode_text Aus\n$parts[0] mode_value -2\n$parts[0] playlist newsong Zone ausgeschalten\n$parts[0] power 0"; 
+						to_ms($parts[0], "mode", "Zone ausgeschalten"); 
+						to_ms($parts[0], "title", "Zone ausgeschalten");
+					}
+		case -1		{ 	print "$parts[0] mode_text Stop\n$parts[0] mode_value -1\n$parts[0] playlist newsong Zone gestoppt\n$parts[0] power $playerstates{$parts[0]}{Power}\n"; 
+						print $udpout_sock "$parts[0] mode_text Stop\n$parts[0] mode_value -1\n$parts[0] playlist newsong Zone gestoppt\n$parts[0] power $playerstates{$parts[0]}{Power}"; 
+						to_ms($parts[0], "mode", "Zone gestoppt"); 
+						to_ms($parts[0], "title", "Zone gestoppt");
+					}
+		case 0		{ 	print "$parts[0] mode_text Pause\n$parts[0] mode_value 0\n$parts[0] power $playerstates{$parts[0]}{Power}\n"; 
+						print $udpout_sock "$parts[0] mode_text Pause\n$parts[0] mode_value 0\n$parts[0] power $playerstates{$parts[0]}{Power}"; 
+						to_ms($parts[0], "mode", "Pause");
+					}
+		case 1		{ 	print "$parts[0] mode_text Play\n$parts[0] mode_value 1\n$parts[0] power $playerstates{$parts[0]}{Power}\n"; 
+						print $udpout_sock "$parts[0] mode_text Play\n$parts[0] mode_value 1\n$parts[0] power $playerstates{$parts[0]}{Power}"; 
+						to_ms($parts[0], "mode", "Play");
+					}
 	}
 }
 
 sub client
 {
 	switch ($parts[2]) {
-		case 'new'			{ print $tcpout_sock "players 0\n"; }
-		case 'reconnect'	{ print $tcpout_sock "players 0\n"; }
-		case 'disconnect'	{ print $udpout_sock "$parts[0] connected 0\n"; send_state(-3);}
+		case 'new'			{ print $tcpout_sock "$curr_player power ?\n$curr_player title ?\n$curr_player mixer volume ?\n$curr_player playlist shuffle ?\n$curr_player playlist repeat ?\n$curr_player mixer muting ?\n";
+							  return("$parts[0] connected 1");
+							}
+		case 'reconnect'	{ print $tcpout_sock "$curr_player power ?\n$curr_player title ?\n$curr_player mixer volume ?\n$curr_player playlist shuffle ?\n$curr_player playlist repeat ?\n$curr_player mixer muting ?\n"; 
+							  return ("$parts[0] connected 1"); 
+							}
+							  
+		case 'disconnect'	{ send_state(-3);
+							  return ("$parts[0] connected 0\n"); }
 	
 	
 	}
@@ -486,6 +514,7 @@ sub client
 
 sub players
 {
+	
 	my $curr_player;
 	my $colon;
 	my $tagname;

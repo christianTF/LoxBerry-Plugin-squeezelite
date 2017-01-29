@@ -37,7 +37,7 @@ our $errortext;
 ##########################################################################
 
 # Version of this script
-our $version = "0.3.2";
+our $version = "0.3.3";
 
 # Read global settings
 my  $syscfg             = new Config::Simple("$home/config/system/general.cfg");
@@ -252,7 +252,7 @@ foreach my $player (sort(keys %playerstates)) {
 		"LMS $player mode" .
 		'</td>' .
 		'<td class=\"tg-031e\">' . 
-		"<center><a download=\"VO_LMS_Zone_$playerstates{$player}{name}\"title=\"Ausgangs-Template für Zone $playerstates{$player}{name}\" data-role=\"button\" data-icon=\"arrow-r\" data-iconpos=\"notext\" href=\"data:application/octet-stream;charset=utf-8;base64,$outxml\" ></a><center>" .
+		"<center><a download=\"VO_LMS_Zone_$playerstates{$player}{name}.xml\"title=\"Ausgangs-Template für Zone $playerstates{$player}{name}\" data-role=\"button\" data-icon=\"arrow-r\" data-iconpos=\"notext\" href=\"data:application/octet-stream;charset=utf-8;base64,$outxml\" ></a><center>" .
 		'</td>' .
 		'</tr>';
   }
