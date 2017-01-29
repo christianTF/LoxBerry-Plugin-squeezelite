@@ -16,7 +16,7 @@ use Basics;
 # - libio-socket-timeout-perl
 
 # Version of this script
-my $version = "0.3.2";
+my $version = "0.3.3";
 
 
 # use strict;
@@ -263,7 +263,7 @@ while (1)
 		$lastpoll = time;
 	}
 	if ($input) {
-		usleep($loopdelay/5);
+		usleep($loopdelay/8);
 	} else {
 		usleep($loopdelay);
 	}
