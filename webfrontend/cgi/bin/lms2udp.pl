@@ -127,6 +127,7 @@ my $lms2udp_berrytcpport = $cfg->param("LMS2UDP.berrytcpport");
 our $lms2udp_usehttpfortext = $cfg->param("LMS2UDP.useHTTPfortext");
 my $lms2udp_forcepolldelay = $cfg->param("LMS2UDP.forcepolldelay");
 my $lms2udp_refreshdelayms = $cfg->param("LMS2UDP.refreshdelayms");
+
 # Labels
 our %mode_string;
 $mode_string{-3} = $cfg->param("LMS2UDP.ZONELABEL_Disconnected");
@@ -141,7 +142,7 @@ if(! is_true($lms2udp_activated) && ! $option_activate) {
 	exit(0);
 }
 
-if (is_true($lms2udp_usehttpfortext) || (! $lms2udp_usehttpfortext)) {
+if (is_true($lms2udp_usehttpfortext) || (! $lms2udp_usehttpfortext) || ($lms2udp_usehttpfortext eq "")) {
 	$lms2udp_usehttpfortext = 1; }
 else {
 	$lms2udp_usehttpfortext = undef;
