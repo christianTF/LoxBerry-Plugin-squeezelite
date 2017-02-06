@@ -51,7 +51,6 @@ my $sel;
 my $client;
 
 our $line;
-our $loopdivisor = 4;
 our @rawparts;
 our @parts;
 our %playerstates;
@@ -409,7 +408,7 @@ sub process_line
 		case 'title'	{ pupdate($parts[0], "Songtitle", $parts[2]);
 						  print $tcpout_sock "$parts[0] artist ?\n$parts[0] remote ?\n";
 						  return undef;}
-		case 'artist'	{ 
+		case 'artist'	{   pupdate($parts[0], "Songtitle", $playerstates{$parts[0]}{Songtitle});
 							if(defined $parts[2]) {
 								pupdate($parts[0], "Artist", $parts[2]);
 							} else { 
@@ -490,8 +489,9 @@ sub playlist
 	switch ($parts[2]) {
 		case 'newsong' {
 				if (defined $rawparts[4]) {
-					# print $udpout_sock "$parts[0] is_stream 0\n";
-					pupdate($parts[0], "Songtitle", $parts[3]);
+					$playerstates{$parts[0]}{Songtitle} = $parts[3];
+					$playerstates{$parts[0]}{Artist} = undef;
+					# pupdate($parts[0], "Songtitle", $parts[3]);
 					print $tcpout_sock "$rawparts[0] artist ?\n$rawparts[0] remote ?\n";
 					send_state(1);
 					return;
@@ -527,6 +527,8 @@ sub playlist
 						 return undef; }
 		case 'repeat'  { pupdate($parts[0], "Repeat", $parts[3]);
 						 return undef; }
+		case 'cant_open' { print $tcpout_sock "$rawparts[0] mode ?\n"; 
+						   return undef; }
 	}
 }
 
@@ -751,10 +753,6 @@ sub guest_currstate
 #####################################################
 sub send_to_ms()
 {
-	
-	
-	
-	
 	# Check sync states on players with status change
 	# and populate mode texts to titles
 	foreach $player (keys %playerdiffs) {
@@ -798,7 +796,7 @@ sub send_to_ms()
 				$udpout_string = undef;
 			}
 			switch ($setting) {
-				case ['Songtitle', 'Artist'] 
+				case 'Songtitle' 
 					{ 
 					print "$player ARTIST: # " . $playerstates{$player}{Artist} . " # \n";
 					
@@ -947,9 +945,11 @@ sub to_ms
 	
 	
 	$url = "http://$miniserveradmin:$miniserverpass\@$miniserverip\:$miniserverport/dev/sps/io/$player_label/$textenc";
+	$url_nopass = "http://$miniserveradmin:*****\@$miniserverip\:$miniserverport/dev/sps/io/$player_label/$textenc";
 	$ua = LWP::UserAgent->new;
 	$ua->timeout(1);
-	# print "DEBUG: #$playerid# #$label# #$text#\n";
-	# print "DEBUG: -->URL #$url#\n";
-	return $response = $ua->get($url);
+	print "DEBUG: #$playerid# #$label# #$text#\n";
+	print "DEBUG: -->URL $url_nopass\n";
+	$response = $ua->get($url);
+	return $response;
 }
