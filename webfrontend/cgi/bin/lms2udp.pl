@@ -51,6 +51,7 @@ my $sel;
 my $client;
 
 our $line;
+our $loopdivisor = 3;
 our @rawparts;
 our @parts;
 our %playerstates;
