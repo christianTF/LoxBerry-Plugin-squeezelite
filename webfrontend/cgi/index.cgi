@@ -108,7 +108,7 @@ my $logmessage;
 ##########################################################################
 
 # Version of this script
-$version = "0.3.3";
+$version = "0.3.5";
 
 # Figure out in which subfolder we are installed
 my $part = substr ((abs_path($0)), (length($home)+1));
