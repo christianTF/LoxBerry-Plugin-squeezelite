@@ -30,8 +30,20 @@ if [ $? -ne 0 ] ; then
 	if [ -x /usr/bin/logger ]; then 
 			/usr/bin/logger "loxberry-plugin-$pluginname - Creating user squeezelox"
 	fi
-	useradd squeezelox -g loxberry -G audio > /dev/null
+	useradd squeezelox -g loxberry -G audio,gpio > /dev/null
 fi
+
+groups squeezelox | grep -q audio
+if [ $? -ne 0 ] ; then
+	adduser squeezelox audio > /dev/null
+fi
+# Needed by WiringPi
+groups squeezelox | grep -q gpio
+if [ $? -ne 0 ] ; then
+	adduser squeezelox gpio > /dev/null
+fi
+# New in WiringPi -> Redirect GPIOs to /dev/gpiomem to avoid root permissions requirement
+export WIRINGPI_GPIOMEM=1
 
 # Add Squeezelite to sudoers (need root permission)
 # Sudoers V2
@@ -52,12 +64,10 @@ if [ ! -e $loxberryhome/config/plugins/$pluginname/sudoers.v$sudoversion ]
 fi
 
 # Change permissions
-if [ ! -x $loxberryhome/webfrontend/cgi/plugins/$pluginname/kill_squeezelite.sh ]; then 
-		if [ -x /usr/bin/logger ]; then 
-			/usr/bin/logger "loxberry-plugin-$pluginname - Setting kill_squeezelite +x permissions"
-		fi
-		chmod +x $loxberryhome/webfrontend/cgi/plugins/$pluginname/kill_squeezelite.sh
+if [ -x /usr/bin/logger ]; then 
+	/usr/bin/logger "loxberry-plugin-$pluginname - Setting kill_squeezelite +x permissions"
 fi
+chmod +x $loxberryhome/webfrontend/cgi/plugins/$pluginname/kill_squeezelite.sh
 
 if [ `systemctl is-active squeezelite.service` ]
 	then
