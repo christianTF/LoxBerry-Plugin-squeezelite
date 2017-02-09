@@ -37,7 +37,7 @@ our $errortext;
 ##########################################################################
 
 # Version of this script
-our $version = "0.3.4";
+our $version = "0.3.5";
 
 # Read global settings
 my  $syscfg             = new Config::Simple("$home/config/system/general.cfg");
@@ -154,6 +154,7 @@ $xmlin .= "<VirtualInUdp Title=\"LMS Gateway\" Comment=\"by LoxBerry Squeezeplay
 		$xmlin .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} power\" Comment=\"$playerstates{$player}{name} Power\" Address=\"\" Check=\"$player power \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
 		$xmlin .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} repeat\" Comment=\"$playerstates{$player}{name} Wiederholung\" Address=\"\" Check=\"$player playlist repeat \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"2\"/>\n";
 		$xmlin .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} stream\" Comment=\"$playerstates{$player}{name} ist Stream\" Address=\"\" Check=\"$player is_stream \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
+		$xmlin .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} sync\" Comment=\"$playerstates{$player}{name} ist synchronisiert\" Address=\"\" Check=\"$player is_synced \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
 		$xmlin .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} mode_value\" Comment=\"$playerstates{$player}{name} Modus\" Address=\"\" Check=\"$player mode_value \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";
 		$xmlin .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} volume\" Comment=\"$playerstates{$player}{name} Lautstärke\" Address=\"\" Check=\"$player mixer volume \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"100\"/>\n";
 		$xmlin .= "\t<VirtualInUdpCmd Title=\"$playerstates{$player}{name} muting\" Comment=\"$playerstates{$player}{name} stumm\" Address=\"\" Check=\"$player mixer muting \\v\" Signed=\"true\" Analog=\"true\" SourceValLow=\"0\" DestValLow=\"0\" SourceValHigh=\"100\" DestValHigh=\"100\" DefVal=\"0\" MinVal=\"0\" MaxVal=\"1\"/>\n";

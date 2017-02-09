@@ -114,7 +114,7 @@ my $logmessage;
 ##########################################################################
 
 # Version of this script
-$version = "0.3.3";
+$version = "0.3.5";
 
 # Figure out in which subfolder we are installed
 my $part = substr ((abs_path($0)), (length($home)+1));
@@ -263,7 +263,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		$lms2udp_msnr = $cfg->param("LMS2UDP.msnr");
 		$lms2udp_udpport = $cfg->param("LMS2UDP.udpport");
 		$lms2udp_berrytcpport = $cfg->param("LMS2UDP.berrytcpport");
-		
+
 		$squ_debug = $cfg->param("Main.debug");
 		if (is_true($squ_debug)) {
 			$squ_debug_enabled = 'checked';
@@ -280,8 +280,14 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			$lms2udp_activated = '';
 			# $debug = 0;
 		}
-
 		
+		# Read labels from config
+		# If the labels are empty, set them to the language default labels
+		our $lms2udp_disconnected = defined $cfg->param("LMS2UDP.ZONELABEL_Disconnected") ? $cfg->param("LMS2UDP.ZONELABEL_Disconnected") : $T::LMS2UDP_ZONELABEL_DISCONNECTED;
+		our $lms2udp_poweredoff = defined $cfg->param("LMS2UDP.ZONELABEL_Poweredoff") ? $cfg->param("LMS2UDP.ZONELABEL_Poweredoff") : $T::LMS2UDP_ZONELABEL_POWEREDOFF;
+		our $lms2udp_stopped = defined $cfg->param("LMS2UDP.ZONELABEL_Stopped") ? $cfg->param("LMS2UDP.ZONELABEL_Stopped") : $T::LMS2UDP_ZONELABEL_STOPPED;
+		our $lms2udp_paused = defined $cfg->param("LMS2UDP.ZONELABEL_Paused") ? $cfg->param("LMS2UDP.ZONELABEL_Paused") : $T::LMS2UDP_ZONELABEL_PLAYING;
+		our $lms2udp_playing = defined $cfg->param("LMS2UDP.ZONELABEL_Playing") ? $cfg->param("LMS2UDP.ZONELABEL_Playing") : $T::LMS2UDP_ZONELABEL_PAUSED;
 		
 		# Generate links to LMS and LMS settings $lmslink and $lmssettingslink in topmenu
 		if ($squ_server) {
@@ -387,9 +393,13 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		$cfg->param("LMS2UDP.msnr", $lms2udp_msnr);
 		$cfg->param("LMS2UDP.udpport", $lms2udp_udpport);
 		$cfg->param("LMS2UDP.berrytcpport", $lms2udp_berrytcpport);
-
 		
-		
+		$cfg->param("LMS2UDP.ZONELABEL_Disconnected", param("LMS2UDP_Disconnected"));
+		$cfg->param("LMS2UDP.ZONELABEL_Poweredoff", param("LMS2UDP_Poweredoff"));
+		$cfg->param("LMS2UDP.ZONELABEL_Stopped", param("LMS2UDP_Stopped"));
+		$cfg->param("LMS2UDP.ZONELABEL_Paused", param("LMS2UDP_Paused"));
+		$cfg->param("LMS2UDP.ZONELABEL_Playing", param("LMS2UDP_Playing"));
+				
 		if ($squ_debug) {
 			$cfg->param("Main.debug", "Yes");
 		} else {

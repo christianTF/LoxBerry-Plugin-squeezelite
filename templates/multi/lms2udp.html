@@ -27,6 +27,26 @@
 	  <td style="border-width : 0px;"><input type="text" name="LMSServer" value="<!--$squ_server-->"></td>
 	  <td style="border-width : 0px;"><!--$T::LMS2UDP_LMSADDRESS_FORMAT--></td>
 	  </tr>
+	  <tr>
+	  <td colspan="3">&nbsp;</td>
+	  </tr>
+	  
+	  <tr>
+	  <td colspan="3" style="border-width : 0px;">
+		<table border="0" cellpadding="2" cellspacing="2" style="background-color: #eeeeee;">
+		<tr>
+		<td colspan="5" style="border-width : 0px;"><center><!--$T::LMS2UDP_ZONELABEL_HINT--></center></td>
+		</tr>
+		<tr>
+			<td><center><label for="LMS2UDP_Disconnected"><!--$T::LMS2UDP_ZONELABEL_DISCONNECTED--></label><input type="text" name="LMS2UDP_Disconnected" value="<!--$lms2udp_disconnected-->"></center></td>
+			<td><center><label for="LMS2UDP_Poweredoff"><!--$T::LMS2UDP_ZONELABEL_POWEREDOFF--></label><input type="text" name="LMS2UDP_Poweredoff" value="<!--$lms2udp_poweredoff-->"></center></td>
+			<td><center><label for="LMS2UDP_Stopped"><!--$T::LMS2UDP_ZONELABEL_STOPPED--></label><input type="text" name="LMS2UDP_Stopped" value="<!--$lms2udp_stopped-->"></center></td>
+			<td><center><label for="LMS2UDP_Playing"><!--$T::LMS2UDP_ZONELABEL_PLAYING--></label><input type="text" name="LMS2UDP_Playing" value="<!--$lms2udp_playing-->"></center></td>
+			<td><center><label for="LMS2UDP_Paused"><!--$T::LMS2UDP_ZONELABEL_PAUSED--></label><input type="text" name="LMS2UDP_Paused" value="<!--$lms2udp_paused-->"></center></td>
+		</tr>
+		</table>
+	  <td>
+	  </tr>
 	</table>
 	</div>
 	<a href="#" id="basic_showmore"><!--$T::LMS2UDP_SHOWMORE--></a>
@@ -64,7 +84,7 @@
 <center>
 <a id="btncancel" data-role="button" data-inline="true" data-mini="true" data-icon="delete" href="#"><!--$T::BUTTON_CANCEL--></a>
 <button type="submit" form="main_form" name="applybtn" value="submit" id="btnsubmit" data-role="button" data-inline="true" data-mini="true" data-icon="check"><!--$T::BUTTON_SAVE--></button>
-<button type="button" tabindex="-1" name="wizzard" value="apply" id="btnwizzard" data-role="button" data-inline="true" data-mini="true" data-icon="grid"><!--$T::BUTTON_WIZZARD--></button>
+<button onclick="openTemplateWizzard()" type="button" tabindex="-1" name="btnwizzard" value="apply" id="btnwizzard" data-role="button" data-inline="true" data-mini="true" data-icon="grid"><!--$T::BUTTON_WIZZARD--></button>
 </form>
 <!-- <p><!--$T::LMS2UDP_DOWNLOAD_HINT--></p> -->
 <script>
@@ -72,14 +92,10 @@ $('#btncancel').click(function() {
     location.reload();
 	return false;
 });
-// Code opened the new window twice
-//$('#btnwizzard').click(function() {
-//	window.open('./templatebuilder.cgi', '_blank', 'menubar=0,scrollbars=1,status=0,toolbar=0', 'replace=false');
-//	return false;
-//});
-$('#btnwizzard').unbind('click').bind('click', function (e) {
+
+function openTemplateWizzard() {
 	window.open('./templatebuilder.cgi', '_blank', 'menubar=0,scrollbars=1,status=0,toolbar=0', 'replace=false');
-});
+}
 
 </script>
 </center>

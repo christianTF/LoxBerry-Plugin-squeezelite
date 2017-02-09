@@ -95,6 +95,8 @@ our @inst_desc;
 our @inst_mac;
 our @inst_output;
 our @inst_params;
+our @inst_gpio;
+our @inst_gpiolevel;
 our @commandline;
 our $htmlout;
 
@@ -108,7 +110,7 @@ my $logmessage;
 ##########################################################################
 
 # Version of this script
-$version = "0.3.3";
+$version = "0.3.5";
 
 # Figure out in which subfolder we are installed
 my $part = substr ((abs_path($0)), (length($home)+1));
@@ -343,6 +345,11 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		}
 		
 		# Read the Instances config file section
+		
+		
+		
+		
+		
 		for ($instance = 1; $instance <= $squ_instances; $instance++) {
 			$enabled = undef;
 			$enabled = $cfg->param("Instance" . $instance . ".Enabled");
@@ -353,6 +360,10 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			tolog("DEBUG", "Instance$instance output from config: " . join(",", $cfg->param("Instance" . $instance . ".Output")));
 			push(@inst_output, join(",", $cfg->param("Instance" . $instance . ".Output")));
 			push(@inst_params, join(",", $cfg->param("Instance" . $instance . ".Parameters")));
+			push(@inst_gpio, defined $cfg->param("Instance" . $instance . ".GPIO") ? $cfg->param("Instance" . $instance . ".GPIO") : "Off");
+			push(@inst_gpiolevel, ($cfg->param("Instance" . $instance . ".GPIOLevel") ? $cfg->param("Instance" . $instance . ".GPIOLevel") : "High"));
+			
+			
 		}
 		
 		# If no instances defined yet, show at least one input line
@@ -381,8 +392,9 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		<th width="5%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_INSTANCE--></p></th>
 		<th width="5%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_ACTIVE--></p></th>
 		<th width="40%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_INSTANCE_NAME--></p></th>
-		<th width="47%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_MAC_ADDRESS--></p></th>
+		<th width="35%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_MAC_ADDRESS--></p></th>
 		<th width="3%"></th>
+		<th width="12%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">GPIO</p></th>
 		</tr>
 	
 		<tr class="top row">
@@ -403,6 +415,44 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		</td>
 		<td><a href="JavaScript:setRandomMAC(\'MAC' . $instnr . '\');" id="randommac' . $instnr . '"><img src="/plugins/' . $psubfolder . '/images/dice_30_30.png" alt="<!--$T::INSTANCES_MAC_DICE_HINT-->" title="<!--$T::INSTANCES_MAC_DICE_HINT-->"/></a>
 		</td>
+		<td><select name="gpio' . $instnr . '" id="gpio' . $instnr . '">
+      <option value="Off">Off</option>
+      <option value="0">0</option>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+      <option value="9">9</option>
+      <option value="10">10</option>
+      <option value="11">11</option>
+      <option value="14">14</option>
+      <option value="15">15</option>
+      <option value="18">18</option>
+      <option value="21">21</option>
+	  <option value="22">22</option>
+	  <option value="23">23</option>
+	  <option value="24">24</option>
+	  <option value="25">25</option>
+	  <option value="27">27</option>
+	  <option value="28">28</option>
+	  <option value="29">29</option>
+	  <option value="30">30</option>
+	  <option value="31">31</option>
+    </select>
+	<script>
+	$( "#gpio' . $instnr . '").val( "' . $inst_gpio[$inst] . '" );
+	
+	/* Disabling the form dropdown is not needed at all  */
+	if(! $("#altbinaries").attr("checked")) {
+		$("#gpio' . $instnr . '").prop( "disabled", true );
+		}
+	</script>
+	
+	
+	</td>	
+		
 		</tr>
 		<tr class="bottom row">
 		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">';
@@ -430,6 +480,21 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		<td>
 		</td>
 		<input type="hidden" placeholder="<!--$T::INSTANCES_INSTANCE_DESCRIPTION_HINT-->" name="Description' . $instnr . '" value="' . $inst_desc[$inst] . '">
+		<td>
+		<select name="gpiolevel' . $instnr . '" id="gpiolevel' . $instnr . '">
+			<option value="High">High</option>
+			<option value="Low">Low</option>
+		</select>
+		<script>
+		$( "#gpiolevel' . $instnr . '").val( "' . $inst_gpiolevel[$inst] . '" );
+		if(! $("#altbinaries").attr("checked")) {
+		
+		/* Disabling the form dropdown is not needed at all */
+		$("#gpiolevel' . $instnr . '").prop( "disabled", true );
+		}
+		
+		</script>
+		</td>
 		</tr>
 		</table>';
 		
@@ -534,7 +599,8 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			my $output = param("Output$instance");
 			my $params = trim(param("Parameters$instance"));
 			my $desc = trim(param("Descriptiom$instance"));
-
+			my $gpio = trim(param("gpio$instance"));
+			my $gpiolevel = trim(param("gpiolevel$instance"));
 			# Possible validations here
 			
 			# Write to config
@@ -546,6 +612,9 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			$cfg->param("Instance$instance.Output", $output);
 			$cfg->param("Instance$instance.Parameters", $params);
 			$cfg->param("Instance$instance.Description", $desc);
+			$cfg->param("Instance$instance.GPIO", $gpio);
+			$cfg->param("Instance$instance.GPIOLevel", $gpiolevel);
+			
 			
 		}
 		$cfg->save();

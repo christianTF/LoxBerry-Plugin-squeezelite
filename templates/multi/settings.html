@@ -74,7 +74,7 @@
 <a id="btncancel" data-role="button" data-inline="true" data-mini="true" data-icon="delete" href="#"><!--$T::BUTTON_CANCEL--></a>
 <button type="submit" form="main_form" name="submitbtn" value="submit" id="btnsubmit" data-role="button" data-inline="true" data-mini="true" data-icon="check"><!--$T::BUTTON_SAVE--></button>
 <button type="submit" tabindex="-1" form="main_form" name="applybtn" value="apply" id="btnapply" data-role="button" data-inline="true" data-mini="true" data-icon="refresh"><!--$T::BUTTON_SAVE_AND_APPLY--></button>
-<button type="button" tabindex="-1" name="wizzard" value="apply" id="btnwizzard" data-role="button" data-inline="true" data-mini="true" data-icon="grid"><!--$T::BUTTON_WIZZARD--></button>
+<button onclick="openTemplateWizzard()" type="button" tabindex="-1" name="btnwizzard" id="btnwizzard" data-role="button" data-inline="true" data-mini="true" data-icon="grid"><!--$T::BUTTON_WIZZARD--></button>
 </form>
 
 </center>
@@ -117,6 +117,7 @@ function checkMAC(fieldname) {
 	}
 }
 
+
 // Animation for the "show more" link
     $("body").off("click", "#basic_showmore");
     $("body").on("click", "#basic_showmore",
@@ -130,10 +131,24 @@ $('#btncancel').click(function() {
 	return false;
 });
 
+function openTemplateWizzard() {
+	window.open('./templatebuilder.cgi', '_blank', 'menubar=0,scrollbars=1,status=0,toolbar=0', 'replace=false');
+}
+
+/*
 $('#btnwizzard').unbind('click').bind('click', function (e) {
 	window.open('./templatebuilder.cgi', '_blank', 'menubar=0,scrollbars=1,status=0,toolbar=0', 'replace=false');
 });
+*/
 
+/*$('#btnwizzard').click(function() {
+	window.open('./templatebuilder.cgi', '_blank', 'menubar=0,scrollbars=1,status=0,toolbar=0', 'replace=false');
+});*/
+/*$(document).on('click', '#btnwizzard', function() {
+window.open('./templatebuilder.cgi', '_blank', 'menubar=0,scrollbars=1,status=0,toolbar=0', 'replace=false');
+return false;
+});
+*/
 
 </script> 
 
