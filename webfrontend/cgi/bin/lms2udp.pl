@@ -16,7 +16,7 @@ use Basics;
 # - libio-socket-timeout-perl
 
 # Version of this script
-my $version = "0.3.5";
+our $version = "0.4.00";
 
 
 # use strict;

@@ -40,6 +40,9 @@ no strict "refs"; # we need it for template system
 # Variables
 ##########################################################################
 
+# Version of this script
+our $version = "0.4.00";
+
 our $cfg;
 our $phrase;
 our $namef;
@@ -51,7 +54,6 @@ our @help;
 our $helptext;
 our $helplink;
 our $languagefile;
-our $version;
 our $error;
 our $saveformdata=0;
 our $output;
@@ -112,9 +114,6 @@ my $logmessage;
 ##########################################################################
 # Read Settings
 ##########################################################################
-
-# Version of this script
-$version = "0.3.5";
 
 # Figure out in which subfolder we are installed
 my $part = substr ((abs_path($0)), (length($home)+1));

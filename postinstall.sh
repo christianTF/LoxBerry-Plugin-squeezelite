@@ -60,20 +60,10 @@ else
 	echo "<OK> This is not Raspberry hardware"
 fi
 
-# echo "<INFO> Determining if we are running on a LoxBerry image"
-# uname -a | grep "loxberry" > /dev/null
-# if [ $? -eq 0 ] ; then
-	# echo "LoxBerry" > $ARGV5/config/plugins/$ARGV2/is_loxberry.info
-	# echo "<OK> Running in a LoxBerry image"
-# else
-	# echo "<OK> This is not a LoxBerry image"
-# fi
-
-# if [ ! -x $ARGV5/webfrontend/cgi/plugins/$ARGV2/kill_squeezelite.sh ]; then 
 	echo "<WARNING> ================================================="
 	echo "<WARNING> Please REBOOT your LoxBerry after installation."
 	echo "<WARNING> Bitte LoxBerry nach der Installation REBOOTEN."
 	echo "<WARNING> ================================================="
-# fi
+
 # Exit with Status 0
 exit 0

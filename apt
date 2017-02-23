@@ -4,7 +4,5 @@
 # Squeezelite from the Debian repository 
 # (will possibly be changed in the future for a newer Squeezelite version) 
 
-# cpanminus
-
 libio-interface-perl libswitch-perl libio-socket-timeout-perl
 squeezelite wiringpi
