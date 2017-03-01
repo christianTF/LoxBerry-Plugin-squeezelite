@@ -41,7 +41,7 @@ no strict "refs"; # we need it for template system
 ##########################################################################
 
 # Version of this script
-our $version = "0.4.00";
+our $version = "0.4.01";
 
 our $cfg;
 our $phrase;
@@ -285,8 +285,8 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		our $lms2udp_disconnected = defined $cfg->param("LMS2UDP.ZONELABEL_Disconnected") ? $cfg->param("LMS2UDP.ZONELABEL_Disconnected") : $T::LMS2UDP_ZONELABEL_DISCONNECTED;
 		our $lms2udp_poweredoff = defined $cfg->param("LMS2UDP.ZONELABEL_Poweredoff") ? $cfg->param("LMS2UDP.ZONELABEL_Poweredoff") : $T::LMS2UDP_ZONELABEL_POWEREDOFF;
 		our $lms2udp_stopped = defined $cfg->param("LMS2UDP.ZONELABEL_Stopped") ? $cfg->param("LMS2UDP.ZONELABEL_Stopped") : $T::LMS2UDP_ZONELABEL_STOPPED;
-		our $lms2udp_paused = defined $cfg->param("LMS2UDP.ZONELABEL_Paused") ? $cfg->param("LMS2UDP.ZONELABEL_Paused") : $T::LMS2UDP_ZONELABEL_PLAYING;
-		our $lms2udp_playing = defined $cfg->param("LMS2UDP.ZONELABEL_Playing") ? $cfg->param("LMS2UDP.ZONELABEL_Playing") : $T::LMS2UDP_ZONELABEL_PAUSED;
+		our $lms2udp_paused = defined $cfg->param("LMS2UDP.ZONELABEL_Paused") ? $cfg->param("LMS2UDP.ZONELABEL_Paused") : $T::LMS2UDP_ZONELABEL_PAUSED;
+		our $lms2udp_playing = defined $cfg->param("LMS2UDP.ZONELABEL_Playing") ? $cfg->param("LMS2UDP.ZONELABEL_Playing") : $T::LMS2UDP_ZONELABEL_PLAYING;
 		
 		# Generate links to LMS and LMS settings $lmslink and $lmssettingslink in topmenu
 		if ($squ_server) {
