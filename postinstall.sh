@@ -28,29 +28,6 @@ ARGV3=$3 # Third argument is Plugin installation folder
 ARGV4=$4 # Forth argument is Plugin version
 ARGV5=$5 # Fifth argument is Base folder of LoxBerry
 
-echo "<INFO> Prepare daemon ..."
-/bin/sed -i "s:REPLACEFOLDERNAME:$ARGV3:g" $ARGV5/system/daemons/plugins/$ARGV2
-/bin/sed -i "s:REPLACEINSTALLFOLDER:$ARGV5:g" $ARGV5/system/daemons/plugins/$ARGV2
-
-echo "<INFO> Prepare LMS2UDP restart file ..."
-/bin/sed -i "s:REPLACEFOLDERNAME:$ARGV3:g" $ARGV5/webfrontend/cgi/plugins/$ARGV2/restart_lms2udp.sh
-/bin/sed -i "s:REPLACEINSTALLFOLDER:$ARGV5:g" $ARGV5/webfrontend/cgi/plugins/$ARGV2/restart_lms2udp.sh
-/bin/sed -i "s:REPLACEFOLDERNAME:$ARGV3:g" $ARGV5/webfrontend/cgi/plugins/$ARGV2/bin/lms2udp.pl
-/bin/sed -i "s:REPLACEINSTALLFOLDER:$ARGV5:g" $ARGV5/webfrontend/cgi/plugins/$ARGV2/bin/lms2udp.pl
-
-echo "<INFO> Prepare Squeezelite restart file ..."
-/bin/sed -i "s:REPLACEFOLDERNAME:$ARGV3:g" $ARGV5/webfrontend/cgi/plugins/$ARGV2/start_instances.cgi
-/bin/sed -i "s:REPLACEINSTALLFOLDER:$ARGV5:g" $ARGV5/webfrontend/cgi/plugins/$ARGV2/start_instances.cgi
-
-echo "<INFO> Prepare daemon watcher cronjob ..."
-/bin/sed -i "s:REPLACEFOLDERNAME:$ARGV3:g" $ARGV5/system/cron/cron.hourly/$ARGV2
-/bin/sed -i "s:REPLACEINSTALLFOLDER:$ARGV5:g" $ARGV5/system/cron/cron.hourly/$ARGV2
-
-echo "<INFO> Prepare player watcher cronjob ..."
-/bin/sed -i "s:REPLACEFOLDERNAME:$ARGV3:g" $ARGV5/system/cron/cron.15min/$ARGV2
-/bin/sed -i "s:REPLACEINSTALLFOLDER:$ARGV5:g" $ARGV5/system/cron/cron.15min/$ARGV2
-
-
 echo "<INFO> Determining if we are running on Raspberry"
 cat /etc/os-release | grep "ID=raspbian" > /dev/null
 if [ $? -eq 0 ] ; then
