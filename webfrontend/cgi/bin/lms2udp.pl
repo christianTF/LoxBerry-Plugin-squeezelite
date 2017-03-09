@@ -1,6 +1,4 @@
 #!/usr/bin/perl
-if (-d "REPLACEINSTALLFOLDER/webfrontend/cgi/plugins/REPLACEFOLDERNAME/lib") {
-	use lib 'REPLACEINSTALLFOLDER/webfrontend/cgi/plugins/REPLACEFOLDERNAME/lib';
 } else {
 	use lib '/opt/loxberry/webfrontend/cgi/plugins/squeezelite/lib';
 }
@@ -16,7 +14,7 @@ use Basics;
 # - libio-socket-timeout-perl
 
 # Version of this script
-our $version = "0.4.00";
+our $version = "0.4.01";
 
 
 # use strict;
@@ -884,6 +882,7 @@ sub create_out_socket
 		
 	$socket = IO::Socket::INET->new( %params )
 		or die "Couldn't connect to $remotehost:$port : $@\n";
+	sleep (1);
 	if ($socket->connected) {
 		print "Created $proto out socket to $remotehost on port $port\n";
 	} else {
