@@ -1,4 +1,6 @@
 #!/usr/bin/perl
+if (-d "REPLACEINSTALLFOLDER/webfrontend/cgi/plugins/squeezelite/lib") {
+	use lib 'REPLACEINSTALLFOLDER/webfrontend/cgi/plugins/squeezelite/lib';
 } else {
 	use lib '/opt/loxberry/webfrontend/cgi/plugins/squeezelite/lib';
 }
