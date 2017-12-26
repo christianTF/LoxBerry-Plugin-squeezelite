@@ -754,7 +754,7 @@ sub getMAC {
 #####################################################
 
 sub tolog {
-  print strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " $_[0]: $_[1]\n";
+#  print strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " $_[0]: $_[1]\n";
   if ($debug) {
 	if ($loghandle) {
 		print $loghandle strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " $_[0]: $_[1]\n";
