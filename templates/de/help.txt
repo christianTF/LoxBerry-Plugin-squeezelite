@@ -16,7 +16,7 @@ HELP_INSTANCES_INTRODUCTION="Es k&ouml;nnen beliebig viele Zonen mit dem <i>Hinz
 HELP_INSTANCES_SAVE="&uuml;bernimmt die Einstellungen in die Konfiguration."
 HELP_INSTANCES_SAVE_AND_APPLY="&uuml;bernimmt die Konfiguration und startet alle Instanzen mit der neuen Konfiguration."
 HELP_LMS2UDP_SAVE="Speichert die Einstellungen und startet das Gateway (bzw. startet dieses neu). Bei aktivem Gateway wird dieses auch nach einem LoxBerry-Neustart wieder ausgef&uuml;hrt."
-HELP_LMS2UDP_WIZZARD="Der Eingangs-Assistent zeigt f&uuml;r die virtuellen Texteing&auml;nge die genauen Bezeichnungen pro Zone an, die du beim Anlegen direkt kopieren kannst. F&uuml;r die UDP-Eing&auml;nge kannst du direkt das erstellte Template herunterladen. Bitte achte auf die Infos im <a href=\"http://www.loxwiki.eu:80/x/_4Cm\" target=\"_blank\">LoxBerry Wiki</a>!"
+HELP_LMS2UDP_WIZZARD="Der Assistent Eing&auml;nge und Ausg&auml;nge zeigt f&uuml;r die virtuellen Texteing&auml;nge die genauen Bezeichnungen pro Zone an, die du beim Anlegen direkt kopieren kannst. F&uuml;r die UDP-Eing&auml;nge kannst du direkt das erstellte Template herunterladen. Bitte achte auf die Infos im <a href=\"http://www.loxwiki.eu:80/x/_4Cm\" target=\"_blank\">LoxBerry Wiki</a>!"
 
 [LMS2UDP]
 HELP_INTRODUCTION="Das LMS Gateway &uuml;bertr&auml;gt den Status aller Zonen per UDP sowie Texte per HTTP-REST an den Miniserver."

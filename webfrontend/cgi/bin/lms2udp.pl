@@ -1,6 +1,6 @@
 #!/usr/bin/perl
-if (-d "REPLACEINSTALLFOLDER/webfrontend/cgi/plugins/REPLACEFOLDERNAME/lib") {
-	use lib 'REPLACEINSTALLFOLDER/webfrontend/cgi/plugins/REPLACEFOLDERNAME/lib';
+if (-d "REPLACEINSTALLFOLDER/webfrontend/cgi/plugins/squeezelite/lib") {
+	use lib 'REPLACEINSTALLFOLDER/webfrontend/cgi/plugins/squeezelite/lib';
 } else {
 	use lib '/opt/loxberry/webfrontend/cgi/plugins/squeezelite/lib';
 }
@@ -16,7 +16,7 @@ use Basics;
 # - libio-socket-timeout-perl
 
 # Version of this script
-my $version = "0.3.5";
+our $version = "0.4.1";
 
 
 # use strict;
@@ -214,6 +214,7 @@ tcpout_initialization();
 
 our $guest;
 my $lastpoll = time;
+my $last_lms_receive_time;
 my $pollinterval = $lms2udp_forcepolldelay;
 my $loopdelay = $lms2udp_refreshdelayms*1000;
 print "Loop delay: $loopdelay microseconds\n";
@@ -292,6 +293,7 @@ sub start_listening
 		@streamtext = $tcpout_sock->getlines;
 		foreach $input (@streamtext) {
 			print "Process line $input\n";
+			$last_lms_receive_time = time;
 			$input = process_line($input);
 			# print "Process line finished\n";
 			# print $udpout_sock $input . "\n";
@@ -308,11 +310,12 @@ sub start_listening
 		}
 		
 		if (((time%60) == 0) && (! $tcpout_sock->connected)) {
-			
 			usleep(700000);
 		}
 		
-		if (! $tcpout_sock->connected)  {
+		if (! $tcpout_sock->connected || $last_lms_receive_time < (time-65))  {
+			if (! $tcpout_sock->connected) { print "LMS Socket seems to be down.\n"; }
+			if ($last_lms_receive_time < (time-65)) { print "LMS2UDP received no data from LMS since 65 seconds (missing Pong to Ping)\n"; }
 			print "RECONNECT TCP Socket...\n";
 				$tcpout_sock = create_out_socket($tcpout_sock, $tcpout_port, 'tcp', $tcpout_host);
 				sleep(5);
@@ -884,6 +887,7 @@ sub create_out_socket
 		
 	$socket = IO::Socket::INET->new( %params )
 		or die "Couldn't connect to $remotehost:$port : $@\n";
+	sleep (1);
 	if ($socket->connected) {
 		print "Created $proto out socket to $remotehost on port $port\n";
 	} else {

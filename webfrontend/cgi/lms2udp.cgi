@@ -40,6 +40,9 @@ no strict "refs"; # we need it for template system
 # Variables
 ##########################################################################
 
+# Version of this script
+our $version = "0.4.01";
+
 our $cfg;
 our $phrase;
 our $namef;
@@ -51,7 +54,6 @@ our @help;
 our $helptext;
 our $helplink;
 our $languagefile;
-our $version;
 our $error;
 our $saveformdata=0;
 our $output;
@@ -112,9 +114,6 @@ my $logmessage;
 ##########################################################################
 # Read Settings
 ##########################################################################
-
-# Version of this script
-$version = "0.3.5";
 
 # Figure out in which subfolder we are installed
 my $part = substr ((abs_path($0)), (length($home)+1));
@@ -286,8 +285,8 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		our $lms2udp_disconnected = defined $cfg->param("LMS2UDP.ZONELABEL_Disconnected") ? $cfg->param("LMS2UDP.ZONELABEL_Disconnected") : $T::LMS2UDP_ZONELABEL_DISCONNECTED;
 		our $lms2udp_poweredoff = defined $cfg->param("LMS2UDP.ZONELABEL_Poweredoff") ? $cfg->param("LMS2UDP.ZONELABEL_Poweredoff") : $T::LMS2UDP_ZONELABEL_POWEREDOFF;
 		our $lms2udp_stopped = defined $cfg->param("LMS2UDP.ZONELABEL_Stopped") ? $cfg->param("LMS2UDP.ZONELABEL_Stopped") : $T::LMS2UDP_ZONELABEL_STOPPED;
-		our $lms2udp_paused = defined $cfg->param("LMS2UDP.ZONELABEL_Paused") ? $cfg->param("LMS2UDP.ZONELABEL_Paused") : $T::LMS2UDP_ZONELABEL_PLAYING;
-		our $lms2udp_playing = defined $cfg->param("LMS2UDP.ZONELABEL_Playing") ? $cfg->param("LMS2UDP.ZONELABEL_Playing") : $T::LMS2UDP_ZONELABEL_PAUSED;
+		our $lms2udp_paused = defined $cfg->param("LMS2UDP.ZONELABEL_Paused") ? $cfg->param("LMS2UDP.ZONELABEL_Paused") : $T::LMS2UDP_ZONELABEL_PAUSED;
+		our $lms2udp_playing = defined $cfg->param("LMS2UDP.ZONELABEL_Playing") ? $cfg->param("LMS2UDP.ZONELABEL_Playing") : $T::LMS2UDP_ZONELABEL_PLAYING;
 		
 		# Generate links to LMS and LMS settings $lmslink and $lmssettingslink in topmenu
 		if ($squ_server) {
@@ -535,11 +534,9 @@ sub getMAC {
 # Logging
 #####################################################
 
-sub tolog {
-#  print strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " $_[0]: $_[1]\n";
-  if ($debug) {
+sub tolog 
+{
 	if ($loghandle) {
 		print $loghandle strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " $_[0]: $_[1]\n";
 	}
-  }
 }
