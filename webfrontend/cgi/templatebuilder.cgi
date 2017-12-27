@@ -22,6 +22,9 @@ use Time::HiRes qw(usleep);
 use Switch;
 use MIME::Base64;
 
+# Version of this script
+our $version = "0.4.00";
+
 my $home = "/opt/loxberry";
 our $tcpout_sock;
 our %playerstates;
@@ -35,9 +38,6 @@ our $errortext;
 ##########################################################################
 # Read Settings
 ##########################################################################
-
-# Version of this script
-our $version = "0.3.5";
 
 # Read global settings
 my  $syscfg             = new Config::Simple("$home/config/system/general.cfg");

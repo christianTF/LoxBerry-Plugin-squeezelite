@@ -14,6 +14,9 @@ no strict "refs"; # we need it for template system
 use Cwd 'abs_path';
 # use Tie::LogFile;
 
+# Version of this script
+our $version = "0.4.00";
+
 my  $home; 
 my  $lang;
 my  $installfolder;
