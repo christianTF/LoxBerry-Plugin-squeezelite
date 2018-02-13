@@ -138,6 +138,10 @@ else
 	chmod +x /usr/bin/squeezelite
 fi
 
+# LoxBerry .0.2.3 Delay start to wait for finished network startup
+sleep 20
+
+
 if [ -s $loxberryhome/config/plugins/$pluginname/plugin_squeezelite.cfg ]
 	then
 	# If a configuration file exists, run Perl script to read config and start Player instances
