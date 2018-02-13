@@ -21,9 +21,10 @@ use Config::Simple;
 use Time::HiRes qw(usleep);
 use Switch;
 use MIME::Base64;
+use CGI qw/:standard/;
 
 # Version of this script
-our $version = "0.4.00";
+our $version = "0.4.3";
 
 my $home = "/opt/loxberry";
 our $tcpout_sock;
@@ -34,6 +35,7 @@ our $line;
 our $xmlin;
 our $errorstate;
 our $errortext;
+my $error;
 
 ##########################################################################
 # Read Settings
@@ -58,8 +60,11 @@ our $pluginname = $psubfolder;
 my $cfgfilename = "$installfolder/config/plugins/$pluginname/plugin_squeezelite.cfg";
 # tolog("INFORMATION", "Reading Plugin config $cfg");
 if (! (-e $cfgfilename)) {
-	print STDERR "Squeezelite Player Plugin Konfiguration ist nicht vollständig. Bitte vor dem Starten des Assistenten die Konfiguration speichern.\n";
+	# print header, start_html('Squeezelite Plugin'), h3('The plugin_squeezelite.cfg configuration file could not be found. Please save the settings before opening the Template wizard.'), end_html;
+	
+	$error .= "The plugin_squeezelite.cfg configuration file could not be found. Please save the settings before opening the Template wizard. <br>\n";
 	$errorstate = 1;
+	&errors;
 	# exit(0);
 }
 
@@ -107,7 +112,7 @@ if ($miniserverclouddns) {
 
 
 if ((! $squ_server) || (! $miniserverip) || (! $miniserverport)) {
-	print STDERR "Squeezelite Player Plugin LMS2UDP is activated but configuration incomplete. Terminating.\n";
+	$error .= "Squeezelite Player Plugin LMS2UDP is activated but configuration incomplete. Terminating. <br>\n";
 	# unlink $pidfile;
 	$errorstate = 1;
 }
@@ -117,17 +122,24 @@ my $tcpout_host = $squ_server;
 my $tcpout_port = $squ_lmscliport;
 my $udpout_port = $lms2udp_udpport;
 
+
 # Connection to the remote TCP host
-$tcpout_sock = create_out_socket($tcpout_sock, $tcpout_port, 'tcp', $tcpout_host);
-# No socket, no fun. Exit.
-if (! $tcpout_sock->connected) {
+	$tcpout_sock = create_out_socket($tcpout_sock, $tcpout_port, 'tcp', $tcpout_host);
+
+	# No socket, no fun. Exit.
+if ($@ || ! $tcpout_sock || ! $tcpout_sock->connected) {
+
 	$errorstate = 1;
+	$error .= "Cannot open TCP connection to LMS - Error: $@ <br>\n";
+	errors();
 }
 print $tcpout_sock "players 0\n";
 $line = $tcpout_sock->getline;
 # Nothing happened - exit!
 if (! $line) {
 	$errorstate = 1;
+	$error .="LMS did not respond with any data. <br>\n";
+	&errors;
 }
 my $local_ip_address = $tcpout_sock->sockhost;
 print $tcpout_sock "exit\n";
@@ -141,8 +153,11 @@ foreach my $part (@parts) {
 }
 if (! players()) {
 	# Nothing found;
-	exit(1);
+	$errorstate = 1;
+	$error .= "LMS returned no players. <br>\n";
+	&errors;
 }
+
 
 $xmlin =  "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
 $xmlin .= "<VirtualInUdp Title=\"LMS Gateway\" Comment=\"by LoxBerry Squeezeplayer Plugin\" Address=\"$local_ip_address\" Port=\"$udpout_port\">\n";
@@ -304,7 +319,10 @@ sub create_out_socket
 	}
 		
 	$socket = IO::Socket::INET->new( %params )
-		or die "Couldn't connect to $remotehost:$port : $@\n";
+		or return undef; 
+#		{ #$Error = "Couldn't connect to $remotehost:$port : $@\n";
+#		 return undef;
+#		};
 	if ($socket->connected) {
 		# print STDERR "Created $proto out socket to $remotehost on port $port\n";
 	} else {
@@ -336,3 +354,17 @@ sub lbheader
 	    }
 	  close(F);
 	}
+
+sub errors
+{
+
+# lbheader();
+	print header, start_html("Squeezelite Plugin - Errors occured");
+	&lbheader;
+	print STDERR "Hallo\n";
+	print "<h3>The Template Generator found errors therefore cannot be displayed:</h3>";
+	print $error;
+	print "<h3>Please try to fix it, and try it again.</h3>";
+	print end_html;
+exit;
+}
