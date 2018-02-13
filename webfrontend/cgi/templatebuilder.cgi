@@ -24,7 +24,7 @@ use MIME::Base64;
 use CGI qw/:standard/;
 
 # Version of this script
-our $version = "0.4.3";
+our $version = "0.5.1";
 
 my $home = "/opt/loxberry";
 our $tcpout_sock;
@@ -107,6 +107,28 @@ if ($miniserverclouddns) {
 	$miniserverip   =  $fields2[0];
 	$miniserverport = $fields2[1];
 }
+
+
+# Read Plugin transations
+# Read English language as default
+# Missing phrases in foreign language will fall back to English	
+	
+	my $languagefileplugin 	= "$installfolder/templates/plugins/$psubfolder/lang/language_en.ini";
+	my $plglang = new Config::Simple($languagefileplugin);
+	$plglang->import_names('T');
+
+#	$lang = 'en'; # DEBUG
+	
+# Read foreign language if exists and not English
+	$languagefileplugin = "$installfolder/templates/plugins/$psubfolder/lang/language_$lang.ini";
+	 if ((-e $languagefileplugin) and ($lang ne 'en')) {
+		# Now overwrite phrase variables with user language
+		$plglang = new Config::Simple($languagefileplugin);
+		$plglang->import_names('T');
+	}
+	
+#	$lang = 'de'; # DEBUG
+
 
 # print "MSIP $miniserverip MSPORT $miniserverport LMS $squ_server\n";
 
@@ -206,7 +228,7 @@ foreach my $player (sort(keys %playerstates)) {
 		"LMS $player mode" .
 		'</td>' .
 		'<td class=\"tg-031e\">' . 
-		"<center><a download=\"VO_LMS_Zone_$playerstates{$player}{name}.xml\"title=\"Ausgangs-Template für Zone $playerstates{$player}{name}\" data-role=\"button\" data-icon=\"arrow-r\" data-iconpos=\"notext\" href=\"data:application/octet-stream;charset=utf-8;base64,$outxml\" ></a><center>" .
+		"<center><a download=\"VO_LMS_Zone_$playerstates{$player}{name}.xml\"title=\"$T::TEMPLATEBUILDER_OUTPUT_TEMPLATE_FOR_ZONE $playerstates{$player}{name}\" data-role=\"button\" data-icon=\"arrow-r\" data-iconpos=\"notext\" href=\"data:application/octet-stream;charset=utf-8;base64,$outxml\" ></a><center>" .
 		'</td>' .
 		'</tr>';
   }

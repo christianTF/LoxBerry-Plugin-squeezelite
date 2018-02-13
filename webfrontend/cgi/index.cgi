@@ -36,7 +36,7 @@ no strict "refs"; # we need it for template system
 ##########################################################################
 
 # Version of this script
-our $version = "0.4.00";
+our $version = "0.5.1";
 
 our $cfg;
 our $phrase;
@@ -209,14 +209,14 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 # Read English language as default
 # Missing phrases in foreign language will fall back to English	
 	
-	$languagefileplugin 	= "$installfolder/templates/plugins/$psubfolder/en/language.txt";
+	$languagefileplugin 	= "$installfolder/templates/plugins/$psubfolder/lang/language_en.ini";
 	$plglang = new Config::Simple($languagefileplugin);
 	$plglang->import_names('T');
 
 #	$lang = 'en'; # DEBUG
 	
 # Read foreign language if exists and not English
-	$languagefileplugin = "$installfolder/templates/plugins/$psubfolder/$lang/language.txt";
+	$languagefileplugin = "$installfolder/templates/plugins/$psubfolder/lang/language_$lang.ini";
 	 if ((-e $languagefileplugin) and ($lang ne 'en')) {
 		# Now overwrite phrase variables with user language
 		$plglang = new Config::Simple($languagefileplugin);
@@ -672,12 +672,12 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	# Read English language as default
 	# Missing phrases in foreign language will fall back to English	
 	
-	$languagefileplugin	= "$installfolder/templates/plugins/$psubfolder/en/help.txt";
+	$languagefileplugin	= "$installfolder/templates/plugins/$psubfolder/lang/help_en.ini";
 	$plglang = new Config::Simple($languagefileplugin);
 	$plglang->import_names('T');
 
 	# Read foreign language if exists and not English
-	$languagefileplugin = "$installfolder/templates/plugins/$psubfolder/$lang/help.txt";
+	$languagefileplugin = "$installfolder/templates/plugins/$psubfolder/lang/help_$lang.ini";
 	 if ((-e $languagefileplugin) and ($lang ne 'en')) {
 		# Now overwrite phrase variables with user language
 		$plglang = new Config::Simple($languagefileplugin);

@@ -25,12 +25,12 @@
 		<col style="width: 70px">
 	</colgroup>
 		<tr>
-			<th class="tg-e3zv">Player-MAC</th>
-			<th class="tg-e3zv">Name</th>
-			<th class="tg-e3zv">IP</th>
-			<!-- <th class="tg-hgcj">Verbunden</th> -->
-			<th class="tg-e3zv">Virtuelle Texteingänge<br>(manuell erzeugen)</th>
-			<th class="tg-e3zv">Ausgänge</th>
+			<th class="tg-e3zv"><!--$T::TEMPLATEBUILDER_PLAYER_MAC--></th>
+			<th class="tg-e3zv"><!--$T::TEMPLATEBUILDER_PLAYER_NAME--></th>
+			<th class="tg-e3zv"><!--$T::TEMPLATEBUILDER_PLAYER_IP--></th>
+			<!-- <th class="tg-hgcj">$T::TEMPLATEBUILDER_PLAYER_CONNECTED</th> -->
+			<th class="tg-e3zv"><!--$T::TEMPLATEBUILDER_PLAYER_VTI--></th>
+			<th class="tg-e3zv"><!--$T::TEMPLATEBUILDER_PLAYER_OUTPUTS--></th>
 		</tr>
 
 <!--$html-->
@@ -39,14 +39,14 @@
 </div>
 <br />
 <center>
-	<a download="VIU_LMSGateway.xml" href="data:application/octet-stream;charset=utf-8;base64,<!--$xmlin-->">Download des Templates für virtuelle Eing&auml;nge (f&uuml;r LMS Gateway)</a><br />
-	<font size="-1">
-	<b>Virtuelle Eing&auml;nge:</b> Speichern unter: <span class="fixed">C:\ProgramData\Loxone\Loxone Config <i>version</i>\Templates\VirtualIn\<b>VIU_LMSGateway.xml</span></b><br />
-	<i>Der Dateiname muss unbedingt mit <span class="fixed"><b>VIU_</b></span> beginnen!</i> Danach Loxone Config neu starten.<br />
-	<b>Virtuelle Ausg&auml;nge:</b> Speichern unter: <span class="fixed">C:\ProgramData\Loxone\Loxone Config <i>version</i>\Templates\VirtualOut\<b>VO_LMS Zone.xml</b></span><br />
-	<i>Der Dateiname muss unbedingt mit <span class="fixed"><b>VO_</b></span> beginnen!</i> Danach Loxone Config neu starten.<br />
-	</font>
-	Details findest du in der <a target="_blank" href="http://www.loxwiki.eu:80/x/_4Cm#SqueezelitePlayer-templategeneratorEingangs-Assistent">Anleitung im LoxBerry Wiki</a>.
+	<a download="VIU_LMSGateway.xml" href="data:application/octet-stream;charset=utf-8;base64,<!--$xmlin-->"><!--$T::TEMPLATEBUILDER_DOWNLOAD_TEMPLATE_LINK--></a>
+	<div style="font-size:75%">
+	<b><!--$T::TEMPLATEBUILDER_VIRTUAL_INPUTS--></b>&nbsp;<!--$T::TEMPLATEBUILDER_VIRTUAL_INPUTS_SAVE_AS-->&nbsp;<span class="fixed">C:\ProgramData\Loxone\Loxone Config <i>version</i>\Templates\VirtualIn\<b>VIU_LMSGateway.xml</span></b><br />
+	<!--$T::TEMPLATEBUILDER_VIRTUAL_INPUTS_FILENAME--><br />
+	<b><!--$T::TEMPLATEBUILDER_VIRTUAL_OUTPUTS--></b>&nbsp;<!--$T::TEMPLATEBUILDER_VIRTUAL_OUTPUTS_SAVE_AS-->&nbsp;<span class="fixed">C:\ProgramData\Loxone\Loxone Config <i>version</i>\Templates\VirtualOut\<b>VO_LMS Zone.xml</b></span><br />
+	<!--$T::TEMPLATEBUILDER_VIRTUAL_OUTPUTS_FILENAME-->
+	</div>
+	<!--$T::TEMPLATEBUILDER_DETAILS_INFO-->&nbsp;<a target="_blank" href="<!--$T::TEMPLATEBUILDER_DETAILS_LINK-->">LoxBerry Wiki</a>.
 <center>
 </body>
 </html>
