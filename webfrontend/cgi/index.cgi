@@ -182,8 +182,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 # Set parameters coming in - get over post
 # Don't know why this is so complicated...
 	if ( !$query{'saveformdata'} ) { if ( param('saveformdata') ) { $saveformdata = quotemeta(param('saveformdata')); } else { $saveformdata = 0;      } } else { $saveformdata = quotemeta($query{'saveformdata'}); }
-	if ( !$query{'lang'} )         { if ( param('lang')         ) { $lang         = quotemeta(param('lang'));         } else { $lang         = "de";   } } else { $lang         = quotemeta($query{'lang'});         }
-#	if ( !$query{'do'} )           { if ( param('do')           ) { $do           = quotemeta(param('do'));           } else { $do           = "form"; } } else { $do           = quotemeta($query{'do'});           }
 
 	if 	( param('applybtn') ) 	{ $doapply = 1; }
 	elsif ( param('addbtn') ) 	{ $doadd = 1; }
@@ -193,9 +191,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 # Clean up saveformdata variable
 	$saveformdata =~ tr/0-1//cd; $saveformdata = substr($saveformdata,0,1);
 
-# Init Language
-	# Clean up lang variable
-	$lang         =~ tr/a-z//cd; $lang         = substr($lang,0,2);
 # If there's no language phrases file for choosed language, use german as default
 	if (!-e "$installfolder/templates/system/$lang/language.dat") 
 	{
