@@ -191,10 +191,10 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 # Clean up saveformdata variable
 	$saveformdata =~ tr/0-1//cd; $saveformdata = substr($saveformdata,0,1);
 
-# If there's no language phrases file for choosed language, use german as default
+# If there's no language phrases file for choosed language, use English as default
 	if (!-e "$installfolder/templates/system/$lang/language.dat") 
 	{
-  		$lang = "de";
+  		$lang = "en";
 	}
 # Read LoxBerry system translations / phrases
 	$languagefile 			= "$installfolder/templates/system/$lang/language.dat";
@@ -208,8 +208,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	$plglang = new Config::Simple($languagefileplugin);
 	$plglang->import_names('T');
 
-#	$lang = 'en'; # DEBUG
-	
 # Read foreign language if exists and not English
 	$languagefileplugin = "$installfolder/templates/plugins/$psubfolder/lang/language_$lang.ini";
 	 if ((-e $languagefileplugin) and ($lang ne 'en')) {
