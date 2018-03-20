@@ -24,7 +24,7 @@ use MIME::Base64;
 use CGI qw/:standard/;
 
 # Version of this script
-our $version = "0.5.1";
+our $version = "0.5.2";
 
 my $home = "/opt/loxberry";
 our $tcpout_sock;

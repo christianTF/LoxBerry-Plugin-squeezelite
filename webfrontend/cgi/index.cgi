@@ -36,10 +36,9 @@ no strict "refs"; # we need it for template system
 ##########################################################################
 
 # Version of this script
-our $version = "0.5.1";
+our $version = "0.5.2";
 
 our $cfg;
-our $phrase;
 our $namef;
 our $value;
 our %query;
@@ -191,15 +190,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 # Clean up saveformdata variable
 	$saveformdata =~ tr/0-1//cd; $saveformdata = substr($saveformdata,0,1);
 
-# If there's no language phrases file for choosed language, use English as default
-	if (!-e "$installfolder/templates/system/$lang/language.dat") 
-	{
-  		$lang = "en";
-	}
-# Read LoxBerry system translations / phrases
-	$languagefile 			= "$installfolder/templates/system/$lang/language.dat";
-	$phrase 				= new Config::Simple($languagefile);
-	
 # Read Plugin transations
 # Read English language as default
 # Missing phrases in foreign language will fall back to English	
@@ -637,7 +627,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 
 	sub error 
 	{
-		$template_title = $phrase->param("TXT0000") . " - " . $phrase->param("TXT0028");
+		$template_title = "Squeezelite Player : Error";
 		if ( !$header_already_sent ) { print "Content-Type: text/html\n\n"; }
 		&lbheader;
 		open(F,"$installfolder/templates/system/$lang/error.html") || die "Missing template system/$lang/error.html";
