@@ -21,6 +21,17 @@ if [ -x /usr/bin/logger ]; then
     /usr/bin/logger "loxberry-plugin-$pluginname - DAEMON Script from Squeezelite Plugin"
 fi
 
+cat /etc/*-release | grep raspbian
+if [ $? -eq 0 ]; then
+	# Is Raspbian OS
+	dpkg-query -l wiringpi
+	if [ $? -ne 0 ]; then
+		# Install wiringpi
+		apt-get -y install wiringpi
+	fi
+fi
+
+
 # Correct permissions of logs of older versions
 chmod a+w $loxberryhome/log/plugins/$pluginname/*
 
