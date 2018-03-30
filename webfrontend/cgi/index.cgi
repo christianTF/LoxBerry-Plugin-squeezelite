@@ -251,7 +251,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		# Prepare form defaults
 		# Read Squeezelite possible sound outputs
 		tolog("INFORMATION", "Calling squeezelite to get outputs");
-		my $squ_outputs = `sudo squeezelite -l` or tolog("ERROR", "Failed to run squeezelite.");
+		my $squ_outputs = `sudo $installfolder/data/plugins/$psubfolder/squeezelite -l` or tolog("ERROR", "Failed to run squeezelite.");
 		
 		# Sample output:
 
