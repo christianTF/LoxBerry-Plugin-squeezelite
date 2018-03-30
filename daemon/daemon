@@ -58,7 +58,7 @@ export WIRINGPI_GPIOMEM=1
 
 # Add Squeezelite to sudoers (need root permission)
 # Sudoers V2
-sudoversion=2
+sudoversion=3
 
 if [ ! -e $loxberryhome/config/plugins/$pluginname/sudoers.v$sudoversion ]
 	then
@@ -66,12 +66,13 @@ if [ ! -e $loxberryhome/config/plugins/$pluginname/sudoers.v$sudoversion ]
 			/usr/bin/logger "loxberry-plugin-$pluginname - Adding sudoers permissions"
 		fi
 		echo %loxberry ALL = NOPASSWD: /usr/bin/squeezelite > /etc/sudoers.d/$pluginname
+		echo %loxberry ALL = NOPASSWD: $loxberryhome/data/plugins/$pluginname/squeezelite > /etc/sudoers.d/$pluginname
 		echo %loxberry ALL = NOPASSWD: /usr/bin/amixer >> /etc/sudoers.d/$pluginname
 		echo %loxberry ALL = NOPASSWD: $loxberryhome/webfrontend/cgi/plugins/$pluginname/kill_squeezelite.sh >> /etc/sudoers.d/$pluginname
 		echo %loxberry ALL = NOPASSWD: $loxberryhome/webfrontend/cgi/plugins/$pluginname/start_instances.cgi >> /etc/sudoers.d/$pluginname
 		chmod 0440 /etc/sudoers.d/$pluginname
 		rm $loxberryhome/config/plugins/$pluginname/sudoers.*
-		echo Sudoers V2 > $loxberryhome/config/plugins/$pluginname/sudoers.v$sudoversion
+		echo Sudoers V3 > $loxberryhome/config/plugins/$pluginname/sudoers.v$sudoversion
 fi
 
 # Change permissions
@@ -128,6 +129,9 @@ if [[ $MainUseAlternativeBinaries == "1" ]]; then
   is_arm() {
         /bin/uname -a | /bin/grep armv > /dev/null 2>&1
   }
+  is_x64() {
+        /bin/uname -a | /bin/grep x86_64 > /dev/null 2>&1
+  }
   is_x86() {
         /bin/uname -a | /bin/grep x86 > /dev/null 2>&1
   }
@@ -135,6 +139,9 @@ if [[ $MainUseAlternativeBinaries == "1" ]]; then
   if is_arm; then
 	ln -s $loxberryhome/data/plugins/$pluginname/squeezelite-armv6hf $loxberryhome/data/plugins/$pluginname/squeezelite
 	chmod +x $loxberryhome/data/plugins/$pluginname/squeezelite-armv6hf
+  elif is_x64; then
+	ln -s $loxberryhome/data/plugins/$pluginname/squeezelite-x64 $loxberryhome/data/plugins/$pluginname/squeezelite
+	chmod +x $loxberryhome/data/plugins/$pluginname/squeezelite-x64
   elif is_x86; then
 	ln -s $loxberryhome/data/plugins/$pluginname/squeezelite-x86 $loxberryhome/data/plugins/$pluginname/squeezelite
 	chmod +x $loxberryhome/data/plugins/$pluginname/squeezelite-x86
