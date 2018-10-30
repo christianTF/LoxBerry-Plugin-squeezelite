@@ -5,5 +5,6 @@
 # (will possibly be changed in the future for a newer Squeezelite version) 
 
 libio-interface-perl libswitch-perl libio-socket-timeout-perl
+libforks-perl
 squeezelite
 

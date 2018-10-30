@@ -1,11 +1,16 @@
 #!/usr/bin/perl
-if (-d "REPLACEINSTALLFOLDER/webfrontend/cgi/plugins/squeezelite/lib") {
-	use lib 'REPLACEINSTALLFOLDER/webfrontend/cgi/plugins/squeezelite/lib';
+use forks qw(stringify);
+use forks::shared;
+
+
+if (-d "/opt/loxberry/webfrontend/cgi/plugins/squeezelite/lib") {
+	use lib '/opt/loxberry/webfrontend/cgi/plugins/squeezelite/lib';
 } else {
 	use lib '/opt/loxberry/webfrontend/cgi/plugins/squeezelite/lib';
 }
 use Basics;
-
+use LMSTTS;
+									
 # Christian Fenzl, christiantf@gmx.at 2017
 # This script is a gateway from Logitech Media TCP CLI to Loxone Miniserver UDP (for values) and http REST (for text).
 # It acts as a proxy with intelligence - LMS-information with missing data is re-collected from LMS first,
@@ -16,8 +21,8 @@ use Basics;
 # - libio-socket-timeout-perl
 
 # Version of this script
-our $version = "0.4.1";
-
+our $version = "1.0.1";
+print "Startup... (version $version)\n";
 
 # use strict;
 # use warnings;
@@ -48,13 +53,13 @@ our $udpout_sock;
 our $in_list;
 our $out_list;
 my $sel;
-my $client;
 
 our $line;
 our $loopdivisor = 3;
 our @rawparts;
 our @parts;
-our %playerstates;
+
+my %playerstates	: shared;
 # The playerstats hash uses the key PLAYERMAC
 # It includes the following hash items
 	# Known
@@ -117,16 +122,17 @@ our $cfg = new Config::Simple($cfgfilename);
 
 my $lms2udp_activated = $cfg->param("LMS2UDP.activated");
 our $cfgversion = $cfg->param("Main.ConfigVersion");
-my $squ_server = $cfg->param("Main.LMSServer");
+my $squ_server : shared = $cfg->param("Main.LMSServer");
 my $squ_lmswebport = $cfg->param("Main.LMSWebPort");
-my $squ_lmscliport = $cfg->param("Main.LMSCLIPort");
+my $squ_lmscliport :shared = $cfg->param("Main.LMSCLIPort");
 my $squ_lmsdataport = $cfg->param("Main.LMSDataPort");
-my $lms2udp_msnr = $cfg->param("LMS2UDP.msnr");
-my $lms2udp_udpport = $cfg->param("LMS2UDP.udpport");
+my $lms2udp_msnr : shared = $cfg->param("LMS2UDP.msnr");
+my $lms2udp_udpport : shared = $cfg->param("LMS2UDP.udpport");
 my $lms2udp_berrytcpport = $cfg->param("LMS2UDP.berrytcpport");
-our $lms2udp_usehttpfortext = $cfg->param("LMS2UDP.useHTTPfortext");
+our $lms2udp_usehttpfortext : shared = $cfg->param("LMS2UDP.useHTTPfortext");
 my $lms2udp_forcepolldelay = $cfg->param("LMS2UDP.forcepolldelay");
 my $lms2udp_refreshdelayms = $cfg->param("LMS2UDP.refreshdelayms");
+our $sendtoms = $cfg->param("LMS2UDP.sendToMS");
 
 # Labels
 our %mode_string;
@@ -154,6 +160,10 @@ if (! $lms2udp_berrytcpport) { $lms2udp_berrytcpport = 9092; }
 if (! $lms2udp_udpport) { $lms2udp_udpport = 9093; }
 if (! $lms2udp_forcepolldelay) { $lms2udp_forcepolldelay = 300; }
 if (! $lms2udp_refreshdelayms || $lms2udp_refreshdelayms < 30) { $lms2udp_refreshdelayms = 150; }
+if (!defined $sendtoms || $sendtoms eq "1") { $sendtoms = 1; } else { $sendtoms = undef;}
+print "Sending to Miniserver is DISABLED\n" if (!$sendtoms);
+print "Sending to Miniserver is ENABLED\n" if ($sendtoms);
+
 
 # Miniserver data
 my $miniserver = $lms2udp_msnr;
@@ -257,19 +267,43 @@ sub start_listening
 					my $new = $tcpin_sock->accept;
 					$in_list->add($new);
 					print "New guest connection accepted\n";
+					print $new "Welcome - this is Squeezelite Plugin\n";
 				} else {
 					$guest->recv(my $guest_line, 1024);
+					#print $guest "Hallo\n";
 					#my @guest_lines = $guest->getlines;
 					#foreach my $guest_line (@guest_lines) {
 						my $guest_answer;
 						chomp $guest_line;
+						$guest_line = trim($guest_line);
 						print "GUEST: $guest_line\n";
 						my @guest_params = split(/ /, $guest_line);
+						my @guest_params = grep(s/\s*$//g, @guest_params);
 						print "GUEST_PARAMS[0]: $guest_params[0] \n";
 						if (lc($guest_params[0]) eq 'lmsgtw') {
 							print "GUEST-Param is lmsgtw - entering Plugin commands.\n";
 							switch ($guest_params[1]) {
-								case 'currstate' { $guest_answer = guest_currstate($guest_params[2]); }
+								case 'currstate' 
+									{ $guest_answer = guest_currstate($guest_params[2]); }
+								case 'testthread' {
+									our $thr = threads->create('testthread', 'b8:27:eb:41:ca:f1');
+									$thr->join();
+								}
+								case 'testthread2' {
+									require LMSTTS;
+									our $thr = threads->create('LMSTTS::testthread2', 'b8:27:eb:41:ca:f1');
+									$thr->join();
+								}
+								
+								case 'tts' { 
+									require LMSTTS;
+									# our $thr = threads->create('LMSTTS::tts', ( $tcpout_sock, $guest_line, \%playerstates) );
+									
+									LMSTTS::tts($tcpout_sock, $guest_line, \%playerstates);
+									
+									#$thr->join();
+									# $guest_answer = LMSTTS::tts($tcpout_sock, \@guest_params, \%playerstates); 
+								}
 							}
 						print $guest $guest_answer;
 						} else {
@@ -338,6 +372,30 @@ sub start_listening
 		# Let's send all the collected data to the Miniserver
 		send_to_ms();
 		
+		# This is the handling of threads
+		###########################################################
+		
+		# List running threads (for debugging)
+		my @running_t = threads->list(threads::running);
+		foreach(@running_t) {
+			print "... TID$_ ";
+		}
+		if(@running_t) {
+			print "\n";
+		}
+		
+		# Close open threads 
+		my @joinable_t = threads->list(threads::joinable);
+		foreach(@joinable_t) {
+			print "Joining TID$_\n";
+			$_->join();
+		}
+		
+		
+		
+		
+		
+		
 		# Here we sleep some time and start over again
 		if ($input) {
 			print "Fast response mode\n";
@@ -365,7 +423,7 @@ sub tcpout_initialization
 	# To get everything: "listen 1\n"
 	
 	# Possibly we also want to welcome Loxone in your nice, little network?
-	print $udpout_sock "Hello Loxone, everything perpendicular on your flash drive ? ;-)\n";
+	print $udpout_sock "Hello Loxone, here is Squeezelite Player Plugin. Everything perpendicular on your flash drive ? ;-)\n";
 
 	# Get current Players from LMS
 	print $tcpout_sock "players 0\nsyncgroups ?\n";
@@ -412,7 +470,7 @@ sub process_line
 		case 'title'	{ pupdate($parts[0], "Songtitle", $parts[2]);
 						  print $tcpout_sock "$parts[0] artist ?\n$parts[0] remote ?\n";
 						  return undef;}
-		case 'artist'	{   pupdate($parts[0], "Songtitle", $playerstates{$parts[0]}{Songtitle});
+		case 'artist'	{   pupdate($parts[0], "Songtitle", $playerstates{$parts[0]}->{Songtitle});
 							if(defined $parts[2]) {
 								pupdate($parts[0], "Artist", $parts[2]);
 							} else { 
@@ -435,7 +493,7 @@ sub process_line
 		case 'mode'		{ 
 					print "DEBUG: Mode |$rawparts[2]|$parts[2]|\n";
 					if ($rawparts[2] eq 'stop') {
-						if ($playerstates{$parts[0]}{Power} == 1) {
+						if ($playerstates{$parts[0]}->{Power} == 1) {
 							send_state(-1);
 						} else {
 							send_state(-2);
@@ -493,8 +551,8 @@ sub playlist
 	switch ($parts[2]) {
 		case 'newsong' {
 				if (defined $rawparts[4]) {
-					$playerstates{$parts[0]}{Songtitle} = $parts[3];
-					$playerstates{$parts[0]}{Artist} = undef;
+					$playerstates{$parts[0]}->{Songtitle} = $parts[3];
+					$playerstates{$parts[0]}->{Artist} = undef;
 					# pupdate($parts[0], "Songtitle", $parts[3]);
 					print $tcpout_sock "$rawparts[0] artist ?\n$rawparts[0] remote ?\n";
 					send_state(1);
@@ -514,7 +572,7 @@ sub playlist
 					return undef;
 			}
 		case 'pause' { 
-				if ($playerstates{$parts[0]}{Power} == 0) { return undef; }
+				if ($playerstates{$parts[0]}->{Power} == 0) { return undef; }
 				print "DEBUG: Playlist Pause\n";
 				if ($rawparts[3] == 1) {
 					send_state(0);
@@ -662,7 +720,7 @@ sub syncgroups
 	# print "DEBUG: SYNCGROUPS entering\n";
 	# First we set all syncs to undef 
 	foreach $player (keys %playerstates) {
-		if ($playerstates{$player}{sync}) {  
+		if ($playerstates{$player}->{sync}) {  
 			pupdate($player, "sync", undef);
 		}
 	}
@@ -679,7 +737,7 @@ sub syncgroups
 		if ($key eq "sync_members") {
 			my @members = split(/,/, $group);
 			foreach $member (@members) {
-				if ($playerstates{$member}{sync} ne join(',', @members)) {
+				if ($playerstates{$member}->{sync} ne join(',', @members)) {
 					pupdate($member, "sync", join(',', @members));
 				}
 			}
@@ -689,10 +747,30 @@ sub syncgroups
 	}
 }
 
+##################################################################
+# pupdate
+# Used to save current LMS state and create a diff hash
+##################################################################
 sub pupdate 
 {
 	my ($player, $key, $value) = @_;
-	$playerstates{$player}{$key} = $value;
+	my $newkey_flag = 0;
+	# print STDERR "pupdate: $player | $key | $value |\n";
+	if (!defined $playerstates{$player}) {
+		print "Create new player $player\n";
+		$newkey_flag = 1;
+		my %player_href : shared;
+		$player_href{$key} = $value;
+		$playerstates{$player} = \%player_href;
+	} else {
+		my $player = $playerstates{$player};
+		$$player{$key} = $value;
+		#$playerstates{$player}->{$key} = $value;
+	}
+	
+	# print STDERR "Saved value: " . $playerstates{$player}->{$key} . "\n";
+	# if ($newkey_flag) { print "sleeping...\n"; sleep 5;}
+	# $playerstates{$player}{$key} = $value;
 	$playerdiffs{$player}{$key} = $value;
 }
 
@@ -729,21 +807,21 @@ sub guest_currstate
 	# If one player was requested
 	if ($player) {
 			$player = uri_unescape($player);
-			$answer .= " Guest requested player state for $player $playerstates{$player}{Name}\n";
+			$answer .= " Guest requested player state for $player $playerstates{$player}->{Name}\n";
 			if (! $playerstates{$player}) {
 				$answer .= "  --> This player does not exist.";
 			} else {
 				foreach my $setting (keys %{$playerstates{$player} }) {
-					$answer .= "$setting: $playerstates{$player}{$setting}\n";
+					$answer .= "$setting: $playerstates{$player}->{$setting}\n";
 				}
 			}
 		} else {
 			# No player specified - list all
 			foreach $player (sort keys %playerstates) {
 				$answer .= "-------------------------------------------------------\n";
-				$answer .= "Player $player $playerstates{$player}{Name}\n";
+				$answer .= "Player $player $playerstates{$player}->{Name}\n";
 				foreach my $setting (keys %{$playerstates{$player} }) {
-					$answer .= "$setting: $playerstates{$player}{$setting}\n";
+					$answer .= "$setting: $playerstates{$player}->{$setting}\n";
 				}
 			}
 		$answer .= "-------------------------------------------------------\n";
@@ -760,9 +838,12 @@ sub send_to_ms()
 	# Check sync states on players with status change
 	# and populate mode texts to titles
 	foreach $player (keys %playerdiffs) {
-		my @members = split(/,/, $playerstates{$player}{sync});
+		if (!defined $playerstates{$player}) 
+			{ next; }
+		@members = split(/,/, $playerstates{$player}->{sync});
 		# Populate song title
-		switch ($playerstates{$player}{Mode}) {
+		
+		switch ($playerstates{$player}->{Mode}) {
 			case -3 	{ pupdate($player, "Songtitle", $mode_string{-3}); pupdate($player, "Artist", undef);}
 			case -2 	{ pupdate($player, "Songtitle", $mode_string{-2}); pupdate($player, "Artist", undef);}
 			case -1 	{ pupdate($player, "Songtitle", $mode_string{-1}); pupdate($player, "Artist", undef);}
@@ -771,13 +852,13 @@ sub send_to_ms()
 		foreach my $setting (keys %{$playerdiffs{$player} }) {
 			if (@members) {
 				switch ($setting) {
-					case 'Songtitle' 	{ sync_pupdate("Songtitle", $playerstates{$player}{$setting}, $player, @members); next;}
-					case 'Artist' 		{ sync_pupdate("Artist", $playerstates{$player}{$setting}, $player, @members); next;}
-					case 'Mode'			{ sync_pupdate("Mode", $playerstates{$player}{$setting}, $player, @members); next;}
-					case 'Stream'		{ sync_pupdate("Stream", $playerstates{$player}{$setting}, $player, @members); next;}
-					case 'Pause'		{ sync_pupdate("Pause", $playerstates{$player}{$setting}, $player, @members); next;}
-					case 'Shuffle' 		{ sync_pupdate("Shuffle", $playerstates{$player}{$setting}, $player, @members); next;}
-					case 'Repeat' 		{ sync_pupdate("Repeat", $playerstates{$player}{$setting}, $player, @members); next;}
+					case 'Songtitle' 	{ sync_pupdate("Songtitle", $playerstates{$player}->{$setting}, $player, @members); next;}
+					case 'Artist' 		{ sync_pupdate("Artist", $playerstates{$player}->{$setting}, $player, @members); next;}
+					case 'Mode'			{ sync_pupdate("Mode", $playerstates{$player}->{$setting}, $player, @members); next;}
+					case 'Stream'		{ sync_pupdate("Stream", $playerstates{$player}->{$setting}, $player, @members); next;}
+					case 'Pause'		{ sync_pupdate("Pause", $playerstates{$player}->{$setting}, $player, @members); next;}
+					case 'Shuffle' 		{ sync_pupdate("Shuffle", $playerstates{$player}->{$setting}, $player, @members); next;}
+					case 'Repeat' 		{ sync_pupdate("Repeat", $playerstates{$player}->{$setting}, $player, @members); next;}
 				}
 			}
 		}
@@ -790,25 +871,27 @@ sub send_to_ms()
 		foreach my $setting (keys %{$playerdiffs{$player} }) {
 		# Limit sending lenght to ~200
 		if (length($udpout_string) > 200) {
-				print $udpout_sock $udpout_string;
-				print 
-				"##  START SEND ######################################################\n" .
-				$udpout_string .
-				"## FINISHED SEND " . length($udpout_string) . "Bytes ###########################\n";
-				print "Fast response mode\n";
-				usleep($loopdelay/$loopdivisor);
+				if ($sendtoms) {
+					print $udpout_sock $udpout_string;
+					print 
+					"##  START SEND ######################################################\n" .
+					$udpout_string .
+					"## FINISHED SEND " . length($udpout_string) . "Bytes ###########################\n";
+					print "Fast response mode\n";
+					usleep($loopdelay/$loopdivisor);
+				}
 				$udpout_string = undef;
 			}
 			switch ($setting) {
 				case 'Songtitle' 
 					{ 
-					print "$player ARTIST: # " . $playerstates{$player}{Artist} . " # \n";
+					print "$player ARTIST: # " . $playerstates{$player}->{Artist} . " # \n";
 					
 					my $title_artist;
-						if ($playerstates{$player}{Artist} ne "") {
-							$title_artist = "$playerstates{$player}{Songtitle} - $playerstates{$player}{Artist}";
+						if ($playerstates{$player}->{Artist} ne "") {
+							$title_artist = "$playerstates{$player}->{Songtitle} - $playerstates{$player}->{Artist}";
 						} else {
-							$title_artist = "$playerstates{$player}{Songtitle}";
+							$title_artist = "$playerstates{$player}->{Songtitle}";
 						}
 					to_ms($player, "title", $title_artist);
 					$udpout_string .= "$player playlist newsong $title_artist\n";
@@ -844,11 +927,13 @@ sub send_to_ms()
 		}
 	}
 	if ($udpout_string) {
-		print $udpout_sock $udpout_string;
-		print 
-		"##  START SEND ######################################################\n" .
-		$udpout_string .
-		"## FINISHED SEND " . length($udpout_string) . "Bytes ###########################\n";
+		if($sendtoms) {
+			print $udpout_sock $udpout_string;
+			print 
+			"##  START SEND ######################################################\n" .
+			$udpout_string .
+			"## FINISHED SEND " . length($udpout_string) . "Bytes ###########################\n";
+		}
 	}
 	%playerdiffs = undef;
 
@@ -940,7 +1025,7 @@ sub to_ms
 	
 	my ($playerid, $label, $text) = @_;
 	
-	if (! $lms2udp_usehttpfortext) { return; }
+	if (! $lms2udp_usehttpfortext || !$sendtoms) { return; }
 	
 	#my $playeridenc = uri_escape( $playerid );
 	#my $labelenc = uri_escape ( $label );
@@ -957,4 +1042,36 @@ sub to_ms
 	print "DEBUG: -->URL $url_nopass\n";
 	$response = $ua->get($url);
 	return $response;
+}
+
+
+#####################################
+# search_in_playerstate
+# Search for the existance of $needle (param 2) in player $subkey (param 1)
+# and return the hashkey (player mac) on existance
+# Example: Search "Büro" in {Player}{Name} -> $mac = search_in_playerstate("Name", "Büro");
+sub search_in_playerstate
+{
+	my ($subkey, $needle) = @_;
+	
+	foreach my $mac (keys %playerstates) {
+		if($playerstates{$mac}->{$subkey} eq $needle) {
+			return $mac;
+		}
+	}
+	
+	return undef;
+}
+
+
+##########################
+# Thread
+
+sub testthread 
+{
+	my ($player) = @_;
+	print STDERR "THREAD STARTED =========================================";
+	print STDERR "Player $player is " . $playerstates{$player}->{Name} . "\n";
+
+
 }
