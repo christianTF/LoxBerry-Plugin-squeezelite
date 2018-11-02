@@ -7,4 +7,6 @@
 libio-interface-perl libswitch-perl libio-socket-timeout-perl
 libforks-perl
 squeezelite
+libwww-curl-perl
+
 

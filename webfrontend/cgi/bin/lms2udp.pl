@@ -2,13 +2,9 @@
 use forks qw(stringify);
 use forks::shared;
 
+use LoxBerry::System;
+use lib "/opt/loxberry/webfrontend/htmlauth/plugins/squeezelite/lib";
 
-if (-d "/opt/loxberry/webfrontend/cgi/plugins/squeezelite/lib") {
-	use lib '/opt/loxberry/webfrontend/cgi/plugins/squeezelite/lib';
-} else {
-	use lib '/opt/loxberry/webfrontend/cgi/plugins/squeezelite/lib';
-}
-use Basics;
 use LMSTTS;
 									
 # Christian Fenzl, christiantf@gmx.at 2017
@@ -142,13 +138,13 @@ $mode_string{-1} = $cfg->param("LMS2UDP.ZONELABEL_Stopped");
 $mode_string{0}  = $cfg->param("LMS2UDP.ZONELABEL_Paused");
 $mode_string{1}  = $cfg->param("LMS2UDP.ZONELABEL_Playing");
 
-if(! is_true($lms2udp_activated) && ! $option_activate) {	
+if(! is_enabled($lms2udp_activated) && ! $option_activate) {	
 	print STDERR "Squeezelite Player Plugin LMS2UDP is NOT activated in config file. That's ok. Terminating.\n";
 	unlink $pidfile;
 	exit(0);
 }
 
-if (is_true($lms2udp_usehttpfortext) || (! $lms2udp_usehttpfortext) || ($lms2udp_usehttpfortext eq "")) {
+if (is_enabled($lms2udp_usehttpfortext) || (! $lms2udp_usehttpfortext) || ($lms2udp_usehttpfortext eq "")) {
 	$lms2udp_usehttpfortext = 1; }
 else {
 	$lms2udp_usehttpfortext = undef;
@@ -163,7 +159,6 @@ if (! $lms2udp_refreshdelayms || $lms2udp_refreshdelayms < 30) { $lms2udp_refres
 if (!defined $sendtoms || $sendtoms eq "1") { $sendtoms = 1; } else { $sendtoms = undef;}
 print "Sending to Miniserver is DISABLED\n" if (!$sendtoms);
 print "Sending to Miniserver is ENABLED\n" if ($sendtoms);
-
 
 # Miniserver data
 my $miniserver = $lms2udp_msnr;
@@ -290,13 +285,11 @@ sub start_listening
 									$thr->join();
 								}
 								case 'testthread2' {
-									require LMSTTS;
 									our $thr = threads->create('LMSTTS::testthread2', 'b8:27:eb:41:ca:f1');
 									$thr->join();
 								}
 								
 								case 'tts' { 
-									require LMSTTS;
 									# our $thr = threads->create('LMSTTS::tts', ( $tcpout_sock, $guest_line, \%playerstates) );
 									
 									LMSTTS::tts($tcpout_sock, $guest_line, \%playerstates);
@@ -377,12 +370,12 @@ sub start_listening
 		
 		# List running threads (for debugging)
 		my @running_t = threads->list(threads::running);
-		foreach(@running_t) {
-			print "... TID$_ ";
-		}
-		if(@running_t) {
-			print "\n";
-		}
+		# foreach(@running_t) {
+			# print "... TID$_ ";
+		# }
+		# if(@running_t) {
+			# print "\n";
+		# }
 		
 		# Close open threads 
 		my @joinable_t = threads->list(threads::joinable);
