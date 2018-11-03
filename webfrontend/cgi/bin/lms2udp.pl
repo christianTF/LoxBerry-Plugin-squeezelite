@@ -77,6 +77,12 @@ my %playerstates	: shared;
 our %playerdiffs;
 # This hash includes all changes since last UDP-Send
 
+our %threads;
+
+our @tcpout_queue : shared;
+
+
+
 # Mode strings (will come from config later)
 
 # Creating pid
@@ -187,8 +193,8 @@ if ((! $squ_server) || (! $miniserverip) || (! $miniserverport)) {
 }
 
 # This is host and port of the remote machine we are communicating with.
-my $tcpout_host = $squ_server;
-my $tcpout_port = $squ_lmscliport;
+our $tcpout_host : shared = $squ_server;
+our $tcpout_port : shared = $squ_lmscliport;
 # This ist the host we are mirroring commands to the remote machine. Incoming commands from Loxone are mirrored to the remote machine.
 my $tcpin_port = $lms2udp_berrytcpport;
 # This is the host we mirror the TCP incoming messages to (usually the Miniserver)
@@ -281,19 +287,21 @@ sub start_listening
 								case 'currstate' 
 									{ $guest_answer = guest_currstate($guest_params[2]); }
 								case 'testthread' {
-									our $thr = threads->create('testthread', 'b8:27:eb:41:ca:f1');
-									$thr->join();
+									my $thr = threads->create('testthread', 'b8:27:eb:41:ca:f1');
+									$threads{$thr->tid()} = $thr->tid();
+									# $thr->join();
 								}
 								case 'testthread2' {
-									our $thr = threads->create('LMSTTS::testthread2', 'b8:27:eb:41:ca:f1');
-									$thr->join();
+									my $thr = threads->create('LMSTTS::testthread2', 'b8:27:eb:41:ca:f1');
+									$threads{$thr->tid()} = $thr->tid();
+									
 								}
 								
 								case 'tts' { 
 									# our $thr = threads->create('LMSTTS::tts', ( $tcpout_sock, $guest_line, \%playerstates) );
 									
 									LMSTTS::tts($tcpout_sock, $guest_line, \%playerstates);
-									
+								
 									#$thr->join();
 									# $guest_answer = LMSTTS::tts($tcpout_sock, \@guest_params, \%playerstates); 
 								}
@@ -367,24 +375,46 @@ sub start_listening
 		
 		# This is the handling of threads
 		###########################################################
-		
-		# List running threads (for debugging)
-		my @running_t = threads->list(threads::running);
-		# foreach(@running_t) {
-			# print "... TID$_ ";
-		# }
-		# if(@running_t) {
-			# print "\n";
-		# }
-		
-		# Close open threads 
-		my @joinable_t = threads->list(threads::joinable);
-		foreach(@joinable_t) {
-			print "Joining TID$_\n";
-			$_->join();
+		foreach(keys %threads) {
+			# print "TID-Check: $_\n";
+			my $thr = threads->object($_);
+			if($thr and $thr->is_joinable()) {
+				print "... Joining TID$thr\n";
+				$thr->join();
+				delete $threads{$_};
+			}
 		}
 		
+				
 		
+		
+		# # List running threads (for debugging)
+		# my @running_t = threads->list(threads::running);
+		# # foreach(@running_t) {
+			# # print "... TID$_ ";
+		# # }
+		# # if(@running_t) {
+			# # print "\n";
+		# # }
+		
+		# # Close open threads 
+		# my @joinable_t = threads->list(threads::joinable);
+		# foreach(@joinable_t) {
+			# print "Joining TID$_\n";
+			# $_->join();
+		# }
+		
+		############################################################
+		# Handling of the tcpout_queue
+		############################################################
+		
+		if (@tcpout_queue) {
+			lock @tcpout_queue;
+			while(@tcpout_queue) {
+				my $msg = shift @tcpout_queue; 
+				print $tcpout_sock $msg . "\n";
+			}
+		}
 		
 		
 		
@@ -965,7 +995,7 @@ sub create_out_socket
 		
 	$socket = IO::Socket::INET->new( %params )
 		or die "Couldn't connect to $remotehost:$port : $@\n";
-	sleep (1);
+	sleep (0.02);
 	if ($socket->connected) {
 		print "Created $proto out socket to $remotehost on port $port\n";
 	} else {
