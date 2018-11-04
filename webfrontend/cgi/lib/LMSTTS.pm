@@ -1,5 +1,7 @@
 use forks;
 use forks::shared;
+
+use LoxBerry::Log;
 use warnings;
 use strict;
 use Time::HiRes;
@@ -19,7 +21,7 @@ package LMSTTS;
 
 # $guest_answer = LMSTTS::tts($tcpout_sock, \@guest_params, \%playerstates);
 
-our $ttsqueue_tid : shared = undef;
+our $ttsqueue_tid : shared;
 our $ttsqueue_thr;
 #our @ttsqueue : shared;
 our @ttsqueue : shared;
@@ -49,18 +51,20 @@ sub tts {
 	my $params = shift;
 	my $playerstates = shift;
 	
-	
 	# Create TTS queue thread
 	if(!$ttsqueue_tid) {
 		$ttsqueue_thr = threads->create('tts_queue', $playerstates);
 		print "Created TTS thread with thread id " . $ttsqueue_thr->tid() . "\n";
 		$main::threads{$ttsqueue_thr->tid()} = $ttsqueue_thr->tid();
 	}
+	if(!$ttsqueue_thr) {
+		print "Could not create thread\n";
+	}
+	
 	
 	# my ($tcpout_sock, $params) = @_; 
 	
 	
-	print STDERR "THREAD TTS ==================================== START ==\n";
 	
 	my $answer = "";
 	
@@ -137,6 +141,7 @@ sub tts {
 
 sub tts_queue
 {
+	print "THREAD TTS_QUEUE ==================================== START ==\n";
 	require Clone;
 	require Array::Utils;
 	
@@ -335,6 +340,12 @@ sub init_play
 			## Read the players that this event should manage
 			my @tts_players = @{ $_->{player} };
 			
+			# Request song play time before further processing
+			foreach my $player (@tts_players) {
+				$playerstates->{$player}->{time} = 0;
+				tcpoutqueue("$player time ?");
+			}
+			
 			## Read all players that currently playing TTS
 			# Getting all currently playing, involved players from the full queue
 			my @playing_players;
@@ -354,11 +365,25 @@ sub init_play
 				print "Element $qid has to wait, because other queue elements currently use it's players\n";
 				next;
 			}
+			
+			# We requested the time - check if we got it
+			print "Waiting for the playtime";
+			foreach (@tts_players) {
+				if( ($playerstates->{$_}->{Mode} == 0 or $playerstates->{$_}->{Mode} == 1) and !$playerstates->{$_}->{time} ) {
+					Time::HiRes::sleep(0.02);
+					redo;
+				}
+			}
+			
 			print "All used players are ready to rumble\n";
 			$local_queue_data{$qid}{play_state} = "playing";
 			
+			# Wait for the song time
+			Time::HiRes::sleep(0.08);
+			
 			my @savedstates;
 			foreach my $player (@tts_players) {
+				
 				print "Playerstate of " . $playerstates->{$player}->{Name} . ": " . $playerstates->{$player}->{Mode} . "\n";
 				#my $state = Clone::clone(\%{$playerstates->{$player}});
 				#$local_queue_data{$qid}{backup_playerstate}{$player} = \$state;
@@ -410,9 +435,6 @@ sub init_play
 				# } elsif(@sync) {
 					# # We was the sync master - Add the others back
 					
-					
-					
-
 
 				# # Restore sync groups
 				# if(@sync and scalar @sync > 1) {
@@ -425,8 +447,25 @@ sub init_play
 					tcpoutqueue("$tts_players[0] playlist preview cmd:stop");
 				}
 				Time::HiRes::sleep(0.02);
-				if ($state->{Mode} == 1) {
+				
+				# Restore volume
+				tcpoutqueue("$player mixer volume " . $state->{volume});
+											
+				# Restore playing mode, if it was playing, and was not turned off during TTS
+				if ($state->{Power} == 0) {
+					tcpoutqueue("$player power 0");
+				} elsif ($state->{Mode} == 1 and $playerstates->{$player}->{Power} == 1 ) {
 					tcpoutqueue("$player play 1");
+				}
+				
+				# Restore playtime
+				if ($state->{Stream} == 0 and $state->{time}) {
+					tcpoutqueue("$player time " . $state->{time});
+				}
+				
+				# Restore shuffle
+				if ($state->{Shuffle}) {
+					tcpoutqueue("$player playlist shuffle " . $state->{Shuffle});
 				}
 			}
 			# Set the queue state to unqueue
@@ -458,11 +497,12 @@ sub tts_play
 	
 	my @tts_players = @{ $queue_element->{player} };
 	
-	# Unsync
+	# Unsync and pause
 	foreach( @tts_players ) {
 		tcpoutqueue("$_ sync -");
+		tcpoutqueue("$_ pause 1 1");	
 	}
-		
+	
 	# Sync
 	if (scalar @tts_players > 1) {
 		my $playercount = scalar @tts_players;
@@ -471,31 +511,65 @@ sub tts_play
 		}
 	}
 	
+	# Disable shuffle if enabled
+	if($playerstates->{$tts_players[0]}->{Shuffle}) {
+		tcpoutqueue("$tts_players[0] playlist shuffle 0");
+	}
+	
+	# Set volume specific to options or config
+	foreach( @tts_players ) {
+		my $volset = calculate_volume(
+			$playerstates->{$_}->{volume}, 
+			$queue_element->{lmsvol}, 
+			$queue_element->{minvol}, 
+			$queue_element->{maxvol}
+		);
+		if ($volset) {
+			tcpoutqueue("$_ mixer volume $volset");
+		}
+	}
+	
 	# Backup/Play
 	tcpoutqueue("$tts_players[0] playlist preview url:" . URI::Escape::uri_escape($local_data->{mp3_url}));
-		
+
+	
 	# Wait
 	my $starttime = time;
 	my $mp3_duration = $local_data->{mp3_duration_ms}/1000;
 	if (!$mp3_duration or $mp3_duration == 0) {
 		$mp3_duration = $tts_play_timeout_sec;
 	}
+	
+	
 	my $maxendtime = time+$mp3_duration+5;
 	
-	while (time < $maxendtime) {
-		Time::HiRes::sleep(1);
-		print "Playerstate is " . $playerstates->{$tts_players[0]}->{Mode} . "\n";
-		if ($playerstates->{$tts_players[0]}->{Mode} < 1) {
-			last;
-		}
+	# Wait until playing
+	Time::HiRes::sleep(0.5);
+	while( $playerstates->{$tts_players[0]}->{Mode} != 1 and time < $maxendtime) {
+		print "Waiting to start playing\n";
+		Time::HiRes::sleep(0.1);
 	}
-	if (time => $maxendtime) {
-		print "Quitting because of timeout\n";
-		print Data::Dumper::Dumper($playerstates->{$tts_players[0]});
+	
+	if (time > $maxendtime) {
+		print "ERROR - Player did not start to play - Quitting";
 		$result = "timeout";
 	} else {
-		print "Finished successfully\n";
-		$result = "success";
+		
+		while (time < $maxendtime) {
+			Time::HiRes::sleep(0.1);
+			print "Playerstate is " . $playerstates->{$tts_players[0]}->{Mode} . "\n";
+			if ($playerstates->{$tts_players[0]}->{Mode} < 1) {
+				last;
+			}
+		}
+		if (time >= $maxendtime) {
+			print "Quitting because of timeout\n";
+			print Data::Dumper::Dumper($playerstates->{$tts_players[0]});
+			$result = "timeout";
+		} else {
+			print "Finished successfully\n";
+			$result = "success";
+		}
 	}
 	
 	# Unsync
@@ -550,6 +624,55 @@ sub tcpoutqueue
 	}
 	# my @msg = split(/ /, $message);
 }
+
+
+##########################################################
+# calculate_volume
+# Calculates the relative volume from options and default,
+# that should be added to the current volume. The return
+# may also be negative
+# Parameters are current volume, (lmsvol, minvol and maxvol) from 
+# the# getopt parameter. The default from the config are
+# read by the function itself
+##########################################################
+sub calculate_volume
+{
+	my ($curr_vol, $opt_lmsvol, $opt_minvol, $opt_maxvol) = @_;
+	my $result;
+	print "Shared main::tts_lmsvol: " . $main::tts_lmsvol . "\n";
+	my $vol = defined $opt_lmsvol ? $opt_lmsvol : $main::tts_lmsvol;
+	my $min = defined $opt_minvol ? $opt_minvol : $main::tts_minvol;
+	my $max = defined $opt_maxvol ? $opt_maxvol : $main::tts_maxvol;
+	
+	# Parse the volumes
+	if(!$vol) {
+		# No default: Use current volume
+		$result = $curr_vol;
+	} 
+	elsif(substr($vol, 0, 1) eq "+" or substr($vol, 0, 1) eq "-" ) {
+		# Relative volume
+		$result = eval ( "$curr_vol" . substr($vol, 1) );
+	}
+	else {
+		$result = $vol;
+	}
+	
+	# Min/Max check
+	if(defined $min and $min>$result) {
+		$result = $min;
+	}
+	if(defined $max and $max<$result) {
+		$result = $max;
+	}
+		
+	print "Resulting volume: $result\n";
+	return $result;
+
+}
+
+
+
+
 
 
 

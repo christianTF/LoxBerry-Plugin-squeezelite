@@ -2,9 +2,8 @@
 use forks qw(stringify);
 use forks::shared;
 
-use LoxBerry::System;
-use lib "/opt/loxberry/webfrontend/htmlauth/plugins/squeezelite/lib";
 
+use lib "/opt/loxberry/webfrontend/htmlauth/plugins/squeezelite/lib";
 use LMSTTS;
 									
 # Christian Fenzl, christiantf@gmx.at 2017
@@ -17,7 +16,7 @@ use LMSTTS;
 # - libio-socket-timeout-perl
 
 # Version of this script
-our $version = "1.0.1";
+our $version = "1.0.2";
 print "Startup... (version $version)\n";
 
 # use strict;
@@ -26,10 +25,11 @@ print "Startup... (version $version)\n";
 # Own modules
 
 # Perl modules
+use LoxBerry::Log;
 
 use Config::Simple;
-use Cwd 'abs_path';
-use File::HomeDir;
+# use Cwd 'abs_path';
+# use File::HomeDir;
 use Getopt::Long qw(GetOptions);
 use HTML::Entities;
 use IO::Select;
@@ -42,7 +42,30 @@ use Time::HiRes qw(usleep);
 use URI::Escape;
 # use TCPUDP;
 
-my $home = "/opt/loxberry";
+my $home = $lbhomedir;
+
+# Config parameters
+our $cfg;
+my $cfg_timestamp = 0;
+my $lms2udp_activated;
+our $cfgversion;
+my $squ_server : shared;
+my $squ_lmswebport;
+my $squ_lmscliport : shared;
+my $squ_lmsdataport;
+my $lms2udp_msnr : shared;
+my $lms2udp_udpport : shared;
+my $lms2udp_berrytcpport;
+our $lms2udp_usehttpfortext : shared;
+my $lms2udp_forcepolldelay;
+my $lms2udp_refreshdelayms;
+our $sendtoms;
+our $tts_lmsvol : shared;
+our $tts_minvol : shared = 0;
+our $tts_maxvol : shared = 100;
+our %mode_string;
+
+
 our $tcpin_sock;
 our $tcpout_sock;
 our $udpout_sock;
@@ -72,6 +95,7 @@ my %playerstates	: shared;
 	# volume
 	# treble
 	# bass
+	# time (seconds of the song - only if explicitely requested)
 	# sync (comma separated list of playerid's, or undef)
 
 our %playerdiffs;
@@ -81,9 +105,15 @@ our %threads;
 
 our @tcpout_queue : shared;
 
-
-
-# Mode strings (will come from config later)
+# Init Logfile
+my $log = LoxBerry::Log->new (
+    name => 'LMS2UDP',
+	loglevel => 7,
+	stderr => 1,
+	addtime => 1,
+#	nofile => 1,
+);
+LOGSTART("Daemon LMS2UDP started");
 
 # Creating pid
 my $pidfile = "/run/shm/lms2udp.$$";
@@ -91,103 +121,18 @@ open(my $fh, '>', $pidfile);
 print $fh "$$";
 close $fh;
 
+
 # For debugging purposes, allow option --activate to override disabled setting in the config
 my $option_activate;
 GetOptions('activate' => \$option_activate) or die "Usage: $0 --activate to override config unactivate\n";
 
-# Read global settings
-my  $syscfg             = new Config::Simple("$home/config/system/general.cfg");
-our $installfolder   = $syscfg->param("BASE.INSTALLFOLDER");
-our $lang            = $syscfg->param("BASE.LANG");
-our $miniservercount = $syscfg->param("BASE.MINISERVERS");
-our $clouddnsaddress = $syscfg->param("BASE.CLOUDDNS");
+# our $pluginname = $lbpplugindir;
 
-
-
-# Figure out in which subfolder we are installed
-my $part = substr ((abs_path($0)), (length($home)+1));
-our ($psubfolder) = (split(/\//, $part))[3];
-our $pluginname = $psubfolder;
-
-# Load Configuration from config file
-# Read plugin settings
-my $cfgfilename = "$installfolder/config/plugins/$pluginname/plugin_squeezelite.cfg";
-# tolog("INFORMATION", "Reading Plugin config $cfg");
-if (! (-e $cfgfilename)) {
-	print STDERR "Squeezelite Player Plugin LMS2UDP configuration does not exist. Terminating.\n";
-	unlink $pidfile;
-	exit(0);
-}
-
-# Read the Plugin config file 
-our $cfg = new Config::Simple($cfgfilename);
-
-my $lms2udp_activated = $cfg->param("LMS2UDP.activated");
-our $cfgversion = $cfg->param("Main.ConfigVersion");
-my $squ_server : shared = $cfg->param("Main.LMSServer");
-my $squ_lmswebport = $cfg->param("Main.LMSWebPort");
-my $squ_lmscliport :shared = $cfg->param("Main.LMSCLIPort");
-my $squ_lmsdataport = $cfg->param("Main.LMSDataPort");
-my $lms2udp_msnr : shared = $cfg->param("LMS2UDP.msnr");
-my $lms2udp_udpport : shared = $cfg->param("LMS2UDP.udpport");
-my $lms2udp_berrytcpport = $cfg->param("LMS2UDP.berrytcpport");
-our $lms2udp_usehttpfortext : shared = $cfg->param("LMS2UDP.useHTTPfortext");
-my $lms2udp_forcepolldelay = $cfg->param("LMS2UDP.forcepolldelay");
-my $lms2udp_refreshdelayms = $cfg->param("LMS2UDP.refreshdelayms");
-our $sendtoms = $cfg->param("LMS2UDP.sendToMS");
-
-# Labels
-our %mode_string;
-$mode_string{-3} = $cfg->param("LMS2UDP.ZONELABEL_Disconnected");
-$mode_string{-2} = $cfg->param("LMS2UDP.ZONELABEL_Poweredoff");
-$mode_string{-1} = $cfg->param("LMS2UDP.ZONELABEL_Stopped");
-$mode_string{0}  = $cfg->param("LMS2UDP.ZONELABEL_Paused");
-$mode_string{1}  = $cfg->param("LMS2UDP.ZONELABEL_Playing");
-
-if(! is_enabled($lms2udp_activated) && ! $option_activate) {	
-	print STDERR "Squeezelite Player Plugin LMS2UDP is NOT activated in config file. That's ok. Terminating.\n";
-	unlink $pidfile;
-	exit(0);
-}
-
-if (is_enabled($lms2udp_usehttpfortext) || (! $lms2udp_usehttpfortext) || ($lms2udp_usehttpfortext eq "")) {
-	$lms2udp_usehttpfortext = 1; }
-else {
-	$lms2udp_usehttpfortext = undef;
-}
-
-# Init default values if empty
-if (! $squ_lmscliport) { $squ_lmscliport = 9090; }
-if (! $lms2udp_berrytcpport) { $lms2udp_berrytcpport = 9092; }
-if (! $lms2udp_udpport) { $lms2udp_udpport = 9093; }
-if (! $lms2udp_forcepolldelay) { $lms2udp_forcepolldelay = 300; }
-if (! $lms2udp_refreshdelayms || $lms2udp_refreshdelayms < 30) { $lms2udp_refreshdelayms = 150; }
-if (!defined $sendtoms || $sendtoms eq "1") { $sendtoms = 1; } else { $sendtoms = undef;}
-print "Sending to Miniserver is DISABLED\n" if (!$sendtoms);
-print "Sending to Miniserver is ENABLED\n" if ($sendtoms);
-
-# Miniserver data
-my $miniserver = $lms2udp_msnr;
-our $miniserverip        = $syscfg->param("MINISERVER$miniserver.IPADDRESS");
-our	$miniserverport      = $syscfg->param("MINISERVER$miniserver.PORT");
-our	$miniserveradmin     = $syscfg->param("MINISERVER$miniserver.ADMIN");
-our	$miniserverpass      = $syscfg->param("MINISERVER$miniserver.PASS");
-my	$miniserverclouddns  = $syscfg->param("MINISERVER$miniserver.USECLOUDDNS");
-my	$miniservermac       = $syscfg->param("MINISERVER$miniserver.CLOUDURL");
-
-# Use Cloud DNS?
-if ($miniserverclouddns) {
-	my $output = qx($home/bin/showclouddns.pl $miniservermac);
-	my @fields2 = split(/:/,$output);
-	$miniserverip   =  $fields2[0];
-	$miniserverport = $fields2[1];
-}
-
-print "MSIP $miniserverip MSPORT $miniserverport LMS $squ_server\n";
-
+my $cfgfilename = "$lbpconfigdir/plugin_squeezelite.cfg";
+read_config();
 
 if ((! $squ_server) || (! $miniserverip) || (! $miniserverport)) {
-	print STDERR "Squeezelite Player Plugin LMS2UDP is activated but configuration incomplete. Terminating.\n";
+	LOGCRIT "Squeezelite Player Plugin LMS2UDP is activated but configuration incomplete. Terminating.";
 	unlink $pidfile;
 	exit(1);
 }
@@ -215,10 +160,12 @@ $udpout_sock->flush;
 
 our $answer; 
 
+LOGOK "Startup ready, sending initial subscriber messages"; 
+
+
 # When we connect to the remote machine
 # In this sub you can send commands to the remote, e.g. query current state or activate a tcp subscription
 # Answers are processed later!
-
 tcpout_initialization();
 
 # Now we are ready to listen and process
@@ -228,7 +175,7 @@ my $lastpoll = time;
 my $last_lms_receive_time;
 my $pollinterval = $lms2udp_forcepolldelay;
 my $loopdelay = $lms2udp_refreshdelayms*1000;
-print "Loop delay: $loopdelay microseconds\n";
+LOGINF "Loop delay: $loopdelay microseconds";
 
 start_listening();
 
@@ -267,7 +214,7 @@ sub start_listening
 					# Create new incoming connection from guest
 					my $new = $tcpin_sock->accept;
 					$in_list->add($new);
-					print "New guest connection accepted\n";
+					LOGOK "New guest connection accepted";
 					print $new "Welcome - this is Squeezelite Plugin\n";
 				} else {
 					$guest->recv(my $guest_line, 1024);
@@ -277,12 +224,12 @@ sub start_listening
 						my $guest_answer;
 						chomp $guest_line;
 						$guest_line = trim($guest_line);
-						print "GUEST: $guest_line\n";
+						LOGINF "GUEST says: $guest_line";
 						my @guest_params = split(/ /, $guest_line);
 						my @guest_params = grep(s/\s*$//g, @guest_params);
-						print "GUEST_PARAMS[0]: $guest_params[0] \n";
+						LOGDEB "GUEST_PARAMS[0]: $guest_params[0]";
 						if (lc($guest_params[0]) eq 'lmsgtw') {
-							print "GUEST-Param is lmsgtw - entering Plugin commands.\n";
+							LOGINF "GUEST-Param is lmsgtw - entering Plugin commands.";
 							switch ($guest_params[1]) {
 								case 'currstate' 
 									{ $guest_answer = guest_currstate($guest_params[2]); }
@@ -306,12 +253,15 @@ sub start_listening
 									# $guest_answer = LMSTTS::tts($tcpout_sock, \@guest_params, \%playerstates); 
 								}
 							}
-						print $guest $guest_answer;
+							if ($guest->connected) {
+								print $guest $guest_answer;
+							}
 						} else {
 							print $tcpout_sock $guest_line;
 							# We close the connection after that
 						}
 					#}	
+					LOGDEB "GUEST: Closing connection";
 					$in_list->remove($guest);
 					$guest->close;
 					$guest_lines = undef;
@@ -327,7 +277,7 @@ sub start_listening
 		my @streamtext;
 		@streamtext = $tcpout_sock->getlines;
 		foreach $input (@streamtext) {
-			print "Process line $input\n";
+			LOGDEB "Process LMS incoming: " . trim($input);
 			$last_lms_receive_time = time;
 			$input = process_line($input);
 			# print "Process line finished\n";
@@ -339,7 +289,7 @@ sub start_listening
 			# my $currtime = strftime("%Y-%m-%dT%H:%M:%S", localtime);
 			# print $currtime . " " . uri_unescape($line);
 		if ((time%60) == 0) {
-			print "DEBUG: Ping-Pong\n";
+			LOGDEB "Sending Ping-Pong";
 			print $tcpout_sock "listen 1\n";
 			usleep(700000);
 		}
@@ -349,23 +299,25 @@ sub start_listening
 		}
 		
 		if (! $tcpout_sock->connected || $last_lms_receive_time < (time-65))  {
-			if (! $tcpout_sock->connected) { print "LMS Socket seems to be down.\n"; }
-			if ($last_lms_receive_time < (time-65)) { print "LMS2UDP received no data from LMS since 65 seconds (missing Pong to Ping)\n"; }
-			print "RECONNECT TCP Socket...\n";
+			if (! $tcpout_sock->connected) { LOGWARN "LMS Socket seems to be down."; }
+			if ($last_lms_receive_time < (time-65)) { LOGWARN "LMS2UDP received no data from LMS since 65 seconds (missing Pong to Ping)"; }
+			LOGINF "RECONNECT TCP Socket...";
 				$tcpout_sock = create_out_socket($tcpout_sock, $tcpout_port, 'tcp', $tcpout_host);
 				sleep(5);
 				if ($tcpout_sock->connected) {
 					$udpout_sock->flush;
 					sleep (1);
+					LOGOK "Reconnected";
 					tcpout_initialization();
 				} else { 
+					LOGINF "Not reconnected - waiting...";
 					sleep (5);
 				}
 					
 		} 
 		if (($lastpoll+$pollinterval) < time)  {
 			# Force a periodic poll
-			print "FORCING POLL\n";
+			LOGINF "FORCING POLL";
 			print $tcpout_sock "players 0\n";
 			$lastpoll = time;
 		}
@@ -379,7 +331,7 @@ sub start_listening
 			# print "TID-Check: $_\n";
 			my $thr = threads->object($_);
 			if($thr and $thr->is_joinable()) {
-				print "... Joining TID$thr\n";
+				LOGINF "Thread TID$thr had finished and is joined";
 				$thr->join();
 				delete $threads{$_};
 			}
@@ -412,16 +364,24 @@ sub start_listening
 			lock @tcpout_queue;
 			while(@tcpout_queue) {
 				my $msg = shift @tcpout_queue; 
+				LOGDEB "TCP-OUT queue: $msg";
 				print $tcpout_sock $msg . "\n";
 			}
 		}
 		
+		############################################################
+		# Check and re-read config file
+		############################################################
+		
+		if ((time%5) == 0 ) {
+			read_config();
+		}
 		
 		
 		
 		# Here we sleep some time and start over again
 		if ($input) {
-			print "Fast response mode\n";
+			LOGINF "Fast response mode";
 			usleep($loopdelay/$loopdivisor);
 			$input = undef;
 		} else {
@@ -446,6 +406,7 @@ sub tcpout_initialization
 	# To get everything: "listen 1\n"
 	
 	# Possibly we also want to welcome Loxone in your nice, little network?
+	LOGINF "UDP Send: Hello Loxone, here is Squeezelite Player Plugin. Everything perpendicular on your flash drive ? ;-)\n";
 	print $udpout_sock "Hello Loxone, here is Squeezelite Player Plugin. Everything perpendicular on your flash drive ? ;-)\n";
 
 	# Get current Players from LMS
@@ -514,7 +475,7 @@ sub process_line
 						return undef;
 					}
 		case 'mode'		{ 
-					print "DEBUG: Mode |$rawparts[2]|$parts[2]|\n";
+					# LOGDEB "DEBUG: Mode |$rawparts[2]|$parts[2]|\n";
 					if ($rawparts[2] eq 'stop') {
 						if ($playerstates{$parts[0]}->{Power} == 1) {
 							send_state(-1);
@@ -546,6 +507,9 @@ sub process_line
 						return undef;
 				}
 		case 'sync'		{ print $tcpout_sock "syncgroups ?\n"; 
+						  return undef;
+		}
+		case 'time'		{ pupdate($parts[0], "time", $parts[2]);
 						  return undef;
 		}
 	}	
@@ -584,7 +548,7 @@ sub playlist
 				} else { 
 					pupdate($parts[0], "Stream", 1);
 					pupdate($parts[0], "Songtitle", $parts[3]);
-					print "DEBUG: Playlist thinks $parts[0] is a stream #$rawparts[4]#\n";
+					# LOGDEB "DEBUG: Playlist thinks $parts[0] is a stream #$rawparts[4]#";
 					send_state(1);
 					return;
 				}
@@ -596,7 +560,7 @@ sub playlist
 			}
 		case 'pause' { 
 				if ($playerstates{$parts[0]}->{Power} == 0) { return undef; }
-				print "DEBUG: Playlist Pause\n";
+				# LOGDEB "DEBUG: Playlist Pause";
 				if ($rawparts[3] == 1) {
 					send_state(0);
 				} elsif ($rawparts[3] == 0) {
@@ -780,7 +744,7 @@ sub pupdate
 	my $newkey_flag = 0;
 	# print STDERR "pupdate: $player | $key | $value |\n";
 	if (!defined $playerstates{$player}) {
-		print "Create new player $player\n";
+		LOGDEB "Playerstates: Create new player $player";
 		$newkey_flag = 1;
 		my %player_href : shared;
 		$player_href{$key} = $value;
@@ -825,7 +789,7 @@ sub guest_currstate
 {
 	my ($player) = @_;
 	my $answer; 
-	
+	LOGDEB "GUEST: Requesting current state";
 	$answer .= "-------------------------------------------------------\n";
 	# If one player was requested
 	if ($player) {
@@ -849,6 +813,7 @@ sub guest_currstate
 			}
 		$answer .= "-------------------------------------------------------\n";
 	}
+	LOGDEB "GUEST: Current state sent";
 	return $answer;
 }
 
@@ -896,11 +861,11 @@ sub send_to_ms()
 		if (length($udpout_string) > 200) {
 				if ($sendtoms) {
 					print $udpout_sock $udpout_string;
-					print 
+					LOGINF 
 					"##  START SEND ######################################################\n" .
 					$udpout_string .
-					"## FINISHED SEND " . length($udpout_string) . "Bytes ###########################\n";
-					print "Fast response mode\n";
+					"## FINISHED SEND " . length($udpout_string) . "Bytes ###########################";
+					LOGDEB "Fast response mode";
 					usleep($loopdelay/$loopdivisor);
 				}
 				$udpout_string = undef;
@@ -908,7 +873,7 @@ sub send_to_ms()
 			switch ($setting) {
 				case 'Songtitle' 
 					{ 
-					print "$player ARTIST: # " . $playerstates{$player}->{Artist} . " # \n";
+					# LOGDEB "$player ARTIST: # " . $playerstates{$player}->{Artist} . " # ";
 					
 					my $title_artist;
 						if ($playerstates{$player}->{Artist} ne "") {
@@ -952,10 +917,10 @@ sub send_to_ms()
 	if ($udpout_string) {
 		if($sendtoms) {
 			print $udpout_sock $udpout_string;
-			print 
+			LOGINF 
 			"##  START SEND ######################################################\n" .
 			$udpout_string .
-			"## FINISHED SEND " . length($udpout_string) . "Bytes ###########################\n";
+			"## FINISHED SEND " . length($udpout_string) . "Bytes ###########################";
 		}
 	}
 	%playerdiffs = undef;
@@ -997,9 +962,9 @@ sub create_out_socket
 		or die "Couldn't connect to $remotehost:$port : $@\n";
 	sleep (0.02);
 	if ($socket->connected) {
-		print "Created $proto out socket to $remotehost on port $port\n";
+		LOGOK "Created $proto out socket to $remotehost on port $port";
 	} else {
-		print "WARNING: Socket to $remotehost on port $port seems to be offline - will retry\n";
+		LOGWARN "Socket to $remotehost on port $port seems to be offline - will retry";
 	}
 	IO::Socket::Timeout->enable_timeouts_on($socket);
 	$socket->read_timeout(2);
@@ -1031,7 +996,7 @@ sub create_in_socket
 	die "cannot create socket $!\n" unless $socket;
 	# In some OS blocking mode must be expricitely disabled
 	IO::Handle::blocking($socket, 0);
-	print "server waiting for $proto client connection on port $port\n";
+	LOGOK "server waiting for $proto client connection on port $port";
 	return $socket;
 }
 
@@ -1061,8 +1026,8 @@ sub to_ms
 	$url_nopass = "http://$miniserveradmin:*****\@$miniserverip\:$miniserverport/dev/sps/io/$player_label/$textenc";
 	$ua = LWP::UserAgent->new;
 	$ua->timeout(1);
-	print "DEBUG: #$playerid# #$label# #$text#\n";
-	print "DEBUG: -->URL $url_nopass\n";
+	LOGDEB "to_ms (http): #$playerid# #$label# #$text#";
+	LOGDEB "to_ms (http): URL $url_nopass";
 	$response = $ua->get($url);
 	return $response;
 }
@@ -1085,6 +1050,107 @@ sub search_in_playerstate
 	
 	return undef;
 }
+
+
+#####################################
+# read_config
+# Reads and re-reads the config
+sub read_config
+{
+
+	# Check existance of config file
+	if (! (-e $cfgfilename)) {
+		LOGCRIT "Squeezelite Player Plugin LMS2UDP configuration does not exist. Terminating.\n";
+		unlink $pidfile;
+		exit(0);
+	}
+	
+	# Check if config has changed
+	my $mtime = (stat($cfgfilename))[9];
+	if($cfg_timestamp == $mtime and $cfg) {
+		return;
+	}
+	
+	LOGINF "Reading Plugin config $cfgfilename";
+	$cfg_timestamp = $mtime;
+		
+	# Read the Plugin config file 
+	$cfg = new Config::Simple($cfgfilename);
+
+	$lms2udp_activated = $cfg->param("LMS2UDP.activated");
+	$cfgversion = $cfg->param("Main.ConfigVersion");
+	$squ_server = $cfg->param("Main.LMSServer");
+	$squ_lmswebport = $cfg->param("Main.LMSWebPort");
+	$squ_lmscliport = $cfg->param("Main.LMSCLIPort");
+	$squ_lmsdataport = $cfg->param("Main.LMSDataPort");
+	$lms2udp_msnr = $cfg->param("LMS2UDP.msnr");
+	$lms2udp_udpport = $cfg->param("LMS2UDP.udpport");
+	$lms2udp_berrytcpport = $cfg->param("LMS2UDP.berrytcpport");
+	$lms2udp_usehttpfortext = $cfg->param("LMS2UDP.useHTTPfortext");
+	$lms2udp_forcepolldelay = $cfg->param("LMS2UDP.forcepolldelay");
+	$lms2udp_refreshdelayms = $cfg->param("LMS2UDP.refreshdelayms");
+	$sendtoms = $cfg->param("LMS2UDP.sendToMS");
+
+	# Read volumes from config
+	
+	# Regex check does not work.... ignoring for now
+	#if($cfg->param("LMSTTS.tts_lmsvol") and "$cfg->param('LMSTTS.tts_lmsvol')" =~ /^[\+\-]?\d*/) { $tts_lmsvol = $cfg->param("LMSTTS.tts_lmsvol"); }
+	#if($cfg->param("LMSTTS.tts_minvol") and $cfg->param("LMSTTS.tts_minvol") =~ m/\d*/) { $tts_minvol = $cfg->param("LMSTTS.tts_minvol"); }
+	#if($cfg->param("LMSTTS.tts_maxvol") and $cfg->param("LMSTTS.tts_maxvol") =~ m/\d*/) { $tts_maxvol = $cfg->param("LMSTTS.tts_maxvol"); }
+	
+	if( $cfg->param("LMSTTS.tts_lmsvol") ) { $tts_lmsvol = $cfg->param("LMSTTS.tts_lmsvol"); }
+	if( $cfg->param("LMSTTS.tts_minvol") ) { $tts_minvol = $cfg->param("LMSTTS.tts_minvol"); }
+	if( $cfg->param("LMSTTS.tts_maxvol") ) { $tts_maxvol = $cfg->param("LMSTTS.tts_maxvol"); }
+	
+	 print "TTS volume from config: $tts_lmsvol\n";
+	
+	# Labels
+	$mode_string{-3} = $cfg->param("LMS2UDP.ZONELABEL_Disconnected");
+	$mode_string{-2} = $cfg->param("LMS2UDP.ZONELABEL_Poweredoff");
+	$mode_string{-1} = $cfg->param("LMS2UDP.ZONELABEL_Stopped");
+	$mode_string{0}  = $cfg->param("LMS2UDP.ZONELABEL_Paused");
+	$mode_string{1}  = $cfg->param("LMS2UDP.ZONELABEL_Playing");
+
+	if(! is_enabled($lms2udp_activated) && ! $option_activate) {	
+		LOGOK "Squeezelite Player Plugin LMS2UDP is NOT activated in config file. That's ok. Terminating.";
+		unlink $pidfile;
+		exit(0);
+	}
+
+	if (is_enabled($lms2udp_usehttpfortext) || (! $lms2udp_usehttpfortext) || ($lms2udp_usehttpfortext eq "")) {
+		$lms2udp_usehttpfortext = 1; }
+	else {
+		$lms2udp_usehttpfortext = undef;
+	}
+
+	# Init default values if empty
+	if (! $squ_lmscliport) { $squ_lmscliport = 9090; }
+	if (! $lms2udp_berrytcpport) { $lms2udp_berrytcpport = 9092; }
+	if (! $lms2udp_udpport) { $lms2udp_udpport = 9093; }
+	if (! $lms2udp_forcepolldelay) { $lms2udp_forcepolldelay = 300; }
+	if (! $lms2udp_refreshdelayms || $lms2udp_refreshdelayms < 30) { $lms2udp_refreshdelayms = 150; }
+	if (!defined $sendtoms || $sendtoms eq "1") { $sendtoms = 1; } else { $sendtoms = undef;}
+	LOGWARN "Sending to Miniserver is DISABLED" if (!$sendtoms);
+	LOGINF "Sending to Miniserver is ENABLED" if ($sendtoms);
+
+	# Miniserver data
+	my %miniservers = LoxBerry::System::get_miniservers();
+	if(! %miniservers{$lms2udp_msnr}) {
+		LOGCRIT "Configured Miniserver $lms2udp_msnr does not exist. Check your Miniservers in the LoxBerry Miniserver widget and your plugin configuration.";
+		exit(1);
+	}
+
+	# my $miniserver = $lms2udp_msnr;
+	our $miniserverip        = $miniservers{$lms2udp_msnr}{IPAddress};
+	our	$miniserverport      = $miniservers{$lms2udp_msnr}{Port};
+	our	$miniserveradmin     = $miniservers{$lms2udp_msnr}{Admin};
+	our	$miniserverpass      = $miniservers{$lms2udp_msnr}{Pass};
+
+	LOGINF "MSIP $miniserverip MSPORT $miniserverport LMS $squ_server\n";
+
+}
+
+
 
 
 ##########################
