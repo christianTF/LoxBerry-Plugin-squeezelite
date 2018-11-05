@@ -1,6 +1,8 @@
 #!/usr/bin/perl
 use forks qw(stringify);
 use forks::shared;
+# use threads qw(stringify);
+# use threads::shared;
 
 
 use lib "/opt/loxberry/webfrontend/htmlauth/plugins/squeezelite/lib";
@@ -16,8 +18,7 @@ use LMSTTS;
 # - libio-socket-timeout-perl
 
 # Version of this script
-our $version = "1.0.2";
-print "Startup... (version $version)\n";
+print "Startup lms2udp daemon...\n";
 
 # use strict;
 # use warnings;
@@ -106,7 +107,7 @@ our %threads;
 our @tcpout_queue : shared;
 
 # Init Logfile
-my $log = LoxBerry::Log->new (
+our $log = LoxBerry::Log->new (
     name => 'LMS2UDP',
 	loglevel => 7,
 	stderr => 1,
@@ -361,12 +362,23 @@ sub start_listening
 		############################################################
 		
 		if (@tcpout_queue) {
-			lock @tcpout_queue;
-			while(@tcpout_queue) {
-				my $msg = shift @tcpout_queue; 
-				LOGDEB "TCP-OUT queue: $msg";
+			threads::shared::lock(@tcpout_queue);
+			
+			## Schnelles Senden
+			while(my $msg = shift(@tcpout_queue)) {
+				LOGDEB "Sending TCPOUT queue: $msg";
 				print $tcpout_sock $msg . "\n";
+				Time::HiRes::sleep(0.003);
 			}
+			
+			## Langsames Senden
+			# my $msg = shift(@tcpout_queue);
+			# if($msg) {
+				# LOGDEB "Sending TCPOUT queue: $msg";
+				# print $tcpout_sock $msg . "\n";
+			# }
+			
+		
 		}
 		
 		############################################################
@@ -509,7 +521,7 @@ sub process_line
 		case 'sync'		{ print $tcpout_sock "syncgroups ?\n"; 
 						  return undef;
 		}
-		case 'time'		{ pupdate($parts[0], "time", $parts[2]);
+		case 'time'		{ pupdate($parts[0], "time", int($parts[2]));
 						  return undef;
 		}
 	}	
@@ -1102,7 +1114,7 @@ sub read_config
 	if( $cfg->param("LMSTTS.tts_minvol") ) { $tts_minvol = $cfg->param("LMSTTS.tts_minvol"); }
 	if( $cfg->param("LMSTTS.tts_maxvol") ) { $tts_maxvol = $cfg->param("LMSTTS.tts_maxvol"); }
 	
-	 print "TTS volume from config: $tts_lmsvol\n";
+	LOGINF "TTS volumes from config: $tts_lmsvol, $tts_minvol, $tts_maxvol";
 	
 	# Labels
 	$mode_string{-3} = $cfg->param("LMS2UDP.ZONELABEL_Disconnected");

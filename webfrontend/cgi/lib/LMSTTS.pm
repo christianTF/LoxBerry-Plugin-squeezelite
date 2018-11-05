@@ -1,5 +1,8 @@
 use forks;
 use forks::shared;
+# use threads qw(stringify);
+# use threads::shared;
+
 
 use LoxBerry::Log;
 use warnings;
@@ -39,6 +42,10 @@ my $tts_plugin_hostname;
 my $tts_queue_cycle_ms;
 my $tts_play_timeout_sec : shared;
 
+my $tl; # TTS Log object
+my $pl; # PLAY Log object
+our $logdbkey : shared; # TTS Log ID to append
+
 ###############################################################################
 # sub tts is the main function to queue up new texts, and to send control 
 # messages to the queue. The queue itself is it's own thread, but started from 
@@ -54,17 +61,14 @@ sub tts {
 	# Create TTS queue thread
 	if(!$ttsqueue_tid) {
 		$ttsqueue_thr = threads->create('tts_queue', $playerstates);
-		print "Created TTS thread with thread id " . $ttsqueue_thr->tid() . "\n";
+		$main::log->OK("LMSTTS: Created TTS thread with thread id " . $ttsqueue_thr->tid());
 		$main::threads{$ttsqueue_thr->tid()} = $ttsqueue_thr->tid();
+	} else {
+		$main::log->DEB("LMSTTS: Queue already running with TID $ttsqueue_tid");
 	}
 	if(!$ttsqueue_thr) {
-		print "Could not create thread\n";
+		$main::log->ERR("LMSTTS: Could not create LMSTTS queue thread");
 	}
-	
-	
-	# my ($tcpout_sock, $params) = @_; 
-	
-	
 	
 	my $answer = "";
 	
@@ -83,7 +87,7 @@ sub tts {
 	);
 	
 	if (!$opt{player}) {
-		print "TTS: No player defined";
+		$main::log->ERR("LMSTTS: No players defined in calling parameters - discarding call.");
 		return;
 	}
 	
@@ -94,15 +98,15 @@ sub tts {
 	# We allow to use player names instead of MAC addresses
 	# Therefore we need to replace names by MACs
 	foreach my $key (keys @{$opt{player}}) {
-		print "LMSTTS: Player $opt{player}[$key]\n";
+		$main::log->DEB("LMSTTS: Player $opt{player}[$key]");
 		if(!defined $$playerstates{$opt{player}[$key]}) {
-			print "LMSTTS: Player option $opt{player}[$key] seems to be a name not mac address - seaching\n"; 
+			$main::log->DEB("LMSTTS: Player option $opt{player}[$key] seems to be a name not mac address - seaching"); 
 			my $mac = main::search_in_playerstate("Name", $opt{player}[$key]);
 			if ($mac) {
-				print "LMSTTS: Found player $mac for $opt{player}[$key]\n";
+				$main::log->DEB("LMSTTS: Found player $mac for $opt{player}[$key]");
 				$opt{player}[$key] = $mac;
 			} else {
-				print "LMSTTS: Player $opt{player}[$key] not found - will be removed\n";
+				$main::log->WARN("LMSTTS: Player $opt{player}[$key] not found - will be removed from call");
 				push @invalid_players, $key;
 				
 			}
@@ -114,18 +118,20 @@ sub tts {
 	
 	if( ! @{$opt{player}} ) {
 	
-		$answer = "No valid players defined - canceled this call.\n";
+		$answer = "LMSTTS: No valid players defined - discarding call.";
+		$main::log->ERR($answer);
+		return $answer;
 
 	} else {
 		$opt{qid} = Time::HiRes::time();
 		{ 
-			threads::shared::lock(@ttsqueue);
+			lock(@ttsqueue);
 			push @ttsqueue, \%opt;
 		}
-		$answer = "LMSTTS: Queued $opt{player}[0]\n";
+		$answer = "LMSTTS: Queued $opt{player}[0]";
 	}
 	
-	print $answer;
+	$main::log->OK($answer);
 	return $answer;
 
 }
@@ -145,9 +151,20 @@ sub tts_queue
 	require Clone;
 	require Array::Utils;
 	
+	# Init Logfile
+	$tl = LoxBerry::Log->new (
+		name => 'TTS',
+		filename => $main::lbplogdir . '/lmstts.log',
+		loglevel => 7,
+		stderr => 1,
+		addtime => 1,
+		append => 1,
+	);
+	$tl->LOGSTART("TTS queue started");
+	$logdbkey = $tl->dbkey();
+	
 	$playerstates = shift;
-	
-	
+		
 	$cfg=$main::cfg;
 
 	$max_threads_generate_mp3 = $cfg->param("LMSTTS.max_threads_generate_mp3");
@@ -161,6 +178,15 @@ sub tts_queue
 	$tts_play_timeout_sec = $cfg->param("LMSTTS.tts_play_timeout_sec");
 	if (! $tts_play_timeout_sec) { $tts_play_timeout_sec = 120; };
 	
+	$tl->INF("Thread parameters:");
+	$tl->INF("max_threads_generate_mp3   : " . $max_threads_generate_mp3);
+	$tl->INF("queue_shutdown_on_idle_sec : " . $queue_shutdown_on_idle_sec);
+	$tl->INF("tts_plugin_hostname        : " . $tts_plugin_hostname);
+	$tl->INF("tts_queue_cycle_ms         : " . $tts_queue_cycle_ms);
+	$tl->INF("tts_play_timeout_sec       : " . $tts_play_timeout_sec);
+	
+	
+	
 	
 	our $curlm = WWW::Curl::Multi->new; 		# Curl parallel processing object
 	# $curlm->setopt(WWW::Curl::Easy::CURLMOPT_MAXCONNECTS, $max_threads_generate_mp3);
@@ -172,24 +198,47 @@ sub tts_queue
 	my %saved_states;
 		
 	$ttsqueue_tid = threads->tid();
-	print "TTS queue ($ttsqueue_tid): Created with TID $ttsqueue_tid\n";
+	$tl->OK("TTS queue ($ttsqueue_tid): Created with TID $ttsqueue_tid");
 	
 	
 	while( ($lastrequest_epoch+$queue_shutdown_on_idle_sec) > time or @ttsqueue) {
 	
 		# print "TTS queue ($ttsqueue_tid): " . scalar @ttsqueue . " elements queued (active for " . (time-$lastrequest_epoch) . "s)\n";
 		
-		# Call the generation of MP3's
+		## Call the generation of MP3's
 		generate_tts_mp3();
 		
-		# Manage playing
+		## Manage playing
 		init_play();
 		
-		# Check if a force 
+		## Handle Callback
+		handle_callback();
+
+		## Check if a force 
 		
+		# Checks is resuming has finished
+		check_resumed();
 		
-		# Unqueue finished or delayed elements
+		## Unqueue finished or delayed elements
 		unqueue();
+		
+		
+		# ### DEBUG
+		# foreach(@ttsqueue) {
+			# $tl->DEB("Queue element: $_->{qid}");
+			# my @tts_players = @{ $_->{player} };
+		
+			# foreach my $player ( @tts_players ) {
+				# $tl->DEB("    Player: $player");
+			# }
+		# }
+		# sleep(1);
+		# ### /DEBUG
+		
+		
+		
+		
+		
 		
 		
 		$lastrequest_epoch = time if ($curlhandlecount > 0);
@@ -198,9 +247,9 @@ sub tts_queue
 	
 	}
 
-	print "TTS queue ($ttsqueue_tid): Closing due to inactivity\n";
+	$tl->OK("TTS queue ($ttsqueue_tid): Closing due to inactivity");
 	$ttsqueue_tid = undef;
-	
+	$tl->LOGEND();
 	return;
 	
 }
@@ -214,17 +263,18 @@ sub generate_tts_mp3
 	if($curlhandlecount > 0 and $curlhandlecount != $curlm_active) {
 		# Check running sessions
 		while (my ($qid,$return_value) = $LMSTTS::curlm->info_read) {
-			print "CURL processed $qid (Return value $return_value)\n";
+			$tl->INF("CURL processed $qid (Return value $return_value)");
 			if ($qid) {
 				$curlhandlecount--;
 				my $curl_handle = $curlids{$qid};
 				$local_queue_data{$qid}{resp_code} = $curl_handle->getinfo(WWW::Curl::Easy::CURLINFO_RESPONSE_CODE);
 				delete $curlids{$qid};
-				print "generate_tts_mp3 curl Response code: $local_queue_data{$qid}{resp_code}\n";
+				$tl->INF("generate_tts_mp3 curl Response code: $local_queue_data{$qid}{resp_code}");
 				# print $local_queue_data{$qid}{curl_response} . "\n";
 				
 				# Check to have a success response
 				if( ! $local_queue_data{$qid}{resp_code} or $local_queue_data{$qid}{resp_code} >= 400 ) {
+					$tl->ERR("Generation of $qid failed: HTTP error $local_queue_data{$qid}{resp_code}");
 					$local_queue_data{$qid}{mp3_state} = "failed";
 					next;
 				}
@@ -236,8 +286,8 @@ sub generate_tts_mp3
 					$json = JSON::decode_json( $local_queue_data{$qid}{curl_response} );
 				};
 				if ($@) {
-					print "QID $qid: Not a valid JSON file returned\n";
-					print $local_queue_data{$qid}{curl_response} . "\n";
+					$tl->ERR("QID $qid: Not a valid JSON file returned");
+					$tl->LOGINF($local_queue_data{$qid}{curl_response});
 					$local_queue_data{$qid}{mp3_state} = "failed";
 					next;
 				}
@@ -248,14 +298,14 @@ sub generate_tts_mp3
 				$local_queue_data{$qid}{mp3_duration_ms} = $json->{'duration-ms'};
 				
 				if(!$local_queue_data{$qid}{mp3_md5} or $local_queue_data{$qid}{mp3_md5} eq "") {
-					print "QID $qid: No MD5 hash returned - request seems to have failed";
+					$tl->ERR("QID $qid: No MD5 hash returned - request seems to have failed");
 					$local_queue_data{$qid}{mp3_state} = "failed";
 					next;
 				}
 				
 				# We are save
 				$local_queue_data{$qid}{mp3_state} = "ready";
-				print "MP3-URL: $json->{'full-httpinterface'}\n";
+				$tl->INF("MP3-URL: $json->{'full-httpinterface'}");
 				
 				
 				
@@ -266,21 +316,17 @@ sub generate_tts_mp3
 	# Unqueue failed entries
 	foreach my $qid (keys %local_queue_data) {
 		next if(! defined $local_queue_data{$qid}{mp3_state} or $local_queue_data{$qid}{mp3_state} ne "failed");
-		print "Unqueue QID $qid because of failed MP3 conversion\n";
+		$tl->WARN("Unqueue QID $qid because of failed MP3 conversion");
 		eval {
 			threads::shared::lock(@ttsqueue);
 			@ttsqueue = grep { defined $_->{qid} and $_->{qid} ne $qid } @ttsqueue;
 		};
 		if($@) {
-			print "unqueue Exception caught: $@\n";
+			$tl->ERR("unqueue Exception caught: $@");
 		}
 		delete $local_queue_data{$qid};
 	}
-	
-	
-	
-	
-	
+
 	## Generate TTS mp3's
 	# Only queue if max_count is not reached
 	if( $curlhandlecount < $max_threads_generate_mp3 ) {
@@ -289,7 +335,7 @@ sub generate_tts_mp3
 			next if($local_queue_data{$qid}{mp3_state});
 			next if($curlhandlecount > $max_threads_generate_mp3);
 			$local_queue_data{$qid}{mp3_state} = "processing";
-			print "   Element $_->{text} State " . $local_queue_data{$qid}{mp3_state} . "\n";
+			$tl->INF("   Element $_->{text} State " . $local_queue_data{$qid}{mp3_state});
 			
 			my $ttsif_url = "";
 			$ttsif_url .= "http://" . $tts_plugin_hostname . "/plugins/text2speech/index.php";
@@ -306,8 +352,8 @@ sub generate_tts_mp3
 			$curl->setopt( WWW::Curl::Easy::CURLOPT_TIMEOUT, 30);
 			my $curl_addhandle_resp = $LMSTTS::curlm->add_handle($curl);
 			# print "curl add_handle response: $curl_addhandle_resp\n";
-			print "Queuing curl TTS interface with qid $qid. URL:\n";
-			print "$ttsif_url\n";
+			$tl->INF("Queuing curl TTS interface with qid $qid. URL:");
+			$tl->DEB("$ttsif_url");
 			$curlhandlecount++;
 			
 		}
@@ -317,7 +363,7 @@ sub generate_tts_mp3
 	if($curlhandlecount > 0) {
 		$LMSTTS::lastrequest_epoch = time;
 		$curlm_active = $LMSTTS::curlm->perform;
-		print "Performing curl requests ($curlhandlecount handles, $curlm_active active)\n";
+		$tl->INF("Performing curl requests ($curlhandlecount handles, $curlm_active active)");
 	}
 }		
 
@@ -329,22 +375,32 @@ sub generate_tts_mp3
 
 sub init_play
 {
+	# We collect players that are currently in use
+	my %workingplayers;
+	
 	# Walk through the queue
 	foreach(@ttsqueue) {
 		my $qid = $_->{qid};
+		
+		## Read the players that this event should manage
+		my $players_in_use = 0;
+		my @tts_players = @{ $_->{player} };
+			
+		foreach my $player (@tts_players) {
+			if($workingplayers{$player}) {
+				$tl->INF("Player $player is currently in use - skipping this round");
+				$players_in_use = 1;
+				last;
+			}
+		}
+		next if($players_in_use);
+				
 		# Check for ready mp3's - mp3 is ready and currently no play_state
 		if( $local_queue_data{$qid}{mp3_state} eq "ready" and !$local_queue_data{$qid}{play_state} ) {
-			print "Element $qid is ready for playing\n";
+			$tl->INF("Element $qid is ready for playing");
 			# This queue element is ready to play
 			
-			## Read the players that this event should manage
-			my @tts_players = @{ $_->{player} };
-			
-			# Request song play time before further processing
-			foreach my $player (@tts_players) {
-				$playerstates->{$player}->{time} = 0;
-				tcpoutqueue("$player time ?");
-			}
+			%workingplayers = map { $_ => 1 } @tts_players;
 			
 			## Read all players that currently playing TTS
 			# Getting all currently playing, involved players from the full queue
@@ -362,12 +418,17 @@ sub init_play
 			my @player_matches = Array::Utils::intersect(\@tts_players, \@playing_players);
 			# This returns all matching elements - if it has values, the current element has to wait
 			if(@player_matches) {
-				print "Element $qid has to wait, because other queue elements currently use it's players\n";
+				$tl->DEB("Element $qid has to wait, because other queue elements currently use it's players");
 				next;
+			}
+			# Request song play time before further processing
+			foreach my $player (@tts_players) {
+				$playerstates->{$player}->{time} = 0;
+				tcpoutqueue("$player time ?");
 			}
 			
 			# We requested the time - check if we got it
-			print "Waiting for the playtime";
+			$tl->DEB("Waiting for the song time...");
 			foreach (@tts_players) {
 				if( ($playerstates->{$_}->{Mode} == 0 or $playerstates->{$_}->{Mode} == 1) and !$playerstates->{$_}->{time} ) {
 					Time::HiRes::sleep(0.02);
@@ -375,7 +436,7 @@ sub init_play
 				}
 			}
 			
-			print "All used players are ready to rumble\n";
+			$tl->OK("All used players are ready to rumble");
 			$local_queue_data{$qid}{play_state} = "playing";
 			
 			# Wait for the song time
@@ -384,11 +445,11 @@ sub init_play
 			my @savedstates;
 			foreach my $player (@tts_players) {
 				
-				print "Playerstate of " . $playerstates->{$player}->{Name} . ": " . $playerstates->{$player}->{Mode} . "\n";
+				$tl->DEB( "Playerstate of " . $playerstates->{$player}->{Name} . ": " . $playerstates->{$player}->{Mode} . " (-1 Stopped, 0 Pause, 1 Playing)");
 				#my $state = Clone::clone(\%{$playerstates->{$player}});
 				#$local_queue_data{$qid}{backup_playerstate}{$player} = \$state;
 				$local_queue_data{$qid}{backup_playerstate}{$player} = { %{$playerstates->{$player}} };
-				print Data::Dumper::Dumper($local_queue_data{$qid}{backup_playerstate}{$player});
+				$tl->DEB( Data::Dumper::Dumper($local_queue_data{$qid}{backup_playerstate}{$player}) );
 				
 			}
 			my $localdata = threads::shared::shared_clone($local_queue_data{$qid});
@@ -401,9 +462,25 @@ sub init_play
 		
 		}
 		
+		
+		
+	
+	}
+}
+
+#######################################################################
+# handle_callback
+# Collect all players that have finished and restore state 
+#######################################################################
+
+sub handle_callback
+{
+	foreach(@ttsqueue) {
+		my $qid = $_->{qid};
+	
 		## Handle callback
 		if( defined $local_queue_data{$qid}{play_thread} and $local_queue_data{$qid}{play_thread}->is_joinable() ) {
-			print "Joining queue player\n";
+			$tl->OK( "Joining player thread TID" . $local_queue_data{$qid}{play_thread}->tid());
 			$local_queue_data{$qid}{play_state} = $local_queue_data{$qid}{play_thread}->join();
 			
 			# Restore the sync state of the involved players
@@ -411,10 +488,11 @@ sub init_play
 			foreach my $player (@tts_players) {
 				# Read the saved state
 				my $state = $local_queue_data{$qid}{backup_playerstate}{$player};
-				print Data::Dumper::Dumper($state);
-				print "Restore: Name $state->{Name} Mode $state->{Mode} ";
-				print "Sync $state->{sync}" if ($state->{sync});
-				print "\n";
+				$tl->DEB( "Saved player state:" );
+				$tl->DEB( Data::Dumper::Dumper($state) );
+				$tl->DEB( "Restore: Name $state->{Name} Mode $state->{Mode} ");
+				$tl->DEB( "Sync $state->{sync}") if ($state->{sync});
+				
 				my @sync = split (/,/, $state->{sync}) if ($state->{sync});
 				
 				if(@sync) {
@@ -444,39 +522,104 @@ sub init_play
 				# }
 				# Restore the playlists
 				if (! @sync) {
+					$tl->INF ("Was not in a sync group - Stop TTS");
 					tcpoutqueue("$tts_players[0] playlist preview cmd:stop");
 				}
-				Time::HiRes::sleep(0.02);
+				Time::HiRes::sleep(0.03);
 				
 				# Restore volume
+				$tl->INF ("Restoring volume to $state->{volume}");
 				tcpoutqueue("$player mixer volume " . $state->{volume});
 											
 				# Restore playing mode, if it was playing, and was not turned off during TTS
 				if ($state->{Power} == 0) {
+					$tl->INF ("Turning off player, as it was turned off before");
 					tcpoutqueue("$player power 0");
 				} elsif ($state->{Mode} == 1 and $playerstates->{$player}->{Power} == 1 ) {
+					$tl->INF ("Resume playing");
 					tcpoutqueue("$player play 1");
 				}
 				
 				# Restore playtime
 				if ($state->{Stream} == 0 and $state->{time}) {
+					$tl->INF ("Restoring playtime - jump to $state->{time}");
 					tcpoutqueue("$player time " . $state->{time});
 				}
 				
 				# Restore shuffle
 				if ($state->{Shuffle}) {
+					$tl->INF ("Restoring shuffle - setting to $state->{Shuffle}");
 					tcpoutqueue("$player playlist shuffle " . $state->{Shuffle});
 				}
 			}
 			# Set the queue state to unqueue
-			$local_queue_data{$qid}{unqueue} = 1;
+			$tl->INF( "Setting queue element to resumed" );
+			$local_queue_data{$qid}{resuming} = 1;
 		
 		}
-		
-		
-	
 	}
+
+
 }
+
+##########################################################
+# check_resumed
+# As resuming takes some time, we have to wait until
+# LMS has fully resumed the old playlist
+##########################################################
+sub check_resumed
+{
+	foreach(@ttsqueue) {
+		my $ready_to_unqueue = 1;
+		my $qid = $_->{qid};
+		next if( !$local_queue_data{$qid}{resuming} );
+		
+		my @tts_players = @{ $_->{player} };
+		foreach my $player (@tts_players) {
+				
+			# Read the saved state
+			my $state = $local_queue_data{$qid}{backup_playerstate}{$player};
+			$tl->DEB( "Saved player state:" );
+			$tl->DEB( Data::Dumper::Dumper($state) );
+			
+			# Check play state
+			if( ($state->{Mode} == 1 or $state->{Mode} == 0) and $playerstates->{$player}->{Mode} < 0 ) {
+				$tl->DEB("Player $player: Mode not yet restored: Saved {$state->{Mode}}, Current {$playerstates->{$player}->{Mode}}");  
+				$ready_to_unqueue = 0;
+				last;
+			}
+			if( $state->{Mode} == -1 and $playerstates->{$player}->{Mode} != -1 ) {
+				$tl->DEB("Player $player: Mode not yet restored: Saved {$state->{Mode}}, Current {$playerstates->{$player}->{Mode}}");  
+				$ready_to_unqueue = 0;
+				last;
+			}
+			if( $state->{Shuffle} != $playerstates->{$player}->{Shuffle} ) {
+				$tl->DEB("Player $player: Shuffle not yet restored: Saved {$state->{Shuffle}}, Current {$playerstates->{$player}->{Shuffle}}");
+				$ready_to_unqueue = 0;
+				last;
+			}
+			
+			# my @sync = split (/,/, $state->{sync}) if ($state->{sync});
+					
+			# if(@sync) {
+				# foreach my $i (@sync) {
+					# next if ($i==0);
+					# tcpoutqueue("$tts_players[$_] sync $tts_players[0]");
+				# }
+			# }
+		}
+		
+		if($ready_to_unqueue == 1) {
+			$tl->OK("Player check ok - Setting $qid to unqueue");
+			$local_queue_data{$qid}{unqueue} = 1;
+		}
+
+	}
+
+}
+
+
+
 
 
 ##########################################################
@@ -492,13 +635,19 @@ sub tts_play
 	my $local_data = shift;
 	my $result = "failed";
 	
-	print "PLAY THREAD STARTED with QID " . $queue_element->{qid} . "\n";
-	print "MP3_URL is " . $local_data->{mp3_url} . ", length is " . printf("%.1f", $local_data->{mp3_duration_ms} / 1000) . " sec\n";
+	$pl = LoxBerry::Log->new (
+		dbkey => $logdbkey
+	);
+	
+	my $tid = threads->tid();
+	$pl->OK ("PLAY TID$tid: THREAD STARTED with QID " . $queue_element->{qid});
+	$pl->INF ("PLAY TID$tid: MP3_URL is " . $local_data->{mp3_url} . ", length is " . printf("%.1f", $local_data->{mp3_duration_ms} / 1000) . " sec");
 	
 	my @tts_players = @{ $queue_element->{player} };
 	
 	# Unsync and pause
 	foreach( @tts_players ) {
+		$pl->DEB( "PLAY TID$tid: Unsyncing and pausing $_" );
 		tcpoutqueue("$_ sync -");
 		tcpoutqueue("$_ pause 1 1");	
 	}
@@ -506,13 +655,16 @@ sub tts_play
 	# Sync
 	if (scalar @tts_players > 1) {
 		my $playercount = scalar @tts_players;
+		$pl->INF( "PLAY TID$tid: TTS uses $playercount zones - syncing..." );
 		for (my $i = 1; $i < $playercount-1; $i++) {
+			$pl->DEB ( "PLAY TID$tid:   Sync $tts_players[$i] --> $tts_players[0]" );
 			tcpoutqueue("$tts_players[0] sync $tts_players[$i]");
 		}
 	}
 	
 	# Disable shuffle if enabled
 	if($playerstates->{$tts_players[0]}->{Shuffle}) {
+		$pl->INF("PLAY TID$tid: Shuffle is in mode ${tts_players[0]}->{Shuffle}} and now disabled");
 		tcpoutqueue("$tts_players[0] playlist shuffle 0");
 	}
 	
@@ -525,60 +677,68 @@ sub tts_play
 			$queue_element->{maxvol}
 		);
 		if ($volset) {
+			$pl->INF("PLAY TID$tid: Setting volume to calculated volume $volset" );
 			tcpoutqueue("$_ mixer volume $volset");
+		} else {
+			$pl->WARN("PLAY TID$tid: Could not calculate a volume to set - skipping volume");
 		}
 	}
 	
 	# Backup/Play
-	tcpoutqueue("$tts_players[0] playlist preview url:" . URI::Escape::uri_escape($local_data->{mp3_url}));
+	$pl->OK("PLAY TID$tid: Sending MP3 to backup playlist and enqueue TTS-MP3" ); 
+	tcpoutqueue("$tts_players[0] playlist preview url:" . URI::Escape::uri_escape($local_data->{mp3_url}) . " title:" . URI::Escape::uri_escape($queue_element->{text}));
 
-	
 	# Wait
 	my $starttime = time;
 	my $mp3_duration = $local_data->{mp3_duration_ms}/1000;
 	if (!$mp3_duration or $mp3_duration == 0) {
 		$mp3_duration = $tts_play_timeout_sec;
+		$pl->WARN("PLAY TID$tid: Could not determine TTS length from MP3. Setting to tts_play_timeout_sec"); 
 	}
-	
 	
 	my $maxendtime = time+$mp3_duration+5;
 	
 	# Wait until playing
+	$pl->INF("PLAY TID$tid: Waiting for LMS to start to play");
 	Time::HiRes::sleep(0.5);
 	while( $playerstates->{$tts_players[0]}->{Mode} != 1 and time < $maxendtime) {
-		print "Waiting to start playing\n";
-		Time::HiRes::sleep(0.1);
+		$pl->DEB( "PLAY TID$tid: Waiting for LMS to start playing TTS" );
+		Time::HiRes::sleep(0.2);
 	}
 	
 	if (time > $maxendtime) {
-		print "ERROR - Player did not start to play - Quitting";
+		$pl->ERR("PLAY TID$tid: Player did not start to play - Quitting waiting loop");
 		$result = "timeout";
 	} else {
-		
+		$pl->INF("PLAY TID$tid: Player started - Waiting to finish");
 		while (time < $maxendtime) {
-			Time::HiRes::sleep(0.1);
-			print "Playerstate is " . $playerstates->{$tts_players[0]}->{Mode} . "\n";
+			Time::HiRes::sleep(0.15);
+			$pl->DEB("PLAY TID$tid:   Playerstate is in mode " . $playerstates->{$tts_players[0]}->{Mode} . " (1=playing) - Waiting...");
 			if ($playerstates->{$tts_players[0]}->{Mode} < 1) {
 				last;
 			}
 		}
 		if (time >= $maxendtime) {
-			print "Quitting because of timeout\n";
-			print Data::Dumper::Dumper($playerstates->{$tts_players[0]});
+			$pl->ERR("PLAY TID$tid: Quitting because of timeout.");
+			$pl->DEB("PLAY TID$tid: Playerstates of first player:");
+			$pl->DEB(Data::Dumper::Dumper($playerstates->{$tts_players[0]}));
 			$result = "timeout";
 		} else {
-			print "Finished successfully\n";
+			$pl->OK("PLAY TID$tid: Finished successfully");
 			$result = "success";
 		}
 	}
 	
 	# Unsync
 	if (scalar @tts_players > 1) {
+		$pl->INF("PLAY TID$tid: Unsyncing all players");
 		foreach( @tts_players ) {
+			$pl->DEB( "PLAY TID$tid:   Unsyncing $_" );
 			tcpoutqueue("$_ sync -");
 		}
 	}
 	
+	$pl->OK("PLAY TID$tid: Player thread closes");
 	return $result;
 
 }
@@ -593,13 +753,16 @@ sub unqueue
 
 	foreach my $qid (keys %local_queue_data) {
 		next if(! defined $local_queue_data{$qid}{unqueue});
-		print "Unqueue QID $qid because it had finished\n";
+		$tl->INF ("Unqueue QID $qid because it has finished");
 		eval {
 			threads::shared::lock(@ttsqueue);
-			@ttsqueue = grep { defined $_->{qid} and $_->{qid} ne $qid } @ttsqueue;
+			my ($index) = grep { $ttsqueue[$_]->{qid} eq $qid } 0..$#ttsqueue;
+			$tl->DEB("Found array index of $qid is $index");
+			splice (@ttsqueue, $index, 1);
+			#@ttsqueue = grep { defined $_->{qid} and $_->{qid} ne $qid } @ttsqueue;
 		};
 		if($@) {
-			print "unqueue Exception caught: $@\n";
+			$tl->ERR ("Unqueue Exception caught: $@");
 		}
 		delete $local_queue_data{$qid};
 	}
@@ -617,7 +780,7 @@ sub unqueue
 sub tcpoutqueue
 {
 	my ($message) = @_;
-	print "TCPOUTQUEUE: $message\n";
+	$tl->DEB ("TCPOUT Queue: $message");
 	{
 		threads::shared::lock(@main::tcpout_queue);
 		push @main::tcpout_queue, $message;
@@ -639,7 +802,7 @@ sub calculate_volume
 {
 	my ($curr_vol, $opt_lmsvol, $opt_minvol, $opt_maxvol) = @_;
 	my $result;
-	print "Shared main::tts_lmsvol: " . $main::tts_lmsvol . "\n";
+	# print "Shared main::tts_lmsvol: " . $main::tts_lmsvol . "\n";
 	my $vol = defined $opt_lmsvol ? $opt_lmsvol : $main::tts_lmsvol;
 	my $min = defined $opt_minvol ? $opt_minvol : $main::tts_minvol;
 	my $max = defined $opt_maxvol ? $opt_maxvol : $main::tts_maxvol;
@@ -665,7 +828,7 @@ sub calculate_volume
 		$result = $max;
 	}
 		
-	print "Resulting volume: $result\n";
+	# print "Resulting volume: $result\n";
 	return $result;
 
 }
