@@ -4,6 +4,7 @@
 # to collect Squeezelite config and return a 
 # startable commandline (or multiple for multiple instances)
 
+use LoxBerry::System;
 use POSIX 'strftime';
 use File::HomeDir;
 use Config::Simple;
@@ -15,7 +16,7 @@ use Cwd 'abs_path';
 # use Tie::LogFile;
 
 # Version of this script
-our $version = "1.0.1.1";
+our $version = "1.0.1.2";
 
 my  $home; 
 my  $lang;
@@ -54,15 +55,8 @@ my @inst_gpiolevel;
 
 my @commandline;
 
-$home = "REPLACEINSTALLFOLDER";
-
-# Directory/Pluginname fallback for test environment
-unless (-d $home) { 
-	$home = "/opt/loxberry";
-}
-
-$pluginname = abs_path($0);
-$pluginname =~ s/(.*)\/(.*)\/(.*)$/$2/g;
+$home = $lbhomedir;
+$pluginname = $lbpplugindir;
 
 # Read global settings
  $cfg             = new Config::Simple("$home/config/system/general.cfg") or tolog("ERROR", "Cannot open Loxberry general config file, exiting - $!");

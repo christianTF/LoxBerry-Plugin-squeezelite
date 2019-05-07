@@ -19,12 +19,13 @@
 # Modules
 ##########################################################################
 
+use LoxBerry::System;
 use POSIX 'strftime';
 use CGI::Carp qw(fatalsToBrowser);
 use CGI qw/:standard/;
 use Config::Simple;
 use File::HomeDir;
-use Cwd 'abs_path';
+# use Cwd 'abs_path';
 # use Net::Address::Ethernet qw( get_address );
 use warnings;
 use strict;
@@ -36,7 +37,7 @@ no strict "refs"; # we need it for template system
 ##########################################################################
 
 # Version of this script
-our $version = "0.5.2";
+our $version = "1.0.1.1";
 
 our $cfg;
 our $namef;
@@ -111,26 +112,23 @@ my $logmessage;
 ##########################################################################
 
 # Figure out in which subfolder we are installed
-my $part = substr ((abs_path($0)), (length($home)+1));
-our ($psubfolder) = (split(/\//, $part))[3];
-our $pluginname = $psubfolder;
+our $psubfolder = $lbpplugindir;
 
 # Read global settings
 
-$cfg             = new Config::Simple("$home/config/system/general.cfg");
-$installfolder   = $cfg->param("BASE.INSTALLFOLDER");
-$lang            = $cfg->param("BASE.LANG");
+#$cfg = new Config::Simple("$lbsconfigdir/general.cfg");
+$installfolder = $lbhomedir;
+$lang = LoxBerry::System::lblanguage();
 
 # Initialize logfile
 if ($debug) {
-	$logname = "$installfolder/log/plugins/$psubfolder/index.log";
+	$logname = "$lbplogdir/index.log";
 	open ($loghandle, '>>' , $logname); # or warn "Cannot open logfile for writing (Permission?) - Continuing without log\n";
 	chmod (0666, $loghandle); # or warn "Cannot change logfile permissions\n";	
 }
 
-
 # Read plugin settings
-$cfgfilename = "$installfolder/config/plugins/$psubfolder/plugin_squeezelite.cfg";
+$cfgfilename = "$lbpconfigdir/plugin_squeezelite.cfg";
 tolog("INFORMATION", "Reading Plugin config $cfgfilename");
 if (-e $cfgfilename) {
 	tolog("INFORMATION", "Plugin config existing - loading");
@@ -194,12 +192,12 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 # Read English language as default
 # Missing phrases in foreign language will fall back to English	
 	
-	$languagefileplugin 	= "$installfolder/templates/plugins/$psubfolder/lang/language_en.ini";
+	$languagefileplugin 	= "$lbptemplatedir/lang/language_en.ini";
 	$plglang = new Config::Simple($languagefileplugin);
 	$plglang->import_names('T');
 
 # Read foreign language if exists and not English
-	$languagefileplugin = "$installfolder/templates/plugins/$psubfolder/lang/language_$lang.ini";
+	$languagefileplugin = "$lbptemplatedir/lang/language_$lang.ini";
 	 if ((-e $languagefileplugin) and ($lang ne 'en')) {
 		# Now overwrite phrase variables with user language
 		$plglang = new Config::Simple($languagefileplugin);
@@ -247,11 +245,14 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		# Filter
 		# $debug     = quotemeta($debug);
 		tolog("INFORMATION", "save triggered - save, refresh form");
-							
+		
+		# Query Squeezelite binary
+		my $sl_path = sl_path();
+		
 		# Prepare form defaults
 		# Read Squeezelite possible sound outputs
 		tolog("INFORMATION", "Calling squeezelite to get outputs");
-		my $squ_outputs = `sudo $installfolder/data/plugins/$psubfolder/squeezelite -l` or tolog("ERROR", "Failed to run squeezelite.");
+		my $squ_outputs = `$sl_path -l` or tolog("ERROR", "Failed to run squeezelite.");
 		
 		# Sample output:
 
@@ -435,7 +436,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		$template_title = "Squeezelite Player Plugin";
 		
 		# Get number of running Squeezelite processes
-		$runningInstances = `pgrep --exact -c squeezelite`;
+		$runningInstances = `pgrep -c squeezelite`;
 		
 		# Print Header
 		&lbheader;
@@ -676,6 +677,41 @@ sub getMAC {
   }
 
   return $mac;
+}
+
+#####################################################
+# Get path of Squeezelite binary
+#####################################################
+
+sub sl_path {
+	# Normal or alternative binaries
+	my $sl_path;
+
+	if (! $cfg->param("Main.UseAlternativeBinaries") ) {
+		# Use original Debian binary
+		tolog("INFORMATION", "Using original Debian Squeezelite binary");
+		$sl_path = 'squeezelite';
+	} else {
+		# Use alternative binaries
+		
+		# Check architecture
+		my $archstring = `/bin/uname -a`;
+		if ( index($archstring, 'armv') != -1 ) {
+			tolog("INFORMATION", "Using ARM Squeezelite binary");
+			$sl_path = "$lbpdatadir/squeezelite-armv6hf";
+		} elsif ( index($archstring, 'x86_64') != -1 ) {
+			tolog("INFORMATION", "Using x64 Squeezelite binary");
+			$sl_path = "$lbpdatadir/squeezelite-x64";
+		} elsif ( index($archstring, 'x86') != -1 ) {
+			tolog("INFORMATION", "Using x86 Squeezelite binary");
+			$sl_path = "$lbpdatadir/squeezelite-x86";
+		} else {
+			tolog("ERROR", "Could not determine architecture - falling back to original Debian Squeezelite binary");
+			$sl_path = 'squeezelite';
+		}
+	}
+	return $sl_path;
+
 }
 
 #####################################################

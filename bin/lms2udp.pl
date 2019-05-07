@@ -6,8 +6,7 @@ use forks::shared;
 
 use LoxBerry::Log;
 
-use lib "/opt/loxberry/webfrontend/htmlauth/plugins/squeezelite/lib";
-use LMSTTS;
+require "$lbhomedir/webfrontend/htmlauth/plugins/squeezelite/LMSTTS.pm";
 									
 # Christian Fenzl, christiantf@gmx.at 2017
 # This script is a gateway from Logitech Media TCP CLI to Loxone Miniserver UDP (for values) and http REST (for text).
@@ -19,6 +18,8 @@ use LMSTTS;
 # - libio-socket-timeout-perl
 
 # Version of this script
+$version = "1.0.1.1";
+
 print "Startup lms2udp daemon...\n";
 
 # use strict;

@@ -4,6 +4,8 @@
 use strict;
 no strict "refs"; # we need it for template system
 
+use LoxBerry::System;
+
 use lib './lib';
 
 # Own modules
@@ -24,9 +26,9 @@ use MIME::Base64;
 use CGI qw/:standard/;
 
 # Version of this script
-our $version = "0.5.2";
+our $version = "1.0.1.1";
 
-my $home = "/opt/loxberry";
+my $home = $lbhomedir;
 our $tcpout_sock;
 our %playerstates;
 our @rawparts;
