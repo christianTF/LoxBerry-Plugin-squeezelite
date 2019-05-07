@@ -5,6 +5,8 @@
 # startable commandline (or multiple for multiple instances)
 
 use LoxBerry::System;
+use LoxBerry::Log;
+
 use POSIX 'strftime';
 use File::HomeDir;
 use Config::Simple;
@@ -55,27 +57,30 @@ my @inst_gpiolevel;
 
 my @commandline;
 
+# Init logfile
+my $log = LoxBerry::Log->new (
+    name => 'Start_Instances',
+	addtime => 1,
+	loglevel => 7,
+);
+
+LOGSTART "Starting Squeezelite instances";
+
 $home = $lbhomedir;
 $pluginname = $lbpplugindir;
 
 # Read global settings
- $cfg             = new Config::Simple("$home/config/system/general.cfg") or tolog("ERROR", "Cannot open Loxberry general config file, exiting - $!");
- $installfolder   = $cfg->param("BASE.INSTALLFOLDER");
- $lang            = $cfg->param("BASE.LANG");
+ #$cfg             = new Config::Simple("$home/config/system/general.cfg") or LOGCRIT("Cannot open Loxberry general config file, exiting - $!");
+ $installfolder = $lbhomedir;
+ $lang            = LoxBerry::System::lblanguage();
 
-# Initialize logfile
-if ($debug) {
-	$logname = "$installfolder/log/plugins/$pluginname/start_instances.log";
-	open ($loghandle, '>>' , $logname); # or warn "Cannot open logfile for writing (Permission?) - Continuing without log\n";
-	chmod (0666, $loghandle); # or warn "Cannot change logfile permissions\n";	
-}
 # Read plugin settings
-tolog("INFORMATION", "Reading Plugin config");
-$cfg = new Config::Simple("$installfolder/config/plugins/$pluginname/plugin_squeezelite.cfg") or tolog("ERROR", "Cannot open config file: $!\n");
-if (not defined($cfg)) {
-	tolog ("WARNING", "No Loxberry-Plugin-$pluginname configuration found - Exiting.\n");
-	exit(1);
-}
+LOGINF("Reading Plugin configuration");
+$cfg = new Config::Simple("$lbpconfigdir/plugin_squeezelite.cfg") or LOGCRIT ("Cannot open config file: $!");
+# if (not defined($cfg)) {
+	# tolog ("WARNING", "No Loxberry-Plugin-$pluginname configuration found - Exiting.\n");
+	# exit(1);
+# }
 
 # Read the Main section
 $cfgversion = $cfg->param("Main.ConfigVersion");
@@ -86,16 +91,16 @@ $squ_lmscliport = $cfg->param("Main.LMSCLIPort");
 $squ_lmsdataport = $cfg->param("Main.LMSDataPort");
 $squ_altbinaries = $cfg->param("Main.UseAlternativeBinaries");
 		
-tolog("INFORMATION", "Check if instances are defined in config file");
-tolog("DEBUG", "Number of instances: $squ_instances");
+LOGINF ("Check if instances are defined in config file");
+LOGINF ("Number of instances: $squ_instances");
 if ( $squ_instances < 1 ) {
-	tolog("WARNING", "No instances defined in config file. Exiting.\n");
+	LOGOK ("No instances defined in config file. Exiting.");
 	exit;
 	}
 
 # Read the Instances section
 for ($instance = 1; $instance <= $squ_instances; $instance++) {
-	tolog("INFORMATION", "Parsing instance $instance configuration");
+	LOGINF ("Parsing instance $instance configuration");
 	$enabled = undef;
 	$enabled = $cfg->param("Instance" . $instance . ".Enabled");
 	if (($enabled eq "True") || ($enabled eq "Yes")) {
@@ -113,7 +118,7 @@ for ($instance = 1; $instance <= $squ_instances; $instance++) {
 }
 
 # Create the command line
-tolog("INFORMATION", "Creating the command lines for squeezelite");
+LOGINF ("Creating the command lines for squeezelite");
 $instcount = scalar @inst_name;
 
 my $server_and_port;
@@ -129,7 +134,7 @@ my $sl_path;
 
 if (! $squ_altbinaries) {
 	# Use original Debian binary
-	tolog("INFORMATION", "Using original Debian Squeezelite binary");
+	LOGOK("Using original Debian Squeezelite binary");
 	$sl_path = 'squeezelite';
 } else {
 	# Use alternative binaries
@@ -137,19 +142,19 @@ if (! $squ_altbinaries) {
 	# Check architecture
 	my $archstring = `/bin/uname -a`;
 	if ( index($archstring, 'armv') != -1 ) {
-		tolog("INFORMATION", "Using ARM Squeezelite binary");
+		LOGOK("Using ARM Squeezelite binary");
 		$sl_path = "$lbpdatadir/squeezelite-armv6hf";
 	} elsif ( index($archstring, 'x86_64') != -1 ) { 
-		tolog("INFORMATION", "Using x64 Squeezelite binary");
+		LOGOK ("Using x64 Squeezelite binary");
 		$sl_path = "$lbpdatadir/squeezelite-x64";
 	} elsif ( index($archstring, 'x86') != -1 ) { 
-		tolog("INFORMATION", "Using x86 Squeezelite binary");
+		LOGOK ("Using x86 Squeezelite binary");
 		$sl_path = "$lbpdatadir/squeezelite-x86";
 	} else {
-		tolog("ERROR", "Could not determine architecture - falling back to original Debian Squeezelite binary");
+		LOGERR ("Could not determine architecture - falling back to original Debian Squeezelite binary");
 		$sl_path = 'squeezelite';
 	}
-
+}
 
 for ($instance = 0; $instance < $instcount; $instance++) {
 	$command = $sl_path;
@@ -177,29 +182,27 @@ for ($instance = 0; $instance < $instcount; $instance++) {
 	if ($inst_params[$instance] ne "") {
 		$command .= " " . $inst_params[$instance];
 	}
-	$command .= " -f $installfolder/log/plugins/$pluginname/squeezelite_" . ($instance+1) . ".log > /dev/null &";
+	
+	#$command .= " -f $lbplogdir/squeezelite_" . ($instance+1) . ".log > /dev/null &";
+	$command .= " -f " . $log->filename . " > /dev/null &";
 	
 	# Starten
-	open(STDOUT, ">>$logname");
-	open(STDERR, ">>$logname");
+	#open(STDOUT, ">>$logname");
+	#open(STDERR, ">>$logname");
 	# $ENV{WIRINGPI_GPIOMEM}='1';
 	# $command = "su --preserve-environment -c \"$command\" squeezelox &";
-	tolog("DEBUG", "Starting instance $instance with: $command");
+	LOGINF("Starting instance $instance with command:");
+	LOGINF("$command");
 	my $output = `$command`;
-	tolog("DEBUG", "Starting instance $instance returned: $output");
+	LOGINF ("Errors of the Squeezelite instances are appended to the end of the log.");
 }
 
-tolog("INFORMATION", "Finished - Closing log and exiting.");
-if ($loghandle) {
-	close($loghandle) or die "Couldn't close logfile $logname\n";
-}
+LOGOK ("Finished to start all instances");
 exit;
 
-sub tolog {
-  # print strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " $_[0]: $_[1]\n";
-  if ($debug) {
-	if ($loghandle) {
-		print $loghandle strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " $_[0]: $_[1]\n";
+END
+{
+	if($log) {
+		LOGEND "Start Instances finished";
 	}
-  }
 }

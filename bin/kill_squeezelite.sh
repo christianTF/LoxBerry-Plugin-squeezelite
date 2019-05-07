@@ -2,4 +2,4 @@
 # squ=$(ps aux | grep 'squeezelite' | awk '{print $2}')
 # echo $squ
 # kill $squ
-killall -e squeezelite
+killall squeezelite
