@@ -1,6 +1,10 @@
 #!/bin/bash
 # Will be executed as user "root".
 
+loxberryhome=REPLACELBHOMEDIR
+pluginname=REPLACELBPPLUGINDIR
+datadir=REPLACELBPDATADIR
+
 #
 # Upgrade routines from V0.x to V1.x
 #
@@ -12,20 +16,25 @@ if [ $? -eq 0 ] ; then
 	deluser --remove-home squeezelox
 fi
 
+if [ -f $datadir/squeezelite ]; then
+	echo "<INFO> Upgrade to V1.x: Deleting old squeezelite symlink"
+	rm -f $datadir/squeezelite
+fi
+	
+
 #
 # Upgrade finished
 #
 
 # Disable Squeezelite Service in systemd
 
-if [ `systemctl is-active squeezelite.service` ]
-	then
-		/usr/bin/logger "loxberry-plugin-$pluginname - Disabling squeezelite.service"
-		systemctl stop squeezelite.service
-		systemctl disable squeezelite.service
+if [ `systemctl is-active squeezelite.service` ]; then
+	echo "<INFO> Disabling Squeezelite systemd service"
+	systemctl stop squeezelite.service
+	systemctl disable squeezelite.service
 fi
 
-
-
+# Set alternative binaries to be executable
+chmod +x $loxberryhome/data/plugins/$pluginname/squeezelite*
 
 exit 0

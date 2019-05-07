@@ -15,7 +15,7 @@ use Cwd 'abs_path';
 # use Tie::LogFile;
 
 # Version of this script
-our $version = "0.4.00";
+our $version = "1.0.1.1";
 
 my  $home; 
 my  $lang;
@@ -130,17 +130,44 @@ if ($squ_server ne "") {
 	}
 }
 
+# Normal or alternative binaries
+my $sl_path;
+
+if (! $squ_altbinaries) {
+	# Use original Debian binary
+	tolog("INFORMATION", "Using original Debian Squeezelite binary");
+	$sl_path = 'squeezelite';
+} else {
+	# Use alternative binaries
+	
+	# Check architecture
+	my $archstring = `/bin/uname -a`;
+	if ( index($archstring, 'armv') != -1 ) {
+		tolog("INFORMATION", "Using ARM Squeezelite binary");
+		$sl_path = "$lbpdatadir/squeezelite-armv6hf";
+	} elsif ( index($archstring, 'x86_64') != -1 ) { 
+		tolog("INFORMATION", "Using x64 Squeezelite binary");
+		$sl_path = "$lbpdatadir/squeezelite-x64";
+	} elsif ( index($archstring, 'x86') != -1 ) { 
+		tolog("INFORMATION", "Using x86 Squeezelite binary");
+		$sl_path = "$lbpdatadir/squeezelite-x86";
+	} else {
+		tolog("ERROR", "Could not determine architecture - falling back to original Debian Squeezelite binary");
+		$sl_path = 'squeezelite';
+	}
+
+
 for ($instance = 0; $instance < $instcount; $instance++) {
-	$command = 	"$installfolder/data/plugins/$pluginname/squeezelite";
+	$command = $sl_path;
 	# Wird in den Parametern kein -a gefunden, senden wir per Default -a 80 (ALSA-Buffer)
 	if (index($inst_params[$instance], "-a ") == -1) {
 		$command .= " -a 160";
 	}
-	my $gpionr = looks_like_number( $inst_gpio[$instance] ) ? $inst_gpio[$instance] : undef;
-	if ((index($inst_params[$instance], "-G ") == -1) && $squ_altbinaries eq '1' && $gpionr) {
-		my $gpiolevel = lc(substr($inst_gpio[$instance], 0, 1)) eq 'l' ? 'L' : 'H'; 
-		$command .= " -G $gpionr:$gpiolevel";
-	}
+	# my $gpionr = looks_like_number( $inst_gpio[$instance] ) ? $inst_gpio[$instance] : undef;
+	# if ((index($inst_params[$instance], "-G ") == -1) && $squ_altbinaries eq '1' && $gpionr) {
+		# my $gpiolevel = lc(substr($inst_gpio[$instance], 0, 1)) eq 'l' ? 'L' : 'H'; 
+		# $command .= " -G $gpionr:$gpiolevel";
+	# }
 	if ($server_and_port ne "") {
 		$command .= " -s $server_and_port";
 	}
@@ -161,8 +188,8 @@ for ($instance = 0; $instance < $instcount; $instance++) {
 	# Starten
 	open(STDOUT, ">>$logname");
 	open(STDERR, ">>$logname");
-	$ENV{WIRINGPI_GPIOMEM}='1';
-	$command = "su --preserve-environment -c \"$command\" squeezelox &";
+	# $ENV{WIRINGPI_GPIOMEM}='1';
+	# $command = "su --preserve-environment -c \"$command\" squeezelox &";
 	tolog("DEBUG", "Starting instance $instance with: $command");
 	my $output = `$command`;
 	tolog("DEBUG", "Starting instance $instance returned: $output");

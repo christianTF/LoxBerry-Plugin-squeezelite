@@ -375,8 +375,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		<th width="5%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_ACTIVE--></p></th>
 		<th width="40%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_INSTANCE_NAME--></p></th>
 		<th width="35%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_MAC_ADDRESS--></p></th>
-		<th width="3%"></th>
-		<th width="12%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">GPIO</p></th>
 		</tr>
 	
 		<tr class="top row">
@@ -396,44 +394,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		$inst_mac[$inst] . '"></p>
 		</td>
 		<td><a href="JavaScript:setRandomMAC(\'MAC' . $instnr . '\');" id="randommac' . $instnr . '"><img src="/plugins/' . $psubfolder . '/images/dice_30_30.png" alt="<!--$T::INSTANCES_MAC_DICE_HINT-->" title="<!--$T::INSTANCES_MAC_DICE_HINT-->"/></a>
-		</td>
-		<td><select name="gpio' . $instnr . '" id="gpio' . $instnr . '">
-      <option value="Off">Off</option>
-      <option value="0">0</option>
-      <option value="1">1</option>
-      <option value="2">2</option>
-      <option value="3">3</option>
-      <option value="4">4</option>
-      <option value="7">7</option>
-      <option value="8">8</option>
-      <option value="9">9</option>
-      <option value="10">10</option>
-      <option value="11">11</option>
-      <option value="14">14</option>
-      <option value="15">15</option>
-      <option value="18">18</option>
-      <option value="21">21</option>
-	  <option value="22">22</option>
-	  <option value="23">23</option>
-	  <option value="24">24</option>
-	  <option value="25">25</option>
-	  <option value="27">27</option>
-	  <option value="28">28</option>
-	  <option value="29">29</option>
-	  <option value="30">30</option>
-	  <option value="31">31</option>
-    </select>
-	<script>
-	$( "#gpio' . $instnr . '").val( "' . $inst_gpio[$inst] . '" );
-	
-	/* Disabling the form dropdown is not needed at all  */
-	if(! $("#altbinaries").attr("checked")) {
-		$("#gpio' . $instnr . '").prop( "disabled", true );
-		}
-	</script>
-	
-	
-	</td>	
+		</td>	
 		
 		</tr>
 		<tr class="bottom row">
@@ -462,21 +423,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		<td>
 		</td>
 		<input type="hidden" placeholder="<!--$T::INSTANCES_INSTANCE_DESCRIPTION_HINT-->" name="Description' . $instnr . '" value="' . $inst_desc[$inst] . '">
-		<td>
-		<select name="gpiolevel' . $instnr . '" id="gpiolevel' . $instnr . '">
-			<option value="High">High</option>
-			<option value="Low">Low</option>
-		</select>
-		<script>
-		$( "#gpiolevel' . $instnr . '").val( "' . $inst_gpiolevel[$inst] . '" );
-		if(! $("#altbinaries").attr("checked")) {
 		
-		/* Disabling the form dropdown is not needed at all */
-		$("#gpiolevel' . $instnr . '").prop( "disabled", true );
-		}
-		
-		</script>
-		</td>
 		</tr>
 		</table>';
 		
