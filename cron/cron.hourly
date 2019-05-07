@@ -1,8 +1,8 @@
 #!/bin/bash
 
 PIDFILES=/run/shm/lms2udp.*
-loxberryhome=REPLACEINSTALLFOLDER
-pluginname=REPLACEFOLDERNAME
+loxberryhome=REPLACELBHOMEDIR
+pluginname=REPLACELBPPLUGINDIR
 
 # Check PIDs of PIDfiles and remove unused PIDs
 if [ -e  $PIDFILES ] ; then

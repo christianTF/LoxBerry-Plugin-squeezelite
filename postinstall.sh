@@ -37,10 +37,5 @@ else
 	echo "<OK> This is not Raspberry hardware"
 fi
 
-	echo "<WARNING> ================================================="
-	echo "<WARNING> Please REBOOT your LoxBerry after installation."
-	echo "<WARNING> Bitte LoxBerry nach der Installation REBOOTEN."
-	echo "<WARNING> ================================================="
-
 # Exit with Status 0
 exit 0
