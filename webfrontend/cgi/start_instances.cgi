@@ -159,13 +159,13 @@ for ($instance = 0; $instance < $instcount; $instance++) {
 	$command .= " -f $installfolder/log/plugins/$pluginname/squeezelite_" . ($instance+1) . ".log > /dev/null &";
 	
 	# Starten
-	tolog("DEBUG", "Starting instance $instance with: $command");
 	open(STDOUT, ">>$logname");
 	open(STDERR, ">>$logname");
 	$ENV{WIRINGPI_GPIOMEM}='1';
-	system("su --preserve-environment -c \"$command\" squeezelox &");
-	
-	tolog("DEBUG", "Starting instance $instance returned");
+	$command = "su --preserve-environment -c \"$command\" squeezelox &";
+	tolog("DEBUG", "Starting instance $instance with: $command");
+	my $output = `$command`;
+	tolog("DEBUG", "Starting instance $instance returned: $output");
 }
 
 tolog("INFORMATION", "Finished - Closing log and exiting.");

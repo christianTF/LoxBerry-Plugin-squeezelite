@@ -4,6 +4,7 @@ use forks::shared;
 # use threads qw(stringify);
 # use threads::shared;
 
+use LoxBerry::Log;
 
 use lib "/opt/loxberry/webfrontend/htmlauth/plugins/squeezelite/lib";
 use LMSTTS;
@@ -26,7 +27,6 @@ print "Startup lms2udp daemon...\n";
 # Own modules
 
 # Perl modules
-use LoxBerry::Log;
 
 use Config::Simple;
 # use Cwd 'abs_path';
@@ -105,6 +105,8 @@ our %playerdiffs;
 our %threads;
 
 our @tcpout_queue : shared;
+
+print "Plugindir: $lbpplugindir\n";
 
 # Init Logfile
 our $log = LoxBerry::Log->new (
@@ -488,21 +490,20 @@ sub process_line
 					}
 		case 'mode'		{ 
 					# LOGDEB "DEBUG: Mode |$rawparts[2]|$parts[2]|\n";
-					if ($rawparts[2] eq 'stop') {
-						if ($playerstates{$parts[0]}->{Power} == 1) {
-							send_state(-1);
-						} else {
-							send_state(-2);
-						}
-					} elsif ($rawparts[2] eq 'play') {
-						pupdate($parts[0], "Mode", 1);
-						send_state(1);
-					} elsif ($rawparts[2] eq 'pause') {
-						pupdate($parts[0], "Mode", 0);
-						send_state(0);
-					} else {
+					if (!defined $rawparts[2]) {
 						pupdate($parts[0], "Mode", -2);
 						send_state(-2);
+					} else {
+						pupdate($parts[0], "Power", 1);
+						if ($rawparts[2] eq 'stop') {
+							send_state(-1);
+						} elsif ($rawparts[2] eq 'play') {
+						pupdate($parts[0], "Mode", 1);
+						send_state(1);
+						} elsif ($rawparts[2] eq 'pause') {
+							pupdate($parts[0], "Mode", 0);
+							send_state(0);
+						}
 					}
 					return undef;
 				}
@@ -781,7 +782,8 @@ sub sync_pupdate
 	my @players = @_;
 	
 	foreach $player (@players) {
-		if ($player eq $currplayer) {
+		#if ($player eq $currplayer) {
+		if ($player eq @players[0]) {
 			next;
 		}
 		pupdate($player, $key, $value);
@@ -810,7 +812,7 @@ sub guest_currstate
 			if (! $playerstates{$player}) {
 				$answer .= "  --> This player does not exist.";
 			} else {
-				foreach my $setting (keys %{$playerstates{$player} }) {
+				foreach my $setting (sort keys %{$playerstates{$player} }) {
 					$answer .= "$setting: $playerstates{$player}->{$setting}\n";
 				}
 			}
@@ -819,7 +821,7 @@ sub guest_currstate
 			foreach $player (sort keys %playerstates) {
 				$answer .= "-------------------------------------------------------\n";
 				$answer .= "Player $player $playerstates{$player}->{Name}\n";
-				foreach my $setting (keys %{$playerstates{$player} }) {
+				foreach my $setting (sort keys %{$playerstates{$player} }) {
 					$answer .= "$setting: $playerstates{$player}->{$setting}\n";
 				}
 			}
@@ -854,7 +856,10 @@ sub send_to_ms()
 				switch ($setting) {
 					case 'Songtitle' 	{ sync_pupdate("Songtitle", $playerstates{$player}->{$setting}, $player, @members); next;}
 					case 'Artist' 		{ sync_pupdate("Artist", $playerstates{$player}->{$setting}, $player, @members); next;}
-					case 'Mode'			{ sync_pupdate("Mode", $playerstates{$player}->{$setting}, $player, @members); next;}
+					case 'Mode'			{ if($playerstates{$player}->{$setting} > -2) {
+											sync_pupdate("Mode", $playerstates{$player}->{$setting}, $player, @members); 
+										  }
+										  next;}
 					case 'Stream'		{ sync_pupdate("Stream", $playerstates{$player}->{$setting}, $player, @members); next;}
 					case 'Pause'		{ sync_pupdate("Pause", $playerstates{$player}->{$setting}, $player, @members); next;}
 					case 'Shuffle' 		{ sync_pupdate("Shuffle", $playerstates{$player}->{$setting}, $player, @members); next;}
@@ -873,10 +878,9 @@ sub send_to_ms()
 		if (length($udpout_string) > 200) {
 				if ($sendtoms) {
 					print $udpout_sock $udpout_string;
-					LOGINF 
-					"##  START SEND ######################################################\n" .
-					$udpout_string .
-					"## FINISHED SEND " . length($udpout_string) . "Bytes ###########################";
+					LOGINF ">>>>>  START SEND >>>>>\n" .
+						trim($udpout_string);
+					LOGINF "<<<<< FINISHED SEND <<<<< (" . length($udpout_string) . " Bytes)";
 					LOGDEB "Fast response mode";
 					usleep($loopdelay/$loopdivisor);
 				}
@@ -929,10 +933,9 @@ sub send_to_ms()
 	if ($udpout_string) {
 		if($sendtoms) {
 			print $udpout_sock $udpout_string;
-			LOGINF 
-			"##  START SEND ######################################################\n" .
-			$udpout_string .
-			"## FINISHED SEND " . length($udpout_string) . "Bytes ###########################";
+			LOGINF ">>>>> START SEND >>>>>\n" .
+				trim($udpout_string);
+			LOGINF "<<<<< FINISHED SEND <<<<< (" . length($udpout_string) . " Bytes)";
 		}
 	}
 	%playerdiffs = undef;
@@ -1104,11 +1107,6 @@ sub read_config
 	$sendtoms = $cfg->param("LMS2UDP.sendToMS");
 
 	# Read volumes from config
-	
-	# Regex check does not work.... ignoring for now
-	#if($cfg->param("LMSTTS.tts_lmsvol") and "$cfg->param('LMSTTS.tts_lmsvol')" =~ /^[\+\-]?\d*/) { $tts_lmsvol = $cfg->param("LMSTTS.tts_lmsvol"); }
-	#if($cfg->param("LMSTTS.tts_minvol") and $cfg->param("LMSTTS.tts_minvol") =~ m/\d*/) { $tts_minvol = $cfg->param("LMSTTS.tts_minvol"); }
-	#if($cfg->param("LMSTTS.tts_maxvol") and $cfg->param("LMSTTS.tts_maxvol") =~ m/\d*/) { $tts_maxvol = $cfg->param("LMSTTS.tts_maxvol"); }
 	
 	if( $cfg->param("LMSTTS.tts_lmsvol") ) { $tts_lmsvol = $cfg->param("LMSTTS.tts_lmsvol"); }
 	if( $cfg->param("LMSTTS.tts_minvol") ) { $tts_minvol = $cfg->param("LMSTTS.tts_minvol"); }
