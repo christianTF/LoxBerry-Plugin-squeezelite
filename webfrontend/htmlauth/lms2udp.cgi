@@ -19,13 +19,13 @@
 # Modules
 ##########################################################################
 
+use LoxBerry::Web;
+use LoxBerry::Log;
+
 # Own modules
 use lib './lib';
 use Basics;
 
-use LoxBerry::Web;
-use LoxBerry::Log;
-use POSIX 'strftime';
 use CGI::Carp qw(fatalsToBrowser);
 use CGI qw/:standard/;
 use Config::Simple;
@@ -65,7 +65,7 @@ our $doapply;
 our $doadd;
 our $dodel;
 
-my  $home = File::HomeDir->my_home;
+#my  $home = File::HomeDir->my_home;
 our $pname;
 our $languagefileplugin;
 our $phraseplugin;
@@ -124,19 +124,16 @@ LOGSTART("lms2udp.cgi");
 ##########################################################################
 
 # Figure out in which subfolder we are installed
-my $part = substr ((abs_path($0)), (length($home)+1));
-our ($psubfolder) = (split(/\//, $part))[3];
-our $pluginname = $psubfolder;
+our $psubfolder = $lbpplugindir;
 
 # Read global settings
-my  $syscfg             = new Config::Simple("$home/config/system/general.cfg");
-our $installfolder   = $syscfg->param("BASE.INSTALLFOLDER");
-our $lang            = $syscfg->param("BASE.LANG");
+my  $syscfg = new Config::Simple("$lbsconfigdir/general.cfg");
+our $installfolder  = $lbhomedir;
+our $lang = LoxBerry::System::lblanguage();
 our $miniservercount = $syscfg->param("BASE.MINISERVERS");
-our $clouddnsaddress = $syscfg->param("BASE.CLOUDDNS");
 
 # Read plugin settings
-$cfgfilename = "$installfolder/config/plugins/$psubfolder/plugin_squeezelite.cfg";
+$cfgfilename = "$lbpconfigdir/plugin_squeezelite.cfg";
 LOGINF("Reading Plugin config $cfgfilename");
 if (-e $cfgfilename) {
 	LOGOK("Plugin config existing - loading");
@@ -176,14 +173,14 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 # Read English language as default
 # Missing phrases in foreign language will fall back to English	
 	
-	$languagefileplugin 	= "$installfolder/templates/plugins/$psubfolder/lang/language_en.ini";
+	$languagefileplugin = "$lbptemplatedir/lang/language_en.ini";
 	$plglang = new Config::Simple($languagefileplugin);
 	$plglang->import_names('T');
 
 #	$lang = 'en'; # DEBUG
 	
 # Read foreign language if exists and not English
-	$languagefileplugin = "$installfolder/templates/plugins/$psubfolder/lang/language_$lang.ini";
+	$languagefileplugin = "$lbptemplatedir/lang/language_en.ini";
 	 if ((-e $languagefileplugin) and ($lang ne 'en')) {
 		# Now overwrite phrase variables with user language
 		$plglang = new Config::Simple($languagefileplugin);
@@ -268,9 +265,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		# Generate logfile link for navigaton
 		our $logfileslink = "				<li><a target=\"_blank\" href=\"" . LoxBerry::Web::loglist_url( ) . "\">Logfiles</a></li>\n";
 		
-
-
-	
 		if (! $lms2udp_msnr) {
 			$lms2udp_msnr = 1;
 		}
@@ -302,7 +296,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	
 		if ( !$header_already_sent ) { print "Content-Type: text/html\n\n"; }
 		
-		#$template_title = $phrase->param("TXT0000") . ": " . $phrase->param("TXT0040");
 		$template_title = "Squeezelite Player Plugin";
 		
 		# Print Header
@@ -310,7 +303,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		
 		# Print Menu selection
 		our $class_lms2udp = 'class="ui-btn-active ui-state-persist"';
-		open(F,"$installfolder/templates/plugins/$psubfolder/multi/topmenu.html") || die "Missing template plugins/$psubfolder/multi/topmenu.html";
+		open(F,"$lbptemplatedir/multi/topmenu.html") || die "Missing template $lbptemplatedir/multi/topmenu.html";
 		  while (<F>) 
 		  {
 		    $_ =~ s/<!--\$(.*?)-->/${$1}/g;
@@ -321,7 +314,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		
 		# Print LMS2UDP setting
 			
-		open(F,"$installfolder/templates/plugins/$psubfolder/multi/lms2udp.html") || die "Missing template plugins/$psubfolder/multi/lms2udp.html";
+		open(F,"$lbptemplatedir/multi/lms2udp.html") || die "Missing template $lbptemplatedir/multi/lms2udp.html";
 		  while (<F>) 
 		  {
 		    $_ =~ s/<!--\$(.*?)-->/${$1}/g;
@@ -381,9 +374,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		$cfg->save();
 	
 	}
-
-	
-	
 	
 #####################################################
 # Restart-Sub
@@ -391,33 +381,11 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	
 	sub restartLMS2UDP
 	{
-		
-		my $restartscript = "$installfolder/webfrontend/cgi/plugins/$psubfolder/restart_lms2udp.sh 1> /dev/null 2> $home/log/plugins/$psubfolder/lms2udp.log &";
+		my $restartscript = "$lbpbindir/restart_lms2udp.sh 1> /dev/null 2> $lbplogdir/lms2udp.log &";
 		system($restartscript);
 		return;
 	}
 	
-	
-#####################################################
-# Error-Sub
-#####################################################
-
-	sub error 
-	{
-		$template_title = "Squeezelite Player : Error";
-		if ( !$header_already_sent ) { print "Content-Type: text/html\n\n"; }
-		&lbheader;
-		open(F,"$installfolder/templates/system/$lang/error.html") || die "Missing template system/$lang/error.html";
-    while (<F>) 
-    {
-      $_ =~ s/<!--\$(.*?)-->/${$1}/g;
-      print $_;
-    }
-		close(F);
-		&footer;
-		exit;
-	}
-
 #####################################################
 # Page-Header-Sub
 #####################################################
@@ -432,12 +400,12 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	# Read English language as default
 	# Missing phrases in foreign language will fall back to English	
 	
-	$languagefileplugin	= "$installfolder/templates/plugins/$psubfolder/lang/help_en.ini";
+	$languagefileplugin	= "$lbptemplatedir/lang/help_en.ini";
 	$plglang = new Config::Simple($languagefileplugin);
 	$plglang->import_names('T');
 
 	# Read foreign language if exists and not English
-	$languagefileplugin = "$installfolder/templates/plugins/$psubfolder/lang/help_$lang.ini";
+	$languagefileplugin = "$lbptemplatedir/lang/help_$lang.ini";
 	 if ((-e $languagefileplugin) and ($lang ne 'en')) {
 		# Now overwrite phrase variables with user language
 		$plglang = new Config::Simple($languagefileplugin);
@@ -445,13 +413,13 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	}
 	  
 	# Parse help template
-	open(F,"$installfolder/templates/plugins/$psubfolder/multi/help_lms2udp.html") || die "Missing template plugins/$psubfolder/multi/help_lms2udp.html";
+	open(F,"$lbptemplatedir/multi/help_lms2udp.html") || die "Missing template $lbptemplatedir/multi/help_lms2udp.html";
 		while (<F>) {
 			$_ =~ s/<!--\$(.*?)-->/${$1}/g;
 		    $helptext = $helptext . $_;
 		}
 	close(F);
-	open(F,"$installfolder/templates/system/$lang/header.html") || die "Missing template system/$lang/header.html";
+	open(F,"$lbstemplatedir/$lang/header.html") || die "Missing template $lbstemplatedir/$lang/header.html";
 	while (<F>) 
 		{
 	      $_ =~ s/<!--\$(.*?)-->/${$1}/g;
@@ -466,7 +434,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 
 	sub footer 
 	{
-	  open(F,"$installfolder/templates/system/$lang/footer.html") || die "Missing template system/$lang/footer.html";
+	  open(F,"$lbstemplatedir/$lang/footer.html") || die "Missing template $lbstemplatedir/$lang/footer.html";
 	    while (<F>) 
 	    {
 	      $_ =~ s/<!--\$(.*?)-->/${$1}/g;

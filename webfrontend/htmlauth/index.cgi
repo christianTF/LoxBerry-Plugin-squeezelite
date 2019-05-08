@@ -417,8 +417,8 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		
 		# Print Menu selection
 		our $class_player = 'class="ui-btn-active ui-state-persist"';
-		#open(F,"$installfolder/templates/plugins/$psubfolder/multi/topmenu_player.html") || die "Missing template plugins/$psubfolder/multi/topmenu_player.html";
-		open(F,"$installfolder/templates/plugins/$psubfolder/multi/topmenu.html") || die "Missing template plugins/$psubfolder/multi/topmenu.html";
+		
+		open(F,"$lbptemplatedir/multi/topmenu.html") || die "Missing template $lbptemplatedir/multi/topmenu.html";
 		  while (<F>) 
 		  {
 		    $_ =~ s/<!--\$(.*?)-->/${$1}/g;
@@ -430,7 +430,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		
 		# Print Player setting
 			
-		open(F,"$installfolder/templates/plugins/$psubfolder/multi/settings.html") || die "Missing template plugins/$psubfolder/multi/settings.html";
+		open(F,"$lbptemplatedir/multi/settings.html") || die "Missing template $lbptemplatedir/multi/settings.html";
 		  while (<F>) 
 		  {
 		    $_ =~ s/<!--\$(.*?)-->/${$1}/g;
@@ -549,12 +549,12 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	# Read English language as default
 	# Missing phrases in foreign language will fall back to English	
 	
-	$languagefileplugin	= "$installfolder/templates/plugins/$psubfolder/lang/help_en.ini";
+	$languagefileplugin	= "$lbptemplatedir/lang/help_en.ini";
 	$plglang = new Config::Simple($languagefileplugin);
 	$plglang->import_names('T');
 
 	# Read foreign language if exists and not English
-	$languagefileplugin = "$installfolder/templates/plugins/$psubfolder/lang/help_$lang.ini";
+	$languagefileplugin = "$lbptemplatedir/lang/help_$lang.ini";
 	 if ((-e $languagefileplugin) and ($lang ne 'en')) {
 		# Now overwrite phrase variables with user language
 		$plglang = new Config::Simple($languagefileplugin);
@@ -562,13 +562,13 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	}
 	  
 	# Parse help template
-	open(F,"$installfolder/templates/plugins/$psubfolder/multi/help.html") || die "Missing template plugins/$psubfolder/multi/help.html";
+	open(F,"$lbptemplatedir/multi/help.html") || die "Missing template $lbptemplatedir/multi/help.html";
 		while (<F>) {
 			$_ =~ s/<!--\$(.*?)-->/${$1}/g;
 		    $helptext = $helptext . $_;
 		}
 	close(F);
-	open(F,"$installfolder/templates/system/$lang/header.html") || die "Missing template system/$lang/header.html";
+	open(F,"$lbstemplatedir/$lang/header.html") || die "Missing template $lbstemplatedir/$lang/header.html";
 	while (<F>) 
 		{
 	      $_ =~ s/<!--\$(.*?)-->/${$1}/g;
@@ -583,7 +583,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 
 	sub footer 
 	{
-	  open(F,"$installfolder/templates/system/$lang/footer.html") || die "Missing template system/$lang/footer.html";
+	  open(F,"$lbstemplatedir/$lang/footer.html") || die "Missing template $lbstemplatedir/$lang/footer.html";
 	    while (<F>) 
 	    {
 	      $_ =~ s/<!--\$(.*?)-->/${$1}/g;
