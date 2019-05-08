@@ -21,6 +21,7 @@
 
 use LoxBerry::System;
 use LoxBerry::Web;
+use LoxBerry::Log;
 use POSIX 'strftime';
 use CGI::Carp qw(fatalsToBrowser);
 use CGI qw/:standard/;
@@ -110,6 +111,15 @@ my $logmessage;
 our $lmslinks;
 our $logfileslink;
 
+# Init logfile
+my $log = LoxBerry::Log->new (
+    name => 'Webinterface',
+	addtime => 1,
+	append => 1,
+);
+
+LOGSTART("index.cgi");
+
 ##########################################################################
 # Read Settings
 ##########################################################################
@@ -132,13 +142,13 @@ if ($debug) {
 
 # Read plugin settings
 $cfgfilename = "$lbpconfigdir/plugin_squeezelite.cfg";
-tolog("INFORMATION", "Reading Plugin config $cfgfilename");
+LOGINF("Reading Plugin config $cfgfilename");
 if (-e $cfgfilename) {
-	tolog("INFORMATION", "Plugin config existing - loading");
+	LOGOK("Plugin config existing - loading");
 	$cfg = new Config::Simple($cfgfilename);
 }
 unless (-e $cfgfilename) {
-	tolog("INFORMATION", "Plugin config NOT existing - creating");
+	LOGOK("Plugin config NOT existing - creating");
 	$cfg = new Config::Simple(syntax=>'ini');
 	$cfg->param("Main.ConfigVersion", 2);
 	$cfg->param("Main.ConfigVersion", 2);
@@ -215,20 +225,20 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 
 	if ($saveformdata) 
 	{
-		if ($doapply) 		{ 	tolog("DEBUG", "doapply triggered - save, restart, refresh form");
+		if ($doapply) 		{ 	LOGINF("doapply triggered - save, restart, refresh form");
 									&save;
 									&restartSqueezelite; }
-		elsif ($doadd)	{ 	tolog("DEBUG", "doaadd triggered - save with +1, refresh form");
+		elsif ($doadd)	{ 	LOGINF("doaadd triggered - save with +1, refresh form");
 							&save(1); }
-		elsif ($dodel)	{ 	tolog("DEBUG", "doadel triggered - save with -1, refresh form");
+		elsif ($dodel)	{ 	LOGINF("doadel triggered - save with -1, refresh form");
 							&save(-1); }
-		else { 				tolog("DEBUG", "save triggered - save, refresh form");
+		else { 				LOGINF( "save triggered - save, refresh form");
 							&save; }
 	  &form;
 	}
 	else 
 	{
-	  tolog("DEBUG", "form triggered - load form");
+	  LOGINF("form triggered - load form");
 	  &form;
 	}
 	exit;
@@ -247,16 +257,16 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	{
 		# Filter
 		# $debug     = quotemeta($debug);
-		tolog("INFORMATION", "save triggered - save, refresh form");
+		LOGINF("save triggered - save, refresh form");
 		
 		# Query Squeezelite binary
 		my $sl_path = sl_path();
 		
 		# Prepare form defaults
 		# Read Squeezelite possible sound outputs
-		tolog("INFORMATION", "Calling squeezelite to get outputs");
-		my $squ_outputs = `$sl_path -l` or tolog("ERROR", "Failed to run squeezelite.");
-		
+		LOGOK("Calling squeezelite to get outputs");
+		my $squ_outputs = `$sl_path -l` or LOGERR("Failed to run squeezelite.");
+		LOGDEB("$squ_outputs");
 		# Sample output:
 
 # Output devices:
@@ -342,7 +352,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			push(@inst_name, $cfg->param("Instance" . $instance . ".Name"));
 			push(@inst_desc, $cfg->param("Instance" . $instance . ".Description"));
 			push(@inst_mac, $cfg->param("Instance" . $instance . ".MAC"));
-			tolog("DEBUG", "Instance$instance output from config: " . join(",", $cfg->param("Instance" . $instance . ".Output")));
+			LOGINF("Instance$instance output from config: " . join(",", $cfg->param("Instance" . $instance . ".Output")));
 			push(@inst_output, join(",", $cfg->param("Instance" . $instance . ".Output")));
 			push(@inst_params, join(",", $cfg->param("Instance" . $instance . ".Parameters")));
 			push(@inst_gpio, defined $cfg->param("Instance" . $instance . ".GPIO") ? $cfg->param("Instance" . $instance . ".GPIO") : "Off");
@@ -541,7 +551,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			$cfg->param("Instance$instance.Enabled", $enabled);
 			$cfg->param("Instance$instance.Name", $name);
 			$cfg->param("Instance$instance.MAC", $MAC);
-			tolog("DEBUG", "Instance$instance output from form: " . $output);
+			LOGDEB("Instance$instance output from form: " . $output);
 			$cfg->param("Instance$instance.Output", $output);
 			$cfg->param("Instance$instance.Parameters", $params);
 			$cfg->param("Instance$instance.Description", $desc);
@@ -692,24 +702,25 @@ sub sl_path {
 
 	if (! $cfg->param("Main.UseAlternativeBinaries") ) {
 		# Use original Debian binary
-		tolog("INFORMATION", "Using original Debian Squeezelite binary");
+		LOGOK("Using original Debian Squeezelite binary");
 		$sl_path = 'squeezelite';
 	} else {
 		# Use alternative binaries
 		
 		# Check architecture
 		my $archstring = `/bin/uname -a`;
+		LOGDEB("uname -a: $archstring");
 		if ( index($archstring, 'armv') != -1 ) {
-			tolog("INFORMATION", "Using ARM Squeezelite binary");
+			LOGOK("Using ARM Squeezelite binary");
 			$sl_path = "$lbpdatadir/squeezelite-armv6hf";
 		} elsif ( index($archstring, 'x86_64') != -1 ) {
-			tolog("INFORMATION", "Using x64 Squeezelite binary");
+			LOGOK("Using x64 Squeezelite binary");
 			$sl_path = "$lbpdatadir/squeezelite-x64";
 		} elsif ( index($archstring, 'x86') != -1 ) {
-			tolog("INFORMATION", "Using x86 Squeezelite binary");
+			LOGOK("Using x86 Squeezelite binary");
 			$sl_path = "$lbpdatadir/squeezelite-x86";
 		} else {
-			tolog("ERROR", "Could not determine architecture - falling back to original Debian Squeezelite binary");
+			LOGERR("Could not determine architecture - falling back to original Debian Squeezelite binary");
 			$sl_path = 'squeezelite';
 		}
 	}
@@ -717,15 +728,9 @@ sub sl_path {
 
 }
 
-#####################################################
-# Logging
-#####################################################
-
-sub tolog {
-#  print strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " $_[0]: $_[1]\n";
-  if ($debug) {
-	if ($loghandle) {
-		print $loghandle strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " $_[0]: $_[1]\n";
+END
+{
+	if($log) {
+		LOGEND "index.cgi completed";
 	}
-  }
 }
