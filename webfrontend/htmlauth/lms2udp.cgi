@@ -23,7 +23,8 @@
 use lib './lib';
 use Basics;
 
-
+use LoxBerry::Web;
+use LoxBerry::Log;
 use POSIX 'strftime';
 use CGI::Carp qw(fatalsToBrowser);
 use CGI qw/:standard/;
@@ -41,7 +42,7 @@ no strict "refs"; # we need it for template system
 ##########################################################################
 
 # Version of this script
-our $version = "0.5.2";
+our $version = "1.0.1.1";
 
 our $cfg;
 our $phrase;
@@ -283,6 +284,12 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			$lmslinks = "				<li><a target=\"_blank\" href=\"http://$squ_server:$webport/\">Logitech Media Server</a></li>\n" . 
 						"				<li><a target=\"_blank\" href=\"http://$squ_server:$webport/settings/index.html\">LMS Settings</a></li>";
 		}
+
+		# Generate logfile link for navigaton
+		our $logfileslink = "				<li><a target=\"_blank\" href=\"" . LoxBerry::Web::loglist_url( ) . "\">Logfiles</a></li>\n";
+		
+
+
 	
 		if (! $lms2udp_msnr) {
 			$lms2udp_msnr = 1;

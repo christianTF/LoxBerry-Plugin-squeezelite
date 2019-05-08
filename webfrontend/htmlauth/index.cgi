@@ -107,6 +107,8 @@ my $logname;
 my $loghandle;
 my $logmessage;
 
+our $lmslinks;
+our $logfileslink;
 
 ##########################################################################
 # Read Settings
@@ -328,11 +330,10 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 						"				<li><a target=\"_blank\" href=\"http://$squ_server:$webport/settings/index.html\">LMS Settings</a></li>";
 		}
 		
+		# Generate logfile link for navigaton
+		$logfileslink = "				<li><a target=\"_blank\" href=\"" . LoxBerry::Web::loglist_url( ) . "\">Logfiles</a></li>\n";
+		
 		# Read the Instances config file section
-		
-		
-		
-		
 		
 		for ($instance = 1; $instance <= $squ_instances; $instance++) {
 			$enabled = undef;
