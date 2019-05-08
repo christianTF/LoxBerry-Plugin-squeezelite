@@ -115,7 +115,6 @@ my $logmessage;
 my $log = LoxBerry::Log->new (
     name => 'Webinterface',
 	addtime => 1,
-	append => 1,
 );
 
 LOGSTART("lms2udp.cgi");

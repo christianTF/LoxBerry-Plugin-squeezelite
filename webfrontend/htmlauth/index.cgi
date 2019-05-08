@@ -22,16 +22,13 @@
 use LoxBerry::System;
 use LoxBerry::Web;
 use LoxBerry::Log;
-use POSIX 'strftime';
 use CGI::Carp qw(fatalsToBrowser);
 use CGI qw/:standard/;
 use Config::Simple;
-use File::HomeDir;
-# use Cwd 'abs_path';
 # use Net::Address::Ethernet qw( get_address );
+
 use warnings;
 use strict;
-
 no strict "refs"; # we need it for template system
 
 ##########################################################################
@@ -63,9 +60,7 @@ our $doapply;
 our $doadd;
 our $dodel;
 
-my  $home = File::HomeDir->my_home;
 our $pname;
-our $debug=1;
 our $languagefileplugin;
 our $phraseplugin;
 our $plglang;
@@ -99,8 +94,6 @@ our @inst_desc;
 our @inst_mac;
 our @inst_output;
 our @inst_params;
-our @inst_gpio;
-our @inst_gpiolevel;
 our @commandline;
 our $htmlout;
 
@@ -115,7 +108,6 @@ our $logfileslink;
 my $log = LoxBerry::Log->new (
     name => 'Webinterface',
 	addtime => 1,
-	append => 1,
 );
 
 LOGSTART("index.cgi");
@@ -155,21 +147,6 @@ unless (-e $cfgfilename) {
 #########################################################################
 # Parameter
 #########################################################################
-
-# For Debugging with level 3 
-sub apache()
-{
-  if ($debug eq 3)
-  {
-		if ($header_already_sent eq 0) {$header_already_sent=1; print header();}
-		my $debug_message = shift;
-		# Print to Browser 
-		print $debug_message."<br>\n";
-		# Write in Apache Error-Log 
-		print STDERR $debug_message."\n";
-	}
-	return();
-}
 
 # Everything from URL
 foreach (split(/&/,$ENV{'QUERY_STRING'}))
@@ -249,7 +226,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	sub form 
 	{
 		# Filter
-		# $debug     = quotemeta($debug);
 		LOGINF("save triggered - save, refresh form");
 		
 		# Query Squeezelite binary
@@ -303,10 +279,8 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		$squ_debug = $cfg->param("Main.debug");
 		if (($squ_debug eq "True") || ($squ_debug eq "Yes")) {
 			$squ_debug_enabled = 'checked';
-			# $debug = 1;
 		} else {
 			$squ_debug_enabled = '';
-			# $debug = 0;
 		}
 
 		$squ_poweroff = $cfg->param("Main.PoweroffPlayers");
@@ -348,8 +322,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			LOGINF("Instance$instance output from config: " . join(",", $cfg->param("Instance" . $instance . ".Output")));
 			push(@inst_output, join(",", $cfg->param("Instance" . $instance . ".Output")));
 			push(@inst_params, join(",", $cfg->param("Instance" . $instance . ".Parameters")));
-			push(@inst_gpio, defined $cfg->param("Instance" . $instance . ".GPIO") ? $cfg->param("Instance" . $instance . ".GPIO") : "Off");
-			push(@inst_gpiolevel, ($cfg->param("Instance" . $instance . ".GPIOLevel") ? $cfg->param("Instance" . $instance . ".GPIOLevel") : "High"));
 			
 			
 		}
@@ -535,8 +507,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			my $output = param("Output$instance");
 			my $params = trim(param("Parameters$instance"));
 			my $desc = trim(param("Descriptiom$instance"));
-			my $gpio = trim(param("gpio$instance"));
-			my $gpiolevel = trim(param("gpiolevel$instance"));
 			# Possible validations here
 			
 			# Write to config
@@ -548,9 +518,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			$cfg->param("Instance$instance.Output", $output);
 			$cfg->param("Instance$instance.Parameters", $params);
 			$cfg->param("Instance$instance.Description", $desc);
-			$cfg->param("Instance$instance.GPIO", $gpio);
-			$cfg->param("Instance$instance.GPIOLevel", $gpiolevel);
-			
 			
 		}
 		$cfg->save();

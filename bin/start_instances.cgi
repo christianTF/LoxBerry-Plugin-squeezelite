@@ -52,8 +52,6 @@ my @inst_desc;
 my @inst_mac;
 my @inst_output;
 my @inst_params;
-my @inst_gpio;
-my @inst_gpiolevel;
 
 my @commandline;
 
@@ -110,8 +108,6 @@ for ($instance = 1; $instance <= $squ_instances; $instance++) {
 		push(@inst_mac, $cfg->param("Instance" . $instance . ".MAC"));
 		push(@inst_output, join(",", $cfg->param("Instance" . $instance . ".Output")));
 		push(@inst_params, join(",", $cfg->param("Instance" . $instance . ".Parameters")));
-		push(@inst_gpio, $cfg->param("Instance" . $instance . ".GPIO"));
-		push(@inst_gpiolevel, $cfg->param("Instance" . $instance . ".GPIOLevel"));
 
 	# ToDo: At some point, we may validate the config file parameters, and define dependencies of options.
 	}
@@ -162,11 +158,6 @@ for ($instance = 0; $instance < $instcount; $instance++) {
 	if (index($inst_params[$instance], "-a ") == -1) {
 		$command .= " -a 160";
 	}
-	# my $gpionr = looks_like_number( $inst_gpio[$instance] ) ? $inst_gpio[$instance] : undef;
-	# if ((index($inst_params[$instance], "-G ") == -1) && $squ_altbinaries eq '1' && $gpionr) {
-		# my $gpiolevel = lc(substr($inst_gpio[$instance], 0, 1)) eq 'l' ? 'L' : 'H'; 
-		# $command .= " -G $gpionr:$gpiolevel";
-	# }
 	if ($server_and_port ne "") {
 		$command .= " -s $server_and_port";
 	}
@@ -187,10 +178,6 @@ for ($instance = 0; $instance < $instcount; $instance++) {
 	$command .= " -f " . $log->filename . " > /dev/null &";
 	
 	# Starten
-	#open(STDOUT, ">>$logname");
-	#open(STDERR, ">>$logname");
-	# $ENV{WIRINGPI_GPIOMEM}='1';
-	# $command = "su --preserve-environment -c \"$command\" squeezelox &";
 	LOGINF("Starting instance $instance with command:");
 	LOGINF("$command");
 	my $output = `$command`;
