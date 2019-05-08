@@ -152,6 +152,17 @@ if (! $squ_altbinaries) {
 	}
 }
 
+# Get Squeezelite version number from licence term
+	my @sl_ver = `$sl_path -t`;
+	my $sl_ver_exitcode  = $? >> 8;
+	if ($sl_ver_exitcode != 0) {
+		LOGERR "Could not start Squeezelite to get version number:";
+		LOGERR join(@sl_ver, "\n");
+	} else {
+			LOGOK "Squeezelite version: " . trim($sl_ver[0]);
+	}
+
+
 for ($instance = 0; $instance < $instcount; $instance++) {
 	$command = $sl_path;
 	# Wird in den Parametern kein -a gefunden, senden wir per Default -a 80 (ALSA-Buffer)
