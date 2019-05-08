@@ -67,7 +67,6 @@ our $dodel;
 
 my  $home = File::HomeDir->my_home;
 our $pname;
-our $debug=1;
 our $languagefileplugin;
 our $phraseplugin;
 our $plglang;
@@ -112,6 +111,15 @@ my $loghandle;
 my $logmessage;
 
 
+# Init logfile
+my $log = LoxBerry::Log->new (
+    name => 'Webinterface',
+	addtime => 1,
+	append => 1,
+);
+
+LOGSTART("lms2udp.cgi");
+
 ##########################################################################
 # Read Settings
 ##########################################################################
@@ -128,22 +136,15 @@ our $lang            = $syscfg->param("BASE.LANG");
 our $miniservercount = $syscfg->param("BASE.MINISERVERS");
 our $clouddnsaddress = $syscfg->param("BASE.CLOUDDNS");
 
-# Initialize logfile
-if ($debug) {
-	$logname = "$installfolder/log/plugins/$psubfolder/lms2udp_cgi.log";
-	open ($loghandle, '>>' , $logname); # or warn "Cannot open logfile for writing (Permission?) - Continuing without log\n";
-	chmod (0666, $loghandle); # or warn "Cannot change logfile permissions\n";	
-}
-
 # Read plugin settings
 $cfgfilename = "$installfolder/config/plugins/$psubfolder/plugin_squeezelite.cfg";
-tolog("INFORMATION", "Reading Plugin config $cfgfilename");
+LOGINF("Reading Plugin config $cfgfilename");
 if (-e $cfgfilename) {
-	tolog("INFORMATION", "Plugin config existing - loading");
+	LOGOK("Plugin config existing - loading");
 	$cfg = new Config::Simple($cfgfilename);
 }
 unless (-e $cfgfilename) {
-	tolog("INFORMATION", "Plugin config NOT existing - creating");
+	LOGOK("Plugin config NOT existing - creating");
 	$cfg = new Config::Simple(syntax=>'ini');
 	$cfg->param("Main.ConfigVersion", 2);
 	$cfg->write($cfgfilename);
@@ -153,21 +154,6 @@ unless (-e $cfgfilename) {
 #########################################################################
 # Parameter
 #########################################################################
-
-# For Debugging with level 3 
-sub apache()
-{
-  if ($debug eq 3)
-  {
-		if ($header_already_sent eq 0) {$header_already_sent=1; print header();}
-		my $debug_message = shift;
-		# Print to Browser 
-		print $debug_message."<br>\n";
-		# Write in Apache Error-Log 
-		print STDERR $debug_message."\n";
-	}
-	return();
-}
 
 # Everything from URL
 foreach (split(/&/,$ENV{'QUERY_STRING'}))
@@ -213,11 +199,11 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 
 	if ($doapply) 
 	{
-		tolog("DEBUG", "LMS2UDP - save form and restart");
+		LOGINF("LMS2UDP - save form and restart");
 		&save;
 		&restartLMS2UDP; 
 	}
-	tolog("DEBUG", "form triggered - load form");
+	LOGINF("form triggered - load form");
 	&form;
 	
 	exit;
@@ -235,8 +221,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	sub form 
 	{
 		# Filter
-		# $debug     = quotemeta($debug);
-		tolog("INFORMATION", "save triggered - save, refresh form");
+		LOGINF("save triggered - save, refresh form");
 							
 		# Read the Main config file section
 		$cfgversion = $cfg->param("Main.ConfigVersion");
@@ -253,18 +238,14 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		$squ_debug = $cfg->param("Main.debug");
 		if (is_true($squ_debug)) {
 			$squ_debug_enabled = 'checked';
-			# $debug = 1;
 		} else {
 			$squ_debug_enabled = '';
-			# $debug = 0;
 		}
 
 		if (is_true($lms2udp_activated)) {
 			$lms2udp_activated = 'checked';
-			# $debug = 1;
 		} else {
 			$lms2udp_activated = '';
-			# $debug = 0;
 		}
 		
 		# Read labels from config
@@ -523,13 +504,9 @@ sub getMAC {
 }
 
 
-#####################################################
-# Logging
-#####################################################
-
-sub tolog 
+END
 {
-	if ($loghandle) {
-		print $loghandle strftime("%Y-%m-%d %H:%M:%S", localtime(time)) . " $_[0]: $_[1]\n";
+	if($log) {
+		LOGEND "lms2udp.cgi completed";
 	}
 }

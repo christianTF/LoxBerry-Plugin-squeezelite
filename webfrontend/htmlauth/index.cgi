@@ -133,13 +133,6 @@ our $psubfolder = $lbpplugindir;
 $installfolder = $lbhomedir;
 $lang = LoxBerry::System::lblanguage();
 
-# Initialize logfile
-if ($debug) {
-	$logname = "$lbplogdir/index.log";
-	open ($loghandle, '>>' , $logname); # or warn "Cannot open logfile for writing (Permission?) - Continuing without log\n";
-	chmod (0666, $loghandle); # or warn "Cannot change logfile permissions\n";	
-}
-
 # Read plugin settings
 $cfgfilename = "$lbpconfigdir/plugin_squeezelite.cfg";
 LOGINF("Reading Plugin config $cfgfilename");
