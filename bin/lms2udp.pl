@@ -6,7 +6,7 @@ use forks::shared;
 
 use LoxBerry::Log;
 
-require "$lbhomedir/webfrontend/htmlauth/plugins/squeezelite/LMSTTS.pm";
+require "$lbphtmlauthdir/lib/LMSTTS.pm";
 									
 # Christian Fenzl, christiantf@gmx.at 2017
 # This script is a gateway from Logitech Media TCP CLI to Loxone Miniserver UDP (for values) and http REST (for text).
@@ -18,7 +18,24 @@ require "$lbhomedir/webfrontend/htmlauth/plugins/squeezelite/LMSTTS.pm";
 # - libio-socket-timeout-perl
 
 # Version of this script
-$version = "1.0.1.1";
+$version = "1.0.1.2";
+
+## Termination handling
+$SIG{INT} = sub { 
+	LOGOK "LMS2UDP interrupted by Ctrl-C"; 
+	LOGTITLE "LMS2UDP interrupted by Ctrl-C"; 
+	LOGEND(); 
+	exit 1;
+};
+
+$SIG{TERM} = sub { 
+	LOGOK "LMS2UDP requested to stop"; 
+	LOGTITLE "LMS2UDP requested to stop"; 
+	LOGEND();
+	exit 1;	
+};
+
+
 
 print "Startup lms2udp daemon...\n";
 
@@ -30,8 +47,6 @@ print "Startup lms2udp daemon...\n";
 # Perl modules
 
 use Config::Simple;
-# use Cwd 'abs_path';
-# use File::HomeDir;
 use Getopt::Long qw(GetOptions);
 use HTML::Entities;
 use IO::Select;
@@ -112,7 +127,6 @@ print "Plugindir: $lbpplugindir\n";
 # Init Logfile
 our $log = LoxBerry::Log->new (
     name => 'LMS2UDP',
-	loglevel => 7,
 	stderr => 1,
 	addtime => 1,
 #	nofile => 1,
@@ -194,7 +208,11 @@ END
 	if (-e "$pidfile") {
 		unlink "$pidfile";
 	}
+	if($log) {
+		LOGEND "lms2udp.pl ended";
+	}
 }		
+
 
 
 #################################################################################
@@ -1141,7 +1159,7 @@ sub read_config
 	if (! $lms2udp_forcepolldelay) { $lms2udp_forcepolldelay = 300; }
 	if (! $lms2udp_refreshdelayms || $lms2udp_refreshdelayms < 30) { $lms2udp_refreshdelayms = 150; }
 	if (!defined $sendtoms || $sendtoms eq "1") { $sendtoms = 1; } else { $sendtoms = undef;}
-	LOGWARN "Sending to Miniserver is DISABLED" if (!$sendtoms);
+	LOGWARN "Sending to Miniserver is DISABLED (sendToMS=0)" if (!$sendtoms);
 	LOGINF "Sending to Miniserver is ENABLED" if ($sendtoms);
 
 	# Miniserver data
