@@ -29,8 +29,6 @@ use Basics;
 use CGI::Carp qw(fatalsToBrowser);
 use CGI qw/:standard/;
 use Config::Simple;
-use File::HomeDir;
-use Cwd 'abs_path';
 # use Net::Address::Ethernet qw( get_address );
 use warnings;
 use strict;
@@ -65,7 +63,6 @@ our $doapply;
 our $doadd;
 our $dodel;
 
-#my  $home = File::HomeDir->my_home;
 our $pname;
 our $languagefileplugin;
 our $phraseplugin;
@@ -180,7 +177,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 #	$lang = 'en'; # DEBUG
 	
 # Read foreign language if exists and not English
-	$languagefileplugin = "$lbptemplatedir/lang/language_en.ini";
+	$languagefileplugin = "$lbptemplatedir/lang/language_$lang.ini";
 	 if ((-e $languagefileplugin) and ($lang ne 'en')) {
 		# Now overwrite phrase variables with user language
 		$plglang = new Config::Simple($languagefileplugin);
