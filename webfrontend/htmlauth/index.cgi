@@ -20,6 +20,7 @@
 ##########################################################################
 
 use LoxBerry::System;
+use LoxBerry::Web;
 use POSIX 'strftime';
 use CGI::Carp qw(fatalsToBrowser);
 use CGI qw/:standard/;
@@ -437,6 +438,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		
 		# Get number of running Squeezelite processes
 		$runningInstances = `pgrep -c squeezelite`;
+		our $log_start_instances = LoxBerry::Web::logfile_button_html( NAME => 'Start_Instances', DATA_MINI => 1 );
 		
 		# Print Header
 		&lbheader;
