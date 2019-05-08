@@ -16,9 +16,14 @@ if [ $? -eq 0 ] ; then
 	deluser --remove-home squeezelox
 fi
 
-if [ -f $datadir/squeezelite ]; then
+if [ -e $datadir/squeezelite ]; then
 	echo "<INFO> Upgrade to V1.x: Deleting old squeezelite symlink"
 	rm -f $datadir/squeezelite
+fi
+
+if [ -e $loxberryhome/config/plugins/$pluginname/sudoers.* ]; then
+	echo "<INFO> Upgrade to V1.x: Removing obsolete sudoers version files"
+	rm $loxberryhome/config/plugins/$pluginname/sudoers.*
 fi
 	
 
