@@ -50,7 +50,6 @@ our $helptext;
 our $helplink;
 our $installfolder;
 our $languagefile;
-our $error;
 our $saveformdata=0;
 our $output;
 our $message;
@@ -141,8 +140,6 @@ unless (-e $cfgfilename) {
 	$cfg->param("Main.UseAlternativeBinaries", 1);
 	$cfg->write($cfgfilename);
 }
-	
-
 
 #########################################################################
 # Parameter
@@ -323,7 +320,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			push(@inst_output, join(",", $cfg->param("Instance" . $instance . ".Output")));
 			push(@inst_params, join(",", $cfg->param("Instance" . $instance . ".Parameters")));
 			
-			
 		}
 		
 		# If no instances defined yet, show at least one input line
@@ -473,7 +469,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			$squ_instances--;
 		}
 		
-		
 		$cfg->param("Main.ConfigVersion", $cfg_version);
 		$cfg->param("Main.LMSServer", $squ_server);
 		$cfg->param("Main.LMSWebPort", $squ_lmswebport);
@@ -495,7 +490,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		} else {
 			$cfg->param("Main.UseAlternativeBinaries", "0");
 		}
-		
 		
 		# Run through instance table
 		
@@ -541,27 +535,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	
 	}
 	
-	
-#####################################################
-# Error-Sub
-#####################################################
-
-	sub error 
-	{
-		$template_title = "Squeezelite Player : Error";
-		if ( !$header_already_sent ) { print "Content-Type: text/html\n\n"; }
-		&lbheader;
-		open(F,"$installfolder/templates/system/$lang/error.html") || die "Missing template system/$lang/error.html";
-    while (<F>) 
-    {
-      $_ =~ s/<!--\$(.*?)-->/${$1}/g;
-      print $_;
-    }
-		close(F);
-		&footer;
-		exit;
-	}
-
 #####################################################
 # Page-Header-Sub
 #####################################################
