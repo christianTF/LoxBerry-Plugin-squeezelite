@@ -4,6 +4,7 @@ use forks::shared;
 # use threads qw(stringify);
 # use threads::shared;
 
+use LoxBerry::IO;
 use LoxBerry::Log;
 
 require "$lbphtmlauthdir/lib/LMSTTS.pm";
@@ -24,14 +25,14 @@ $version = "1.0.1.2";
 $SIG{INT} = sub { 
 	LOGOK "LMS2UDP interrupted by Ctrl-C"; 
 	LOGTITLE "LMS2UDP interrupted by Ctrl-C"; 
-	LOGEND(); 
+	#LOGEND(); 
 	exit 1;
 };
 
 $SIG{TERM} = sub { 
 	LOGOK "LMS2UDP requested to stop"; 
 	LOGTITLE "LMS2UDP requested to stop"; 
-	LOGEND();
+	#LOGEND();
 	exit 1;	
 };
 
@@ -1049,23 +1050,29 @@ sub to_ms
 	
 	if (! $lms2udp_usehttpfortext || !$sendtoms) { return; }
 	
-	#my $playeridenc = uri_escape( $playerid );
-	#my $labelenc = uri_escape ( $label );
-	my $textenc = uri_escape( $text );
+	# my $textenc = uri_escape( $text );
+	# my $player_label = uri_escape( 'LMS ' . $playerid . ' ' . $label);
+	my $player_label = 'LMS ' . $playerid . ' ' . $label;
+		
+	## Direct method - replaced by LoxBerry::IO::mshttp_send
 	
-	my $player_label = uri_escape( 'LMS ' . $playerid . ' ' . $label);
+	# $url = "http://$miniserveradmin:$miniserverpass\@$miniserverip\:$miniserverport/dev/sps/io/$player_label/$textenc";
+	# $url_nopass = "http://$miniserveradmin:*****\@$miniserverip\:$miniserverport/dev/sps/io/$player_label/$textenc";
+	# $ua = LWP::UserAgent->new;
+	# $ua->timeout(1);
+	# LOGDEB "to_ms (http): #$playerid# #$label# #$text#";
+	# LOGDEB "to_ms (http): URL $url_nopass";
+	# $response = $ua->get($url);
+	# return $response;
 	
+	## New: With mshttp_send_mem
 	
-	$url = "http://$miniserveradmin:$miniserverpass\@$miniserverip\:$miniserverport/dev/sps/io/$player_label/$textenc";
-	$url_nopass = "http://$miniserveradmin:*****\@$miniserverip\:$miniserverport/dev/sps/io/$player_label/$textenc";
-	$ua = LWP::UserAgent->new;
-	$ua->timeout(1);
 	LOGDEB "to_ms (http): #$playerid# #$label# #$text#";
-	LOGDEB "to_ms (http): URL $url_nopass";
-	$response = $ua->get($url);
-	return $response;
+	my $http_response = LoxBerry::IO::mshttp_send( $lms2udp_msnr, $player_label, $text);
+	if (! $http_response) {
+		LOGDEB "to_ms (http): WARNING: Could not set '$player_label' (VI/VTI not available?)";
+	}
 }
-
 
 #####################################
 # search_in_playerstate
