@@ -1,9 +1,65 @@
 
-									<div data-role="navbar" >
-										<ul>
-											<li><a id="a_player" href="./index.cgi" <!--$class_player-->>Player</a></li>
-											<li><a id="a_lms2udp" href="./lms2udp.cgi" <!--$class_lms2udp-->>LMS Gateway</a></li>
-											<!--$lmslinks-->
-											<!--$logfileslink-->
+				<div data-role="navbar" >
+					<ul>
+						<li><a id="a_player" href="./index.cgi" <!--$class_player-->>Player</a></li>
+						<li><a id="a_lms2udp" href="./lms2udp.cgi" <!--$class_lms2udp-->>LMS Gateway</a></li>
+						<!--$lmslinks-->
+						<!--$logfileslink-->
  										</ul>
-									</div>
+				</div>
+				<!-- Process states -->
+				<div style="display:flex;align-items:center;justify-content:center;font-size:11px;">
+					<span id="squeezelitestate">Collecting...</span>&nbsp;| &nbsp;<span id="lms2udpstate">Collecting...</span>
+				</div>
+				
+<script>		
+
+$(function() {
+		
+		setInterval(function(){ running_states(); }, 5000);
+		running_states();
+});
+
+function running_states() 
+	{
+
+		$.post( 'ajax.cgi', {
+			ajax: 'getstates' })
+		.done(function(resp) {
+			// console.log( "ajax_post", "success", resp );
+			if(resp.instancecount != null) {
+				if (resp.instancecount == resp.instanceenabled && resp.instancecount == 0)
+					$("#squeezelitestate").attr("style", "color:black").html('No Squeezelite Zone enabled');
+				else if (resp.instancecount == resp.instanceenabled)
+					$("#squeezelitestate").attr("style", "color:green").html(resp.instancecount + ' of ' + resp.instanceenabled + ' Squeezelite instances running');
+				else
+					$("#squeezelitestate").attr("style", "color:red").html(resp.instancecount + ' of ' + resp.instanceenabled + ' Squeezelite instances running');
+			} else {
+				$("#squeezelitestate").attr("style", "color:red").html('Error fetching data');
+			}
+			
+			if(resp.lms2udpcount != null) {
+				if(resp.lms2udpcount == -1)
+					$("#lms2udpstate").attr("style", "color:black").html('LMS Gateway disabled');
+				else if (resp.lms2udpcount == 0)
+					$("#lms2udpstate").attr("style", "color:red").html('LMS Gateway NOT running');
+				else
+					$("#lms2udpstate").attr("style", "color:green").html('LMS Gateway running');;
+			} else {
+				$("#lms2udpstate").attr("style", "color:red").html('Error fetching data');
+			}
+			
+	  })
+	  .fail(function(resp) {
+			$("#squeezelitestate").attr("style", "color:red").html('Error fetching data');
+			$("#lms2udpstate").attr("style", "color:red").html('Error fetching data');
+			
+	  })
+	  .always(function(resp) {
+			// console.log( "ajax_post", "finished", resp );
+
+		});
+	}
+	
+	
+</script>

@@ -408,10 +408,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		#$template_title = $phrase->param("TXT0000") . ": " . $phrase->param("TXT0040");
 		$template_title = "Squeezelite Player Plugin";
 		
-		# Get number of running Squeezelite processes
-		$runningInstances = `pgrep -c squeezelite`;
-		our $log_start_instances = LoxBerry::Web::logfile_button_html( NAME => 'Start_Instances', DATA_MINI => 1 );
-		
 		# Print Header
 		&lbheader;
 		
