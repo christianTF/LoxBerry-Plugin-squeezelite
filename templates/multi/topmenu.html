@@ -9,7 +9,7 @@
 				</div>
 				<!-- Process states -->
 				<div style="display:flex;align-items:center;justify-content:center;font-size:11px;">
-					<span id="squeezelitestate">Collecting...</span>&nbsp;| &nbsp;<span id="lms2udpstate">Collecting...</span>
+					<span id="squeezelitestate"><!--$T::RUNNINGINSTANCES_COLLECTING--></span>&nbsp;| &nbsp;<span id="lms2udpstate"><!--$T::RUNNINGINSTANCES_COLLECTING--></span>
 				</div>
 				
 <script>		
@@ -29,30 +29,30 @@ function running_states()
 			// console.log( "ajax_post", "success", resp );
 			if(resp.instancecount != null) {
 				if (resp.instancecount == resp.instanceenabled && resp.instancecount == 0)
-					$("#squeezelitestate").attr("style", "color:black").html('No Squeezelite Zone enabled');
+					$("#squeezelitestate").attr("style", "color:black").html('<!--$T::RUNNINGINSTANCES_SQU_NO_ZONE-->');
 				else if (resp.instancecount == resp.instanceenabled)
-					$("#squeezelitestate").attr("style", "color:green").html(resp.instancecount + ' of ' + resp.instanceenabled + ' Squeezelite instances running');
+					$("#squeezelitestate").attr("style", "color:green").html(resp.instancecount + ' <!--$T::RUNNINGINSTANCES_SQU_OF--> ' + resp.instanceenabled + ' <!--$T::RUNNINGINSTANCES_SQU_NO_OF_RUNNING-->');
 				else
-					$("#squeezelitestate").attr("style", "color:red").html(resp.instancecount + ' of ' + resp.instanceenabled + ' Squeezelite instances running');
+					$("#squeezelitestate").attr("style", "color:red").html(resp.instancecount + ' <!--$T::RUNNINGINSTANCES_SQU_OF--> ' + resp.instanceenabled + ' <!--$T::RUNNINGINSTANCES_SQU_NO_OF_RUNNING-->');
 			} else {
-				$("#squeezelitestate").attr("style", "color:red").html('Error fetching data');
+				$("#squeezelitestate").attr("style", "color:red").html('<!--$T::RUNNINGINSTANCES_ERROR_FETCHING-->');
 			}
 			
 			if(resp.lms2udpcount != null) {
 				if(resp.lms2udpcount == -1)
-					$("#lms2udpstate").attr("style", "color:black").html('LMS Gateway disabled');
+					$("#lms2udpstate").attr("style", "color:black").html('<!--$T::RUNNINGINSTANCES_LMSGW_DISABLED-->');
 				else if (resp.lms2udpcount == 0)
-					$("#lms2udpstate").attr("style", "color:red").html('LMS Gateway NOT running');
+					$("#lms2udpstate").attr("style", "color:red").html('<!--$T::RUNNINGINSTANCES_LMSGW_NOT_RUNNING-->');
 				else
-					$("#lms2udpstate").attr("style", "color:green").html('LMS Gateway running');;
+					$("#lms2udpstate").attr("style", "color:green").html('<!--$T::RUNNINGINSTANCES_LMSGW_RUNNING-->');;
 			} else {
-				$("#lms2udpstate").attr("style", "color:red").html('Error fetching data');
+				$("#lms2udpstate").attr("style", "color:red").html('<!--$T::RUNNINGINSTANCES_ERROR_FETCHING-->');
 			}
 			
 	  })
 	  .fail(function(resp) {
-			$("#squeezelitestate").attr("style", "color:red").html('Error fetching data');
-			$("#lms2udpstate").attr("style", "color:red").html('Error fetching data');
+			$("#squeezelitestate").attr("style", "color:red").html('<!--$T::RUNNINGINSTANCES_ERROR_FETCHING-->');
+			$("#lms2udpstate").attr("style", "color:red").html('<!--$T::RUNNINGINSTANCES_ERROR_FETCHING-->');
 			
 	  })
 	  .always(function(resp) {
