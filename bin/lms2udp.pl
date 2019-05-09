@@ -806,6 +806,9 @@ sub sync_pupdate
 		if ($player eq @players[0]) {
 			next;
 		}
+		if ( $playerstates{$player}->{Mode} < 0 and ( $key eq "Songtitle" or $key eq "Artist" ) ) {
+			next;
+		}
 		pupdate($player, $key, $value);
 	}
 }
