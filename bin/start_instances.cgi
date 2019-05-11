@@ -6,6 +6,8 @@
 
 use LoxBerry::System;
 use LoxBerry::Log;
+#use lib './lib';
+#use ALSA;
 
 use POSIX 'strftime';
 use File::HomeDir;
@@ -52,6 +54,9 @@ my @inst_desc;
 my @inst_mac;
 my @inst_output;
 my @inst_params;
+my @inst_alsacard;
+my @inst_alsadev;
+my @inst_alsavolume;
 
 my @commandline;
 
@@ -108,6 +113,14 @@ for ($instance = 1; $instance <= $squ_instances; $instance++) {
 		push(@inst_mac, $cfg->param("Instance" . $instance . ".MAC"));
 		push(@inst_output, join(",", $cfg->param("Instance" . $instance . ".Output")));
 		push(@inst_params, join(",", $cfg->param("Instance" . $instance . ".Parameters")));
+		
+		my $control = $cfg->param("Instance" . $instance . ".ALSAControl");
+		if($control and ! is_disabled($control) ) {
+			my ($card, $dev) = split('\|', $control, 2);
+			push(@inst_alsacard, $card);
+			push(@inst_alsadev, $dev);
+			push(@inst_alsavolume, $cfg->param("Instance" . $instance . ".ALSAVolume"));
+		}
 
 	# ToDo: At some point, we may validate the config file parameters, and define dependencies of options.
 	}
@@ -162,8 +175,13 @@ if (! $squ_altbinaries) {
 			LOGOK "Squeezelite version: " . trim($sl_ver[0]);
 	}
 
-
 for ($instance = 0; $instance < $instcount; $instance++) {
+	
+	# ALSA Mixer set volume
+	if( $inst_alsavolume[$instance] ) {
+		alsa_sset($inst_alsacard[$instance], $inst_alsadev[$instance], $inst_alsavolume[$instance]);
+	}
+	
 	$command = $sl_path;
 	# Wird in den Parametern kein -a gefunden, senden wir per Default -a 80 (ALSA-Buffer)
 	if (index($inst_params[$instance], "-a ") == -1) {
@@ -197,6 +215,24 @@ for ($instance = 0; $instance < $instcount; $instance++) {
 
 LOGOK ("Finished to start all instances");
 exit;
+
+
+sub alsa_sset
+{
+	my ($card, $control, $value) = @_;
+	return if (! $card or !$control or !$value);
+	LOGINF "Setting volume for $card, $control to $value";
+	my $response = `amixer sset --card $card $control $value`;
+	if( $? ) {
+		LOGERR "Failed to set volume: $response";
+	} else {
+		LOGOK "Volume set: $response";
+	}
+
+}
+
+
+
 
 END
 {

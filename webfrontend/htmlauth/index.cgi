@@ -93,6 +93,8 @@ our @inst_desc;
 our @inst_mac;
 our @inst_output;
 our @inst_params;
+our @inst_alsacontrol;
+our @inst_alsavolume;
 our @commandline;
 our $htmlout;
 
@@ -100,7 +102,6 @@ my $logname;
 my $loghandle;
 my $logmessage;
 
-our $lmslinks;
 our $logfileslink;
 
 # Init logfile
@@ -265,6 +266,33 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 				}
 		}
 
+		## Generate soundcard list
+		my @cards_tmp = `cat /proc/asound/cards`;
+		my %cards;
+		foreach $line (@cards_tmp) {
+			my $bracket_start = index $line, '[';
+			my $bracket_finish = index $line, ']';
+			if ($bracket_start == -1 or $bracket_finish == -1 or $bracket_finish < $bracket_start) {
+				next;
+			}
+			my $card = trim(substr($line, $bracket_start+1, $bracket_finish-$bracket_start-1));
+			print STDERR "CARD: $card\n";
+			my @alsacontrols = `amixer -c $card scontrols`;
+			# print STDERR "alsacontrols:\n" . join(' ', @alsacontrols) . "\n";
+			foreach my $controlline (@alsacontrols) {
+				my $tick_start = index $controlline, "'";
+				# print "Tickstart: $tick_start\n";
+				my $tick_finish = index $controlline, "'", $tick_start+1;
+				# print "Tickfinish: $tick_finish\n";
+				if ($tick_start == -1 or $tick_finish == -1) {
+					next;
+				}	
+				my $control = trim(substr($controlline, $tick_start+1, $tick_finish-$tick_start-1));
+				print STDERR "   CONTROL: $control\n";
+				$cards{$card}{$control} = 1;
+			}
+		}
+		
 		# Read the Main config file section
 		$cfgversion = $cfg->param("Main.ConfigVersion");
 		$squ_instances = $cfg->param("Main.Instances");
@@ -319,6 +347,8 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			LOGINF("Instance$instance output from config: " . join(",", $cfg->param("Instance" . $instance . ".Output")));
 			push(@inst_output, join(",", $cfg->param("Instance" . $instance . ".Output")));
 			push(@inst_params, join(",", $cfg->param("Instance" . $instance . ".Parameters")));
+			push(@inst_alsacontrol, $cfg->param("Instance" . $instance . ".ALSAControl"));
+			push(@inst_alsavolume, $cfg->param("Instance" . $instance . ".ALSAVolume"));
 			
 		}
 		
@@ -352,7 +382,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		</tr>
 	
 		<tr class="top row">
-		<td rowspan="2"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><font size="6">' .
+		<td rowspan="3"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><font size="6">' .
 		$instnr . '</font></p>
 		</td>
 		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
@@ -399,6 +429,33 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		<input type="hidden" placeholder="<!--$T::INSTANCES_INSTANCE_DESCRIPTION_HINT-->" name="Description' . $instnr . '" value="' . $inst_desc[$inst] . '">
 		
 		</tr>
+		<tr>
+		<td><b>Mixer</b></td>
+		<td>
+			<select name="alsacontrol' . $instnr . '" id="alsacontrol' . $instnr . '">
+				<option value="disabled"><!--$T::INSTANCES_ALSA_SELECT_OPTION_HINT--></option>';
+				foreach my $card (keys %cards) {
+					$htmlout .= "<optgroup label='$card'>\n";
+					foreach my $control (keys %{$cards{$card}}) {
+						my $sel="";
+						if($inst_alsacontrol[$inst] eq "$card|$control") {
+							$sel = 'selected="selected"';
+						}
+						$htmlout .= "<option value='$card|$control' $sel>$control</option>\n";
+					}
+					$htmlout .= "</optgroup>\n";
+				}
+
+		$htmlout .= '
+		</select>
+		</td>
+		<td><input type="text" placeholder="<!--$T::INSTANCES_ALSA_VOLUME_HINT-->" name="alsavolume' . $instnr . '" value="' . $inst_alsavolume[$inst] . '"></span></p></td>
+		<td></td>
+		</tr>
+		
+		
+		
+		
 		</table>';
 		
 	}
@@ -497,6 +554,8 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			my $output = param("Output$instance");
 			my $params = trim(param("Parameters$instance"));
 			my $desc = trim(param("Descriptiom$instance"));
+			my $alsacontrol = param("alsacontrol$instance");
+			my $alsavolume = param("alsavolume$instance");
 			# Possible validations here
 			
 			# Write to config
@@ -508,6 +567,11 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 			$cfg->param("Instance$instance.Output", $output);
 			$cfg->param("Instance$instance.Parameters", $params);
 			$cfg->param("Instance$instance.Description", $desc);
+			$cfg->param("Instance$instance.ALSAControl", $alsacontrol);
+			$cfg->param("Instance$instance.ALSAVolume", $alsavolume);
+			
+			
+			
 			
 		}
 		$cfg->save();
@@ -589,11 +653,11 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	}
 
 
-#####################################################
-# Strings trimmen
-#####################################################
+# #####################################################
+# # Strings trimmen
+# #####################################################
 
-sub trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
+# sub trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
 
 #####################################################
 # Lokale MAC-Adresse auslesen
