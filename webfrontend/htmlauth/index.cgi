@@ -376,9 +376,10 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		<table width="100%" cellpadding="2" cellspacing="0" border="1px" style="background-color: #ffffff;">
 		<tr valign="top">
 		<th width="5%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_INSTANCE--></p></th>
-		<th width="5%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_ACTIVE--></p></th>
+		<th width="10%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_ACTIVE--></p></th>
 		<th width="40%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_INSTANCE_NAME--></p></th>
 		<th width="35%"><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><!--$T::INSTANCES_TABLE_HEAD_MAC_ADDRESS--></p></th>
+		<th></th>
 		</tr>
 	
 		<tr class="top row">
@@ -393,7 +394,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		<input type="text" placeholder="<!--$T::INSTANCES_INSTANCE_NAME_HINT-->" name="Name' . $instnr . '" value="' . 
 		$inst_name[$inst] . '"></p>
 		</td>
-		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
+		<td><p style="text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
 		<input type="text" placeholder="<!--$T::INSTANCES_MAC_HINT-->" onkeyup="checkMAC(\'MAC' . $instnr . '\')"w id="MAC' . $instnr . '" name="MAC' . $instnr . '" value="' . 
 		$inst_mac[$inst] . '"></p>
 		</td>
@@ -424,8 +425,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		<td><p style=" text-align: left; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;">
 		<input type="text" placeholder="<!--$T::INSTANCES_ADDITIONAL_PARAMETERS_HINT-->" name="Parameters' . $instnr . '" value="' . $inst_params[$inst] . '"></span></p>
 		</td>
-		<td>
-		</td>
+		<td></td>
 		<input type="hidden" placeholder="<!--$T::INSTANCES_INSTANCE_DESCRIPTION_HINT-->" name="Description' . $instnr . '" value="' . $inst_desc[$inst] . '">
 		
 		</tr>
@@ -452,9 +452,6 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		<td><input type="text" placeholder="<!--$T::INSTANCES_ALSA_VOLUME_HINT-->" name="alsavolume' . $instnr . '" value="' . $inst_alsavolume[$inst] . '"></span></p></td>
 		<td></td>
 		</tr>
-		
-		
-		
 		
 		</table>';
 		
