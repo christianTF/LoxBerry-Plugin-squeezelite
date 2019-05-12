@@ -18,4 +18,4 @@ fi
 # Cleanup remaining pidfiles
 rm -f $PIDFILES
 
-$loxberryhome/bin/plugins/$pluginname/lms2udp.pl & 1> /dev/null 2> $loxberryhome/log/plugins/$pluginname/lms2udp.log
+$loxberryhome/bin/plugins/$pluginname/lms2udp.pl & > /dev/null 2>&1 

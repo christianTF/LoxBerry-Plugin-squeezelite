@@ -20,5 +20,5 @@ fi
 # If no PID was remaining, restart LMS2UDP
 if [ ! -e  $PIDFILES ] ; then
 	# Starting LMS2UDP
-	$loxberryhome/webfrontend/cgi/plugins/$pluginname/restart_lms2udp.sh & 1> /dev/null 2> $loxberryhome/log/plugins/$pluginname/start_lms2udp.log
+	$loxberryhome/bin/plugins/$pluginname/restart_lms2udp.sh & > /dev/null 2>&1 
 fi
