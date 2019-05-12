@@ -6,6 +6,7 @@ use forks::shared;
 
 use LoxBerry::IO;
 use LoxBerry::Log;
+use LoxBerry::JSON;
 
 require "$lbphtmlauthdir/lib/LMSTTS.pm";
 									
@@ -776,6 +777,9 @@ sub pupdate
 {
 	my ($player, $key, $value) = @_;
 	my $newkey_flag = 0;
+	
+	return if (!$player or !$key);
+		
 	# print STDERR "pupdate: $player | $key | $value |\n";
 	if (!defined $playerstates{$player}) {
 		LOGDEB "Playerstates: Create new player $player";
@@ -864,6 +868,10 @@ sub send_to_ms()
 	# Check sync states on players with status change
 	# and populate mode texts to titles
 	foreach $player (keys %playerdiffs) {
+		if($player eq "") {
+			delete $playerdiffs{$player};
+			next;
+		}
 		if (!defined $playerstates{$player}) 
 			{ next; }
 		@members = split(/,/, $playerstates{$player}->{sync});
@@ -962,6 +970,24 @@ sub send_to_ms()
 			LOGINF "<<<<< FINISHED SEND <<<<< (" . length($udpout_string) . " Bytes)";
 		}
 	}
+	
+	if (keys %playerdiffs) {
+		# Generate JSON file for UI
+		
+		# for (keys %playerdiffs) {
+			# LOGDEB "     $_ : $playerdiffs{$_}";
+		# }
+				
+		my $datafile = "/dev/shm/lms2udp_data.json";
+		LOGINF "Writing current LMS data to $datafile";
+		# unlink $datafile;
+		my $lmsjsonobj = LoxBerry::JSON->new();
+		my $lmsjson = $lmsjsonobj->open(filename => $datafile);
+		$lmsjson->{States} = \%playerstates;
+		$lmsjsonobj->write();
+		undef $lmsjsonobj;
+	}
+	
 	%playerdiffs = undef;
 
 

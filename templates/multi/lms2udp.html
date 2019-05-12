@@ -85,6 +85,8 @@
 <a id="btncancel" data-role="button" data-inline="true" data-mini="true" data-icon="delete" href="#"><!--$T::BUTTON_CANCEL--></a>
 <button type="submit" form="main_form" name="applybtn" value="submit" id="btnsubmit" data-role="button" data-inline="true" data-mini="true" data-icon="check"><!--$T::BUTTON_SAVE--></button>
 <button onclick="openTemplateWizzard()" type="button" tabindex="-1" name="btnwizzard" value="apply" id="btnwizzard" data-role="button" data-inline="true" data-mini="true" data-icon="grid"><!--$T::BUTTON_WIZZARD--></button>
+<button onclick="openLiveView()" type="button" tabindex="-1" name="btnliveview" id="btnliveview" value="apply" data-role="button" data-inline="true" data-mini="true" data-icon="bars"><!--$T::BUTTON_LIVEVIEW--></button>
+
 </form>
 <!-- <p><!--$T::LMS2UDP_DOWNLOAD_HINT--></p> -->
 <script>
@@ -95,6 +97,10 @@ $('#btncancel').click(function() {
 
 function openTemplateWizzard() {
 	window.open('./templatebuilder.cgi', '_blank', 'menubar=0,scrollbars=1,status=0,toolbar=0', 'replace=false');
+}
+
+function openLiveView() {
+	window.open('./lms_live.php', '_blank', 'menubar=0,scrollbars=1,status=0,toolbar=0', 'replace=false');
 }
 
 </script>
