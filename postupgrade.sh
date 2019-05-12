@@ -32,5 +32,13 @@ cp -v -r /tmp/$ARGV1\_upgrade/log/$ARGV3/* $ARGV5/log/plugins/$ARGV3/
 echo "<INFO> Remove temporary folders"
 rm -r /tmp/$ARGV1\_upgrade
 
+# Restart services
+echo "<INFO> Stopping currently running instances"
+sudo REPLACELBPBINDIR/kill_squeezelite.sh
+echo "<INFO> Starting instances"
+REPLACELBPBINDIR/start_instances.cgi > /dev/null
+echo "<INFO> Restarting LMS Gateway"
+REPLACELBPBINDIR/restart_lms2udp.sh & > /dev/null 2>&1
+
 # Exit with Status 0
 exit 0
