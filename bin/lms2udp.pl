@@ -758,6 +758,7 @@ sub syncgroups
 		my ($key, $group) = split(/:/, uri_unescape($rawparts[$groups]), 2);
 		if ($key eq "sync_members") {
 			my @members = split(/,/, $group);
+			print $tcpout_sock "$members[0] title ?\n";
 			foreach $member (@members) {
 				if ($playerstates{$member}->{sync} ne join(',', @members)) {
 					pupdate($member, "sync", join(',', @members));
@@ -875,28 +876,34 @@ sub send_to_ms()
 		if (!defined $playerstates{$player}) 
 			{ next; }
 		@members = split(/,/, $playerstates{$player}->{sync});
-		# Populate song title
-		
-		switch ($playerstates{$player}->{Mode}) {
-			case -3 	{ pupdate($player, "Songtitle", $mode_string{-3}); pupdate($player, "Artist", undef);}
-			case -2 	{ pupdate($player, "Songtitle", $mode_string{-2}); pupdate($player, "Artist", undef);}
-			case -1 	{ pupdate($player, "Songtitle", $mode_string{-1}); pupdate($player, "Artist", undef);}
-		}
-		# Populate to sync partners
+
+		# # Populate to sync partners
 		foreach my $setting (keys %{$playerdiffs{$player} }) {
-			if (@members) {
+			if ($player eq $members[0]) {
 				switch ($setting) {
 					case 'Songtitle' 	{ sync_pupdate("Songtitle", $playerstates{$player}->{$setting}, $player, @members); next;}
 					case 'Artist' 		{ sync_pupdate("Artist", $playerstates{$player}->{$setting}, $player, @members); next;}
-					case 'Mode'			{ if($playerstates{$player}->{$setting} > -2) {
-											sync_pupdate("Mode", $playerstates{$player}->{$setting}, $player, @members); 
-										  }
-										  next;}
+					# case 'Mode'			{ if($playerstates{$player}->{'Power'} == 1) {
+  										# sync_pupdate("Mode", $playerstates{$player}->{$setting}, $player, @members); 
+										  # }
+										  # next;}
 					case 'Stream'		{ sync_pupdate("Stream", $playerstates{$player}->{$setting}, $player, @members); next;}
 					case 'Pause'		{ sync_pupdate("Pause", $playerstates{$player}->{$setting}, $player, @members); next;}
 					case 'Shuffle' 		{ sync_pupdate("Shuffle", $playerstates{$player}->{$setting}, $player, @members); next;}
 					case 'Repeat' 		{ sync_pupdate("Repeat", $playerstates{$player}->{$setting}, $player, @members); next;}
 				}
+			}
+		}
+	}
+
+	foreach $player (keys %playerstates) {
+		# Populate song title
+		#@members = split(/,/, $playerstates{$player}->{sync});
+		if($player->{Mode} ne $playerdiffs{$player}) {
+			switch ($playerstates{$player}->{Mode}) {
+				case -3 	{ pupdate($player, "Songtitle", $mode_string{-3}); pupdate($player, "Artist", undef);next;}
+				case -2 	{ pupdate($player, "Songtitle", $mode_string{-2}); pupdate($player, "Artist", undef);next;}
+				case -1 	{ pupdate($player, "Songtitle", $mode_string{-1}); pupdate($player, "Artist", undef);next;}
 			}
 		}
 	}
