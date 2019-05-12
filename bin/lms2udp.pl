@@ -19,7 +19,7 @@ require "$lbphtmlauthdir/lib/LMSTTS.pm";
 # - libio-socket-timeout-perl
 
 # Version of this script
-$version = "1.0.1.2";
+$version = "1.0.2.1";
 
 ## Termination handling
 $SIG{INT} = sub { 
@@ -1071,7 +1071,14 @@ sub to_ms
 	## New: With mshttp_send_mem
 	
 	LOGDEB "to_ms (http): #$playerid# #$label# #$text#";
-	my $http_response = LoxBerry::IO::mshttp_send( $lms2udp_msnr, $player_label, $text);
+	my $http_response;
+	eval {
+	$http_response = LoxBerry::IO::mshttp_send( $lms2udp_msnr, $player_label, $text);
+	};
+	if ($@) {
+		LOGERR "to_ms (http): FAILED #$playerid# #$label# #$text# Exception catched: $@";
+		return;
+	}
 	if (! $http_response) {
 		LOGDEB "to_ms (http): WARNING: Could not set '$player_label' (VI/VTI not available?)";
 	}
