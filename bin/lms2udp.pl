@@ -152,6 +152,7 @@ read_config();
 
 if ((! $squ_server) || (! $miniserverip) || (! $miniserverport)) {
 	LOGCRIT "Squeezelite Player Plugin LMS2UDP is activated but configuration incomplete. Terminating.";
+	LOGTITLE "LMS Gateway stopped (no configuration)";
 	unlink $pidfile;
 	exit(1);
 }
@@ -1112,6 +1113,7 @@ sub read_config
 	# Check existance of config file
 	if (! (-e $cfgfilename)) {
 		LOGCRIT "Squeezelite Player Plugin LMS2UDP configuration does not exist. Terminating.\n";
+		LOGTITLE "LMS Gateway stopped (no configuration)";
 		unlink $pidfile;
 		exit(0);
 	}
@@ -1159,6 +1161,7 @@ sub read_config
 
 	if(! is_enabled($lms2udp_activated) && ! $option_activate) {	
 		LOGOK "Squeezelite Player Plugin LMS2UDP is NOT activated in config file. That's ok. Terminating.";
+		LOGTITLE "LMS Gateway stopped (disabled)";
 		unlink $pidfile;
 		exit(0);
 	}
