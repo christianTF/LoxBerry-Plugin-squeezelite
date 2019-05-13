@@ -20,7 +20,7 @@ require "$lbphtmlauthdir/lib/LMSTTS.pm";
 # - libio-socket-timeout-perl
 
 # Version of this script
-$version = "1.0.4";
+$version = "1.0.4.1";
 
 ## Termination handling
 $SIG{INT} = sub { 
@@ -778,8 +778,8 @@ sub pupdate
 {
 	my ($player, $key, $value) = @_;
 	my $newkey_flag = 0;
-	
-	return if (!$player or !$key);
+	# LOGDEB "pupdate: $player | $key | $value";
+	return if (!$player or ! defined $key);
 		
 	# print STDERR "pupdate: $player | $key | $value |\n";
 	if (!defined $playerstates{$player}) {
@@ -790,6 +790,7 @@ sub pupdate
 		$playerstates{$player} = \%player_href;
 		$playerdiffs{$player}{$key} = $value;
 	} else {
+		# LOGDEB "pupdate: Value updated.";
 		$playerdiffs{$player}{$key} = $value if ( $value ne $playerstates{$player}->{$key} );
 		my $currplayer = $playerstates{$player};
 		$$currplayer{$key} = $value;
@@ -898,7 +899,7 @@ sub send_to_ms()
 			$songtitle = $title_artist; 
 		} elsif ( $playerstates{$player}{Mode} < 0 ) {
 			# Jede andere Änderung, wenn aktueller Modus aus
-			next;
+			# do nothing;
 		} elsif ( ( $playerdiffs{$player}{Songtitle} and $playerstates{$player}->{Artist} ) or $playerstates{$player}->{Artist} ) {
 			# Jede Änderung von Titel+Artist oder nur Artist
 			$title_artist = "$playerstates{$player}->{Songtitle} - $playerstates{$player}->{Artist}";
@@ -910,7 +911,7 @@ sub send_to_ms()
 			$songtitle = "$playerstates{$player}->{Songtitle}";
 			$artist = "";
 		} 
-		LOGDEB "SONGTITLE calculated: $title_artist";
+		# LOGDEB "SONGTITLE calculated: $title_artist";
 		
 		if ($title_artist) {
 			$playerstates{$player}->{SentSongtitle} = $title_artist;
@@ -920,50 +921,49 @@ sub send_to_ms()
 			$udpout_string .= "$player playlist newsong $title_artist\n";
 			$data_changed = 1;
 		}
-	}
-		
-	foreach my $setting (keys %{$playerdiffs{$player} }) {
-	# Limit sending lenght to ~200
-		if (length($udpout_string) > 200) {
-			if ($sendtoms) {
-				print $udpout_sock $udpout_string;
-				LOGINF ">>>>>  START SEND >>>>>\n" .
-					trim($udpout_string);
-				LOGINF "<<<<< FINISHED SEND <<<<< (" . length($udpout_string) . " Bytes)";
-				LOGDEB "Fast response mode";
-				usleep($loopdelay/$loopdivisor);
+			
+		foreach my $setting (keys %{$playerdiffs{$player} }) {
+		# Limit sending lenght to ~200
+			if (length($udpout_string) > 200) {
+				if ($sendtoms) {
+					print $udpout_sock $udpout_string;
+					LOGINF ">>>>>  START SEND >>>>>\n" .
+						trim($udpout_string);
+					LOGINF "<<<<< FINISHED SEND <<<<< (" . length($udpout_string) . " Bytes)";
+					LOGDEB "Fast response mode";
+					usleep($loopdelay/$loopdivisor);
+				}
+			$data_changed = 1;
+			$udpout_string = undef;
 			}
-		$data_changed = 1;
-		$udpout_string = undef;
+			
+			switch ($setting) {
+				case 'Name'			{ to_ms($player, "name", $playerdiffs{$player}{$setting});
+									  $udpout_string .= "$player name $playerdiffs{$player}{$setting}\n";
+									  next;
+									}
+				case 'Mode'			{ to_ms($player, "mode", $mode_string{$playerdiffs{$player}{$setting}});
+									  $udpout_string .= "$player mode_value $playerdiffs{$player}{$setting}\n";
+									  $udpout_string .= "$player mode_text $mode_string{$playerdiffs{$player}{$setting}}\n";
+									  next;
+									} 
+				case 'Power'		{ $udpout_string .= "$player power $playerdiffs{$player}{$setting}\n"; next;}
+				case 'Shuffle' 		{ $udpout_string .= "$player playlist shuffle $playerdiffs{$player}{$setting}\n"; next;}
+				case 'Repeat' 		{ $udpout_string .= "$player playlist repeat $playerdiffs{$player}{$setting}\n"; next;}
+				case 'Stream' 		{ $udpout_string .= "$player is_stream $playerdiffs{$player}{$setting}\n"; next;}
+				case 'volume' 		{ $udpout_string .= "$player mixer volume $playerdiffs{$player}{$setting}\n"; next;}
+				case 'bass' 		{ $udpout_string .= "$player mixer bass $playerdiffs{$player}{$setting}\n"; next;}
+				case 'treble' 		{ $udpout_string .= "$player mixer treble $playerdiffs{$player}{$setting}\n"; next;}
+				case 'muting' 		{ $udpout_string .= "$player mixer muting $playerdiffs{$player}{$setting}\n"; next;}
+				case 'Connected'	{ $udpout_string .= "$player connected $playerdiffs{$player}{$setting}\n"; next;}
+				case 'sync'			{ my $is_synced;
+									  if ($playerdiffs{$player}{$setting}) {
+										 $is_synced = 1;
+									  } else { $is_synced = 0; }
+									  $udpout_string .= "$player is_synced $is_synced\n"; next;}
+			}
 		}
-		
-		switch ($setting) {
-			case 'Name'			{ to_ms($player, "name", $playerdiffs{$player}{$setting});
-								  $udpout_string .= "$player name $playerdiffs{$player}{$setting}\n";
-								  next;
-								}
-			case 'Mode'			{ to_ms($player, "mode", $mode_string{$playerdiffs{$player}{$setting}});
-								  $udpout_string .= "$player mode_value $playerdiffs{$player}{$setting}\n";
-								  $udpout_string .= "$player mode_text $mode_string{$playerdiffs{$player}{$setting}}\n";
-								  next;
-								} 
-			case 'Power'		{ $udpout_string .= "$player power $playerdiffs{$player}{$setting}\n"; next;}
-			case 'Shuffle' 		{ $udpout_string .= "$player playlist shuffle $playerdiffs{$player}{$setting}\n"; next;}
-			case 'Repeat' 		{ $udpout_string .= "$player playlist repeat $playerdiffs{$player}{$setting}\n"; next;}
-			case 'Stream' 		{ $udpout_string .= "$player is_stream $playerdiffs{$player}{$setting}\n"; next;}
-			case 'volume' 		{ $udpout_string .= "$player mixer volume $playerdiffs{$player}{$setting}\n"; next;}
-			case 'bass' 		{ $udpout_string .= "$player mixer bass $playerdiffs{$player}{$setting}\n"; next;}
-			case 'treble' 		{ $udpout_string .= "$player mixer treble $playerdiffs{$player}{$setting}\n"; next;}
-			case 'muting' 		{ $udpout_string .= "$player mixer muting $playerdiffs{$player}{$setting}\n"; next;}
-			case 'Connected'	{ $udpout_string .= "$player connected $playerdiffs{$player}{$setting}\n"; next;}
-			case 'sync'			{ my $is_synced;
-								  if ($playerdiffs{$player}{$setting}) {
-									 $is_synced = 1;
-								  } else { $is_synced = 0; }
-								  $udpout_string .= "$player is_synced $is_synced\n"; next;}
-		}
-	}
-	
+	}	
 	if ($udpout_string) {
 		if($sendtoms) {
 			print $udpout_sock $udpout_string;
