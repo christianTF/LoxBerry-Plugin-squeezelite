@@ -688,11 +688,11 @@ sub send_state
 sub client
 {
 	switch ($parts[2]) {
-		case 'new'			{ print $tcpout_sock "$parts[0] power ?\n$parts[0] title ?\n$parts[0] mixer volume ?\n$parts[0] playlist shuffle ?\n$parts[0] playlist repeat ?\n$parts[0] mixer muting ?\n";
+		case 'new'			{ print $tcpout_sock "$parts[0] name ?\n$parts[0] power ?\n$parts[0] title ?\n$parts[0] mixer volume ?\n$parts[0] playlist shuffle ?\n$parts[0] playlist repeat ?\n$parts[0] mixer muting ?\n";
 							  pupdate($parts[0], "Connected", 1);
 							  pupdate($parts[0], "Known", 1);
 							}
-		case 'reconnect'	{ print $tcpout_sock "$parts[0] power ?\n$parts[0] title ?\n$parts[0] mixer volume ?\n$parts[0] playlist shuffle ?\n$parts[0] playlist repeat ?\n$parts[0] mixer muting ?\n"; 
+		case 'reconnect'	{ print $tcpout_sock "$parts[0] name ?\n$parts[0] power ?\n$parts[0] title ?\n$parts[0] mixer volume ?\n$parts[0] playlist shuffle ?\n$parts[0] playlist repeat ?\n$parts[0] mixer muting ?\n"; 
 							  pupdate($parts[0], "Connected", 1);
 							  pupdate($parts[0], "Known", 1);
 							}
