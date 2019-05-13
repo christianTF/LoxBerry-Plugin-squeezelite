@@ -20,7 +20,7 @@ require "$lbphtmlauthdir/lib/LMSTTS.pm";
 # - libio-socket-timeout-perl
 
 # Version of this script
-$version = "1.0.2.1";
+$version = "1.0.4";
 
 ## Termination handling
 $SIG{INT} = sub { 
@@ -36,8 +36,6 @@ $SIG{TERM} = sub {
 	#LOGEND();
 	exit 1;	
 };
-
-
 
 print "Startup lms2udp daemon...\n";
 
@@ -64,6 +62,7 @@ use URI::Escape;
 my $home = $lbhomedir;
 
 # Config parameters
+my $datafile = "/dev/shm/lms2udp_data.json";
 our $cfg;
 my $cfg_timestamp = 0;
 my $lms2udp_activated;
@@ -211,6 +210,11 @@ END
 	if (-e "$pidfile") {
 		unlink "$pidfile";
 	}
+	
+	if (-e "$datafile") {
+		unlink "$datafile";
+	}
+	
 	if($log) {
 		LOGEND "lms2udp.pl ended";
 	}
@@ -573,10 +577,11 @@ sub playlist
 	switch ($parts[2]) {
 		case 'newsong' {
 				if (defined $rawparts[4]) {
-					$playerstates{$parts[0]}->{Songtitle} = $parts[3];
-					$playerstates{$parts[0]}->{Artist} = undef;
-					# pupdate($parts[0], "Songtitle", $parts[3]);
+					#$playerstates{$parts[0]}->{Songtitle} = $parts[3];
+					#$playerstates{$parts[0]}->{Artist} = undef;
 					print $tcpout_sock "$rawparts[0] artist ?\n$rawparts[0] remote ?\n";
+					pupdate($parts[0], "Songtitle", $parts[3]);
+					pupdate($parts[0], "Artist", undef);
 					send_state(1);
 					return;
 					#return "$parts[0] $parts[1] $parts[2] $parts[3]";
@@ -638,8 +643,8 @@ sub send_state
 	switch ($state) {
 		case -3		{ 	# Nicht verbunden
 						pupdate($parts[0], "Mode", -3);
-						pupdate($parts[0], "Title", undef);
-						pupdate($parts[0], "Artist", undef);
+						#pupdate($parts[0], "Title", undef);
+						#pupdate($parts[0], "Artist", undef);
 						pupdate($parts[0], "Power", 0);
 						pupdate($parts[0], "Pause", 0);
 						pupdate($parts[0], "Connected", 0);
@@ -647,8 +652,8 @@ sub send_state
 					}
 		case -2		{ 	# Zone ausgeschaltet
 						pupdate($parts[0], "Mode", -2);
-						pupdate($parts[0], "Title", undef);
-						pupdate($parts[0], "Artist", undef);
+						#pupdate($parts[0], "Title", undef);
+						#pupdate($parts[0], "Artist", undef);
 						pupdate($parts[0], "Power", 0);
 						pupdate($parts[0], "Pause", 0);
 						pupdate($parts[0], "Connected", 1);
@@ -656,8 +661,8 @@ sub send_state
 					}
 		case -1		{ 	# Zone gestoppt
 						pupdate($parts[0], "Mode", -1);
-						pupdate($parts[0], "Title", undef);
-						pupdate($parts[0], "Artist", undef);
+						#pupdate($parts[0], "Title", undef);
+						#pupdate($parts[0], "Artist", undef);
 						pupdate($parts[0], "Power", 1);
 						pupdate($parts[0], "Pause", 0);
 						pupdate($parts[0], "Connected", 1);
@@ -683,11 +688,11 @@ sub send_state
 sub client
 {
 	switch ($parts[2]) {
-		case 'new'			{ print $tcpout_sock "$curr_player power ?\n$curr_player title ?\n$curr_player mixer volume ?\n$curr_player playlist shuffle ?\n$curr_player playlist repeat ?\n$curr_player mixer muting ?\n";
+		case 'new'			{ print $tcpout_sock "$parts[0] power ?\n$parts[0] title ?\n$parts[0] mixer volume ?\n$parts[0] playlist shuffle ?\n$parts[0] playlist repeat ?\n$parts[0] mixer muting ?\n";
 							  pupdate($parts[0], "Connected", 1);
 							  pupdate($parts[0], "Known", 1);
 							}
-		case 'reconnect'	{ print $tcpout_sock "$curr_player power ?\n$curr_player title ?\n$curr_player mixer volume ?\n$curr_player playlist shuffle ?\n$curr_player playlist repeat ?\n$curr_player mixer muting ?\n"; 
+		case 'reconnect'	{ print $tcpout_sock "$parts[0] power ?\n$parts[0] title ?\n$parts[0] mixer volume ?\n$parts[0] playlist shuffle ?\n$parts[0] playlist repeat ?\n$parts[0] mixer muting ?\n"; 
 							  pupdate($parts[0], "Connected", 1);
 							  pupdate($parts[0], "Known", 1);
 							}
@@ -753,20 +758,15 @@ sub syncgroups
 		return undef;
 	}
 	
+	# Split the members
 	for my $groups (1 .. $#rawparts) {
 		# print "Group $groups is $rawparts[$groups]\n";
 		my ($key, $group) = split(/:/, uri_unescape($rawparts[$groups]), 2);
 		if ($key eq "sync_members") {
 			my @members = split(/,/, $group);
 			print $tcpout_sock "$members[0] title ?\n";
-			foreach $member (@members) {
-				if ($playerstates{$member}->{sync} ne join(',', @members)) {
-					pupdate($member, "sync", join(',', @members));
-				}
-			}
-		} else { 
-			next; 
-		}
+			pupdate($members[0], "sync", join(',', @members));
+		} 
 	}
 }
 
@@ -788,36 +788,35 @@ sub pupdate
 		my %player_href : shared;
 		$player_href{$key} = $value;
 		$playerstates{$player} = \%player_href;
+		$playerdiffs{$player}{$key} = $value;
 	} else {
-		my $player = $playerstates{$player};
-		$$player{$key} = $value;
-		#$playerstates{$player}->{$key} = $value;
+		$playerdiffs{$player}{$key} = $value if ( $value ne $playerstates{$player}->{$key} );
+		my $currplayer = $playerstates{$player};
+		$$currplayer{$key} = $value;
 	}
 	
-	# print STDERR "Saved value: " . $playerstates{$player}->{$key} . "\n";
-	# if ($newkey_flag) { print "sleeping...\n"; sleep 5;}
-	# $playerstates{$player}{$key} = $value;
-	$playerdiffs{$player}{$key} = $value;
+	# Sync setting to sync members
+	my @syncKeys = qw ( Songtitle Artist Stream Pause Shuffle Repeat sync );
+	if( $playerstates{$player}->{sync} and grep { $key eq $_ } @syncKeys ) {
+		#LOGDEB "pupdate: $key is synced";
+		foreach my $member ( get_members($playerstates{$player}->{sync}) ) {
+			next if ($member eq $player);
+			$playerdiffs{$member}{$key} = $value if ( $playerstates{$member}->{$key} ne $value ); 
+			$playerstates{$member}->{$key} = $value;
+		}
+	}
 }
 
-sub sync_pupdate 
+##
+## Return members array from sync string
+##
+sub get_members
 {
-	my $key = shift;
-	my $value = shift;
-	my $currplayer = shift;
-	my @players = @_;
-	
-	foreach $player (@players) {
-		#if ($player eq $currplayer) {
-		if ($player eq @players[0]) {
-			next;
-		}
-		if ( $playerstates{$player}->{Mode} < 0 and ( $key eq "Songtitle" or $key eq "Artist" ) ) {
-			next;
-		}
-		pupdate($player, $key, $value);
-	}
+	my ($membersStr) = @_;
+	my @members = split(/,/, $membersStr);
+	return @members;
 }
+
 
 
 
@@ -868,107 +867,103 @@ sub send_to_ms()
 {
 	# Check sync states on players with status change
 	# and populate mode texts to titles
-	foreach $player (keys %playerdiffs) {
+	foreach my $player (keys %playerdiffs) {
 		if($player eq "") {
 			delete $playerdiffs{$player};
 			next;
 		}
 		if (!defined $playerstates{$player}) 
 			{ next; }
-		@members = split(/,/, $playerstates{$player}->{sync});
-
-		# # Populate to sync partners
-		foreach my $setting (keys %{$playerdiffs{$player} }) {
-			if ($player eq $members[0]) {
-				switch ($setting) {
-					case 'Songtitle' 	{ sync_pupdate("Songtitle", $playerstates{$player}->{$setting}, $player, @members); next;}
-					case 'Artist' 		{ sync_pupdate("Artist", $playerstates{$player}->{$setting}, $player, @members); next;}
-					# case 'Mode'			{ if($playerstates{$player}->{'Power'} == 1) {
-  										# sync_pupdate("Mode", $playerstates{$player}->{$setting}, $player, @members); 
-										  # }
-										  # next;}
-					case 'Stream'		{ sync_pupdate("Stream", $playerstates{$player}->{$setting}, $player, @members); next;}
-					case 'Pause'		{ sync_pupdate("Pause", $playerstates{$player}->{$setting}, $player, @members); next;}
-					case 'Shuffle' 		{ sync_pupdate("Shuffle", $playerstates{$player}->{$setting}, $player, @members); next;}
-					case 'Repeat' 		{ sync_pupdate("Repeat", $playerstates{$player}->{$setting}, $player, @members); next;}
-				}
-			}
-		}
-	}
-
-	foreach $player (keys %playerstates) {
-		# Populate song title
-		#@members = split(/,/, $playerstates{$player}->{sync});
-		if($player->{Mode} ne $playerdiffs{$player}) {
-			switch ($playerstates{$player}->{Mode}) {
-				case -3 	{ pupdate($player, "Songtitle", $mode_string{-3}); pupdate($player, "Artist", undef);next;}
-				case -2 	{ pupdate($player, "Songtitle", $mode_string{-2}); pupdate($player, "Artist", undef);next;}
-				case -1 	{ pupdate($player, "Songtitle", $mode_string{-1}); pupdate($player, "Artist", undef);next;}
-			}
-		}
 	}
 
 	# Now we send the changes to MS
 	my $udpout_string;
-	foreach $player (keys %playerdiffs) {
+	my $data_changed;
+	
+	foreach my $player (keys %playerdiffs) {
 		
-		foreach my $setting (keys %{$playerdiffs{$player} }) {
-		# Limit sending lenght to ~200
-		if (length($udpout_string) > 200) {
-				if ($sendtoms) {
-					print $udpout_sock $udpout_string;
-					LOGINF ">>>>>  START SEND >>>>>\n" .
-						trim($udpout_string);
-					LOGINF "<<<<< FINISHED SEND <<<<< (" . length($udpout_string) . " Bytes)";
-					LOGDEB "Fast response mode";
-					usleep($loopdelay/$loopdivisor);
-				}
-				$udpout_string = undef;
+		# Mode and title changes for each player
+		my $title_artist;
+		my $songtitle;
+		my $artist;
+		
+		if ( $playerdiffs{$player}{Mode} < 0 ) {
+			# Modusänderung im Diff auf Ausschalten
+			switch ($playerdiffs{$player}{Mode}) {
+				case -3 	{ $title_artist = $mode_string{-3}; next;}
+				case -2 	{ $title_artist = $mode_string{-2}; next;}
+				case -1 	{ $title_artist = $mode_string{-1}; next;}
 			}
-			switch ($setting) {
-				case 'Songtitle' 
-					{ 
-					# LOGDEB "$player ARTIST: # " . $playerstates{$player}->{Artist} . " # ";
-					
-					my $title_artist;
-						if ($playerstates{$player}->{Artist} ne "") {
-							$title_artist = "$playerstates{$player}->{Songtitle} - $playerstates{$player}->{Artist}";
-						} else {
-							$title_artist = "$playerstates{$player}->{Songtitle}";
-						}
-					to_ms($player, "title", $title_artist);
-					$udpout_string .= "$player playlist newsong $title_artist\n";
-					next;
-				}
-				
-				case 'Name'			{ to_ms($player, "name", $playerdiffs{$player}{$setting});
-									  $udpout_string .= "$player name $playerdiffs{$player}{$setting}\n";
-									  next;
-									}
-				case 'Mode'			{ to_ms($player, "mode", $mode_string{$playerdiffs{$player}{$setting}});
-									  $udpout_string .= "$player mode_value $playerdiffs{$player}{$setting}\n";
-									  $udpout_string .= "$player mode_text $mode_string{$playerdiffs{$player}{$setting}}\n";
-									  next;
-									} 
-				case 'Power'		{ $udpout_string .= "$player power $playerdiffs{$player}{$setting}\n"; next;}
-				case 'Shuffle' 		{ $udpout_string .= "$player playlist shuffle $playerdiffs{$player}{$setting}\n"; next;}
-				case 'Repeat' 		{ $udpout_string .= "$player playlist repeat $playerdiffs{$player}{$setting}\n"; next;}
-				case 'Stream' 		{ $udpout_string .= "$player is_stream $playerdiffs{$player}{$setting}\n"; next;}
-				case 'volume' 		{ $udpout_string .= "$player mixer volume $playerdiffs{$player}{$setting}\n"; next;}
-				case 'bass' 		{ $udpout_string .= "$player mixer bass $playerdiffs{$player}{$setting}\n"; next;}
-				case 'treble' 		{ $udpout_string .= "$player mixer treble $playerdiffs{$player}{$setting}\n"; next;}
-				case 'muting' 		{ $udpout_string .= "$player mixer muting $playerdiffs{$player}{$setting}\n"; next;}
-				case 'Connected'	{ $udpout_string .= "$player connected $playerdiffs{$player}{$setting}\n"; next;}
-				case 'sync'			{ my $is_synced;
-									  if ($playerdiffs{$player}{$setting}) {
-										 $is_synced = 1;
-									  } else { $is_synced = 0; }
-									  $udpout_string .= "$player is_synced $is_synced\n"; next;}
-				
-				
-			}
+			$artist = ""; 
+			$songtitle = $title_artist; 
+		} elsif ( $playerstates{$player}{Mode} < 0 ) {
+			# Jede andere Änderung, wenn aktueller Modus aus
+			next;
+		} elsif ( ( $playerdiffs{$player}{Songtitle} and $playerstates{$player}->{Artist} ) or $playerstates{$player}->{Artist} ) {
+			# Jede Änderung von Titel+Artist oder nur Artist
+			$title_artist = "$playerstates{$player}->{Songtitle} - $playerstates{$player}->{Artist}";
+			$songtitle = "$playerstates{$player}->{Songtitle}";
+			$artist = "$playerstates{$player}->{Artist}";
+		} elsif (defined $playerdiffs{$player}{Songtitle}) {
+			# Jede Änderung des Titels
+			$title_artist = "$playerstates{$player}->{Songtitle}";
+			$songtitle = "$playerstates{$player}->{Songtitle}";
+			$artist = "";
+		} 
+		LOGDEB "SONGTITLE calculated: $title_artist";
+		
+		if ($title_artist) {
+			$playerstates{$player}->{SentSongtitle} = $title_artist;
+			to_ms($player, "title", $playerstates{$player}->{SentSongtitle});
+			to_ms($player, "songtitle", $songtitle);
+			to_ms($player, "artist", $artist);
+			$udpout_string .= "$player playlist newsong $title_artist\n";
+			$data_changed = 1;
 		}
 	}
+		
+	foreach my $setting (keys %{$playerdiffs{$player} }) {
+	# Limit sending lenght to ~200
+		if (length($udpout_string) > 200) {
+			if ($sendtoms) {
+				print $udpout_sock $udpout_string;
+				LOGINF ">>>>>  START SEND >>>>>\n" .
+					trim($udpout_string);
+				LOGINF "<<<<< FINISHED SEND <<<<< (" . length($udpout_string) . " Bytes)";
+				LOGDEB "Fast response mode";
+				usleep($loopdelay/$loopdivisor);
+			}
+		$data_changed = 1;
+		$udpout_string = undef;
+		}
+		
+		switch ($setting) {
+			case 'Name'			{ to_ms($player, "name", $playerdiffs{$player}{$setting});
+								  $udpout_string .= "$player name $playerdiffs{$player}{$setting}\n";
+								  next;
+								}
+			case 'Mode'			{ to_ms($player, "mode", $mode_string{$playerdiffs{$player}{$setting}});
+								  $udpout_string .= "$player mode_value $playerdiffs{$player}{$setting}\n";
+								  $udpout_string .= "$player mode_text $mode_string{$playerdiffs{$player}{$setting}}\n";
+								  next;
+								} 
+			case 'Power'		{ $udpout_string .= "$player power $playerdiffs{$player}{$setting}\n"; next;}
+			case 'Shuffle' 		{ $udpout_string .= "$player playlist shuffle $playerdiffs{$player}{$setting}\n"; next;}
+			case 'Repeat' 		{ $udpout_string .= "$player playlist repeat $playerdiffs{$player}{$setting}\n"; next;}
+			case 'Stream' 		{ $udpout_string .= "$player is_stream $playerdiffs{$player}{$setting}\n"; next;}
+			case 'volume' 		{ $udpout_string .= "$player mixer volume $playerdiffs{$player}{$setting}\n"; next;}
+			case 'bass' 		{ $udpout_string .= "$player mixer bass $playerdiffs{$player}{$setting}\n"; next;}
+			case 'treble' 		{ $udpout_string .= "$player mixer treble $playerdiffs{$player}{$setting}\n"; next;}
+			case 'muting' 		{ $udpout_string .= "$player mixer muting $playerdiffs{$player}{$setting}\n"; next;}
+			case 'Connected'	{ $udpout_string .= "$player connected $playerdiffs{$player}{$setting}\n"; next;}
+			case 'sync'			{ my $is_synced;
+								  if ($playerdiffs{$player}{$setting}) {
+									 $is_synced = 1;
+								  } else { $is_synced = 0; }
+								  $udpout_string .= "$player is_synced $is_synced\n"; next;}
+		}
+	}
+	
 	if ($udpout_string) {
 		if($sendtoms) {
 			print $udpout_sock $udpout_string;
@@ -976,16 +971,11 @@ sub send_to_ms()
 				trim($udpout_string);
 			LOGINF "<<<<< FINISHED SEND <<<<< (" . length($udpout_string) . " Bytes)";
 		}
+		$data_changed = 1;
 	}
 	
-	if (keys %playerdiffs) {
+	if ($data_changed) {
 		# Generate JSON file for UI
-		
-		# for (keys %playerdiffs) {
-			# LOGDEB "     $_ : $playerdiffs{$_}";
-		# }
-				
-		my $datafile = "/dev/shm/lms2udp_data.json";
 		LOGINF "Writing current LMS data to $datafile";
 		# unlink $datafile;
 		my $lmsjsonobj = LoxBerry::JSON->new();
@@ -999,8 +989,6 @@ sub send_to_ms()
 
 
 }
-
-
 
 
 
@@ -1087,11 +1075,11 @@ sub to_ms
 	
 	if (! $lms2udp_usehttpfortext || !$sendtoms) { return; }
 	
-	# my $textenc = uri_escape( $text );
-	# my $player_label = uri_escape( 'LMS ' . $playerid . ' ' . $label);
 	my $player_label = 'LMS ' . $playerid . ' ' . $label;
 		
 	## Direct method - replaced by LoxBerry::IO::mshttp_send
+	# my $textenc = uri_escape( $text );
+	# my $player_label = uri_escape( 'LMS ' . $playerid . ' ' . $label);
 	
 	# $url = "http://$miniserveradmin:$miniserverpass\@$miniserverip\:$miniserverport/dev/sps/io/$player_label/$textenc";
 	# $url_nopass = "http://$miniserveradmin:*****\@$miniserverip\:$miniserverport/dev/sps/io/$player_label/$textenc";

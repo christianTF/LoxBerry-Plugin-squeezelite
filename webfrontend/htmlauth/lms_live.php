@@ -74,6 +74,7 @@ function generate_list(resp) {
 	tableStr += '<th>Mode</th>';
 	tableStr += '<th>Songtitle</th>';
 	tableStr += '<th>Artist</th>';
+	tableStr += '<th>Songtitle (Sent)</th>';
 	tableStr += '<th>Volume</th>';
 	tableStr += '<th>Repeat</th>';
 	tableStr += '<th>Shuffle</th>';
@@ -101,9 +102,11 @@ function generate_list(resp) {
 		if(value.Power == 1) {
 			nameStr = '<span style="color:green"><b>'+value.Name+'</b></span>';
 			SongtitleStr = '<b>'+value.Songtitle+'</b>';
+			SentSongtitleStr = '<b>'+value.SentSongtitle+'</b>';
 		} else {
 			nameStr = '<span style="color:darkred">'+value.Name+'</span>';
 			SongtitleStr = value.Songtitle;
+			SentSongtitleStr = value.SentSongtitle;
 		}
 		
 		if(value.Artist == null) 
@@ -118,6 +121,7 @@ function generate_list(resp) {
 		playerStr += '<td>'+value.Mode+'</td>';
 		playerStr += '<td>'+SongtitleStr+'</td>';
 		playerStr += '<td>'+value.Artist+'</td>';
+		playerStr += '<td style="font-size:80%">'+SentSongtitleStr+'</td>';
 		playerStr += '<td>'+value.volume+'</td>';
 		playerStr += '<td>'+value.Repeat+'</td>';
 		playerStr += '<td>'+value.Shuffle+'</td>';
