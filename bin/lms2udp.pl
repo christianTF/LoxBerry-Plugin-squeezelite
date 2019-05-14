@@ -20,20 +20,26 @@ require "$lbphtmlauthdir/lib/LMSTTS.pm";
 # - libio-socket-timeout-perl
 
 # Version of this script
-$version = "1.0.4.1";
+$version = "1.0.5";
 
 ## Termination handling
 $SIG{INT} = sub { 
-	LOGOK "LMS2UDP interrupted by Ctrl-C"; 
-	LOGTITLE "LMS2UDP interrupted by Ctrl-C"; 
-	#LOGEND(); 
+	if($log) {
+		$log->default();
+		LOGOK("LMS2UDP interrupted by Ctrl-C"); 
+		LOGTITLE("LMS2UDP interrupted by Ctrl-C"); 
+		LOGEND("lms2udp.pl ended");
+	}
 	exit 1;
 };
 
 $SIG{TERM} = sub { 
-	LOGOK "LMS2UDP requested to stop"; 
-	LOGTITLE "LMS2UDP requested to stop"; 
-	#LOGEND();
+	if($log) {
+		$log->default();
+		LOGOK("LMS2UDP requested to stop"); 
+		LOGTITLE("LMS2UDP requested to stop"); 
+		LOGEND;
+	}
 	exit 1;	
 };
 
@@ -211,13 +217,9 @@ END
 		unlink "$pidfile";
 	}
 	
-	if (-e "$datafile") {
-		unlink "$datafile";
-	}
-	
-	if($log) {
-		LOGEND "lms2udp.pl ended";
-	}
+	# if($tl) {
+		# $tl->LOGEND("TTS ended");
+	# }
 }		
 
 
@@ -491,10 +493,12 @@ sub process_line
 	switch ($parts[1]) {
 		case 'playlist' { return playlist();}
 		case 'mixer' 	{ return mixer();}
-		case 'title'	{ pupdate($parts[0], "Songtitle", $parts[2]);
+		case 'title'	{ 
+						  pupdate($parts[0], "Songtitle", $parts[2]);
 						  print $tcpout_sock "$parts[0] artist ?\n$parts[0] remote ?\n";
-						  return undef;}
-		case 'artist'	{   pupdate($parts[0], "Songtitle", $playerstates{$parts[0]}->{Songtitle});
+						  return undef;
+						}
+		case 'artist'	{   # pupdate($parts[0], "Songtitle", $playerstates{$parts[0]}->{Songtitle});
 							if(defined $parts[2]) {
 								pupdate($parts[0], "Artist", $parts[2]);
 							} else { 
@@ -764,7 +768,7 @@ sub syncgroups
 		my ($key, $group) = split(/:/, uri_unescape($rawparts[$groups]), 2);
 		if ($key eq "sync_members") {
 			my @members = split(/,/, $group);
-			print $tcpout_sock "$members[0] title ?\n";
+			#print $tcpout_sock "$members[0] title ?\n";
 			pupdate($members[0], "sync", join(',', @members));
 		} 
 	}
