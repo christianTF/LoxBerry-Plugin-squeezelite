@@ -134,7 +134,7 @@ print "Plugindir: $lbpplugindir\n";
 # Init Logfile
 our $log = LoxBerry::Log->new (
     name => 'LMS2UDP',
-	stderr => 1,
+	# stderr => 1,
 	addtime => 1,
 #	nofile => 1,
 );

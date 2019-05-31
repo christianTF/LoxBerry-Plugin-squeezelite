@@ -280,14 +280,19 @@ sub generate_tts_mp3
 				}
 				
 				# Parse json and check if no valid json is given
-				# print "RESPONSE: " . $local_queue_data{$qid}{curl_response} . "\n";
+				print "RESPONSE: " . $local_queue_data{$qid}{curl_response} . "\n";
 				my $json;
+				my $jsonobj;
 				eval {
-					$json = JSON::decode_json( $local_queue_data{$qid}{curl_response} );
+					#$jsonobj = new JSON;
+					#$jsonobj->allow_nonref(1);
+					$json = JSON->new->allow_nonref(1)->utf8->decode( $local_queue_data{$qid}{curl_response} );
 				};
 				if ($@) {
+					my $error = $@;
 					$tl->ERR("QID $qid: Not a valid JSON file returned");
-					$tl->LOGINF($local_queue_data{$qid}{curl_response});
+					$tl->INF($error);
+					$tl->INF($local_queue_data{$qid}{curl_response});
 					$local_queue_data{$qid}{mp3_state} = "failed";
 					next;
 				}
@@ -430,7 +435,7 @@ sub init_play
 			# We requested the time - check if we got it
 			$tl->DEB("Waiting for the song time...");
 			foreach (@tts_players) {
-				if( ($playerstates->{$_}->{Mode} == 0 or $playerstates->{$_}->{Mode} == 1) and !$playerstates->{$_}->{time} ) {
+				if( ($playerstates->{$_}->{Mode} eq "0" or $playerstates->{$_}->{Mode} eq "1") and !$playerstates->{$_}->{time} ) {
 					Time::HiRes::sleep(0.02);
 					redo;
 				}
@@ -475,9 +480,18 @@ sub init_play
 
 sub handle_callback
 {
+	$tl->DEB("--> handle_callback") if (@ttsqueue);
+	
 	foreach(@ttsqueue) {
 		my $qid = $_->{qid};
-	
+		
+		# ## Do not do a callback after at least 2 seconds
+		# if (Time::HiRes::time < $qid+2) {
+			# next;
+		# }
+		
+		
+		
 		## Handle callback
 		if( defined $local_queue_data{$qid}{play_thread} and $local_queue_data{$qid}{play_thread}->is_joinable() ) {
 			$tl->OK( "Joining player thread TID" . $local_queue_data{$qid}{play_thread}->tid());
@@ -496,9 +510,10 @@ sub handle_callback
 				my @sync = split (/,/, $state->{sync}) if ($state->{sync});
 				
 				if(@sync) {
-					foreach my $i (@sync) {
-						next if ($i==0);
-						tcpoutqueue("$tts_players[$_] sync $tts_players[0]");
+					foreach my $i (0 .. $#sync) {
+						$tl->DEB("Key i is $i");
+						next if ($tts_players[0] eq $sync[$i]); # Don't sync to itself
+						tcpoutqueue("$sync[$i] sync $tts_players[0]");
 					}
 				
 				}
@@ -579,8 +594,8 @@ sub check_resumed
 				
 			# Read the saved state
 			my $state = $local_queue_data{$qid}{backup_playerstate}{$player};
-			$tl->DEB( "Saved player state:" );
-			$tl->DEB( Data::Dumper::Dumper($state) );
+			#$tl->DEB( "check_resumed: Saved player state:" );
+			#$tl->DEB( "check_resumed: " . Data::Dumper::Dumper($state) );
 			
 			# Check play state
 			if( ($state->{Mode} == 1 or $state->{Mode} == 0) and $playerstates->{$player}->{Mode} < 0 ) {
@@ -609,10 +624,19 @@ sub check_resumed
 			# }
 		}
 		
+		
 		if($ready_to_unqueue == 1) {
 			$tl->OK("Player check ok - Setting $qid to unqueue");
 			$local_queue_data{$qid}{unqueue} = 1;
 		}
+		
+		# Unqueue after 60 seconds, if player did not resume
+		if( Time::HiRes::time() > ($qid+60) ) {
+			$tl->ERR("Player did not resume - GIVING UP and unqueue");
+			$local_queue_data{$qid}{unqueue} = 1;
+		}
+		
+			
 
 	}
 
@@ -664,7 +688,7 @@ sub tts_play
 	
 	# Disable shuffle if enabled
 	if($playerstates->{$tts_players[0]}->{Shuffle}) {
-		$pl->INF("PLAY TID$tid: Shuffle is in mode ${tts_players[0]}->{Shuffle}} and now disabled");
+		$pl->INF("PLAY TID$tid: Shuffle is in mode " . $playerstates->{$tts_players[0]}->{Shuffle} . " and now disabled");
 		tcpoutqueue("$tts_players[0] playlist shuffle 0");
 	}
 	
