@@ -635,9 +635,9 @@ sub check_resumed
 			$local_queue_data{$qid}{unqueue} = 1;
 		}
 		
-		# Unqueue after 60 seconds, if player did not resume
-		if( Time::HiRes::time() > ($qid+60) ) {
-			$tl->ERR("Player did not resume - GIVING UP and unqueue");
+		# Unqueue after $tts_play_timeout_sec (120) seconds, if player did not resume
+		if( Time::HiRes::time() > ($qid+$tts_play_timeout_sec) ) {
+			$tl->ERR("Player did not resume - GIVING UP and unqueue (timeout $tts_play_timeout_sec secs)");
 			$local_queue_data{$qid}{unqueue} = 1;
 		}
 		
@@ -836,28 +836,38 @@ sub calculate_volume
 	my $min = defined $opt_minvol ? $opt_minvol : $main::tts_minvol;
 	my $max = defined $opt_maxvol ? $opt_maxvol : $main::tts_maxvol;
 	
+	$tl->DEB("calculate_vol: vol $vol | min $min | max $max");
+	
+	
 	# Parse the volumes
 	if(!$vol) {
 		# No default: Use current volume
 		$result = $curr_vol;
+		$tl->DEB("calculate_vol: No volume - use curr_vol $result");
+
 	} 
 	elsif(substr($vol, 0, 1) eq "+" or substr($vol, 0, 1) eq "-" ) {
 		# Relative volume
-		$result = eval ( "$curr_vol" . substr($vol, 1) );
+		$result = eval ( "$curr_vol" + substr($vol, 1) );
+		$tl->DEB("calculate_vol: Relative volume - use $result");
 	}
 	else {
 		$result = $vol;
+		$tl->DEB("calculate_vol: Absolute volume - use $result");
 	}
 	
 	# Min/Max check
 	if(defined $min and $min>$result) {
 		$result = $min;
+		$tl->DEB("calculate_vol: Min-Check - use $result");
 	}
 	if(defined $max and $max<$result) {
 		$result = $max;
+		$tl->DEB("calculate_vol: Max-Check - use $result");
 	}
 		
 	# print "Resulting volume: $result\n";
+	$tl->DEB("calculate_vol: Finally use $result");
 	return $result;
 
 }
