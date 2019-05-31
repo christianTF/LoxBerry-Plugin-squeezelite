@@ -156,7 +156,7 @@ sub tts_queue
 		name => 'TTS',
 		filename => $main::lbplogdir . '/lmstts.log',
 		loglevel => 7,
-		stderr => 1,
+		stderr => 0,
 		addtime => 1,
 		append => 1,
 	);
