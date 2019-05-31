@@ -504,14 +504,14 @@ sub handle_callback
 				my $state = $local_queue_data{$qid}{backup_playerstate}{$player};
 				$tl->DEB( "Saved player state:" );
 				$tl->DEB( Data::Dumper::Dumper($state) );
-				$tl->DEB( "Restore: Name $state->{Name} Mode $state->{Mode} ");
+				$tl->DEB( "Restore: Name $state->{Name} ($player) Mode $state->{Mode} ");
 				$tl->DEB( "Sync $state->{sync}") if ($state->{sync});
 				
 				my @sync = split (/,/, $state->{sync}) if ($state->{sync});
 				
 				if(@sync) {
 					foreach my $i (0 .. $#sync) {
-						$tl->DEB("Key i is $i");
+						#$tl->DEB("Key i is $i");
 						next if ($tts_players[0] eq $sync[$i]); # Don't sync to itself
 						tcpoutqueue("$sync[$i] sync $tts_players[0]");
 					}
@@ -566,6 +566,11 @@ sub handle_callback
 					$tl->INF ("Restoring shuffle - setting to $state->{Shuffle}");
 					tcpoutqueue("$player playlist shuffle " . $state->{Shuffle});
 				}
+				
+				# Query current mode
+				tcpoutqueue("$player mode ?");
+				tcpoutqueue("$player title ?");
+				
 			}
 			# Set the queue state to unqueue
 			$tl->INF( "Setting queue element to resumed" );
@@ -599,17 +604,17 @@ sub check_resumed
 			
 			# Check play state
 			if( ($state->{Mode} == 1 or $state->{Mode} == 0) and $playerstates->{$player}->{Mode} < 0 ) {
-				$tl->DEB("Player $player: Mode not yet restored: Saved {$state->{Mode}}, Current {$playerstates->{$player}->{Mode}}");  
+				$tl->DEB("Player $state->{Name} ($player): Mode not yet restored (<0): Saved {$state->{Mode}}, Current {$playerstates->{$player}->{Mode}}");  
 				$ready_to_unqueue = 0;
 				last;
 			}
 			if( $state->{Mode} == -1 and $playerstates->{$player}->{Mode} != -1 ) {
-				$tl->DEB("Player $player: Mode not yet restored: Saved {$state->{Mode}}, Current {$playerstates->{$player}->{Mode}}");  
+				$tl->DEB("Player $state->{Name} ($player): Mode not yet restored (!-1): Saved {$state->{Mode}}, Current {$playerstates->{$player}->{Mode}}");  
 				$ready_to_unqueue = 0;
 				last;
 			}
 			if( $state->{Shuffle} != $playerstates->{$player}->{Shuffle} ) {
-				$tl->DEB("Player $player: Shuffle not yet restored: Saved {$state->{Shuffle}}, Current {$playerstates->{$player}->{Shuffle}}");
+				$tl->DEB("Player $state->{Name} ($player): Shuffle not yet restored: Saved {$state->{Shuffle}}, Current {$playerstates->{$player}->{Shuffle}}");  
 				$ready_to_unqueue = 0;
 				last;
 			}
