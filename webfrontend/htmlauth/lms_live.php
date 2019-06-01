@@ -37,9 +37,10 @@ $( document ).ready(function() {
 });
 
 function updateView() {
-	// if (getSelectedText()) {
-		// // console.log("Text is selected");
-		// return; }
+	if (text = getSelectedText()) {
+		document.execCommand("copy");
+		// console.log("Text is selected");
+		return; }
 	// if (updateRunning) return;
 	
 	updateRunning = 1;
@@ -139,6 +140,15 @@ function generate_list(resp) {
 	
 }
 
+function getSelectedText() {
+	var text = "";
+		if (typeof window.getSelection != "undefined") {
+			text = window.getSelection().toString();
+		} else if (typeof document.selection != "undefined" && document.selection.type == "Text") {
+		text = document.selection.createRange().text;
+	}
+return text;
+}
 
 </script>
 
