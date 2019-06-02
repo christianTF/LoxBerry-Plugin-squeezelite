@@ -10,7 +10,7 @@ use LoxBerry::JSON;
 
 require "$lbphtmlauthdir/lib/LMSTTS.pm";
 									
-# Christian Fenzl, christiantf@gmx.at 2017
+# Christian Fenzl, christiantf@gmx.at 2017-2019
 # This script is a gateway from Logitech Media TCP CLI to Loxone Miniserver UDP (for values) and http REST (for text).
 # It acts as a proxy with intelligence - LMS-information with missing data is re-collected from LMS first,
 # before the full data are sent to the Miniserver.
@@ -20,7 +20,7 @@ require "$lbphtmlauthdir/lib/LMSTTS.pm";
 # - libio-socket-timeout-perl
 
 # Version of this script
-$version = "1.0.5";
+$version = "1.0.6";
 
 ## Termination handling
 $SIG{INT} = sub { 
@@ -121,6 +121,7 @@ my %playerstates	: shared;
 	# bass
 	# time (seconds of the song - only if explicitely requested)
 	# sync (comma separated list of playerid's, or undef)
+	# State (calculates from Mode and Power to Loxones Mode
 
 our %playerdiffs;
 # This hash includes all changes since last UDP-Send
@@ -223,17 +224,14 @@ END
 }		
 
 
-
 #################################################################################
 # Listening sub
 # Params: none
 # Returns: none
 #################################################################################
 
-
 sub start_listening 
 {
-
 
 	while (1)
 	{
@@ -506,33 +504,35 @@ sub process_line
 							}
 							return undef;
 					}
-		case 'power' 	{ # print "DEBUG: Power\n"; 
-						  if ($rawparts[2] eq "0") {
-							print $tcpout_sock "syncgroups ?\n";
-							send_state (-2);
-						} elsif ($rawparts[2] eq "1") {
-							print $tcpout_sock "$rawparts[0] mode ?\n";
-							print $tcpout_sock "syncgroups ?\n";
-							pupdate($parts[0], "Power", 1);
+		case 'power' 	{ # print "DEBUG: $rawparts[0] Power $rawparts[2]\n"; 
+						  print $tcpout_sock "syncgroups ?\n";
+						  pupdate($parts[0], "Connected", 1);
+						  pupdate($parts[0], "Known", 1);
 							
+						  if ($rawparts[2] eq "0") {
+							pupdate($parts[0], "Power", 0);
+							pupdate($parts[0], "Mode", -1);
+							pupdate($parts[0], "Pause", 0);
+						} elsif ($rawparts[2] eq "1") {
+							pupdate($parts[0], "Power", 1);
+							print $tcpout_sock "$rawparts[0] playlist shuffle ?\n";
+						    print $tcpout_sock "$rawparts[0] playlist repeat ?\n";
+							print $tcpout_sock "$rawparts[0] mode ?\n";
 						}
 						return undef;
 					}
 		case 'mode'		{ 
-					# LOGDEB "DEBUG: Mode |$rawparts[2]|$parts[2]|\n";
-					if (!defined $rawparts[2]) {
-						pupdate($parts[0], "Mode", -2);
-						send_state(-2);
-					} else {
-						pupdate($parts[0], "Power", 1);
+					LOGDEB "DEBUG: Mode |$rawparts[2]|$parts[2]|\n";
+					if (defined $rawparts[2]) {
 						if ($rawparts[2] eq 'stop') {
-							send_state(-1);
+							pupdate($parts[0], "Mode", -1);
+							pupdate($parts[0], "Pause", 0);
 						} elsif ($rawparts[2] eq 'play') {
-						pupdate($parts[0], "Mode", 1);
-						send_state(1);
+							pupdate($parts[0], "Mode", 1);
+							pupdate($parts[0], "Pause", 0);
 						} elsif ($rawparts[2] eq 'pause') {
 							pupdate($parts[0], "Mode", 0);
-							send_state(0);
+							pupdate($parts[0], "Pause", 1);
 						}
 					}
 					return undef;
@@ -549,7 +549,7 @@ sub process_line
 						  }
 						return undef;
 				}
-		case 'sync'		{ print $tcpout_sock "syncgroups ?\n"; 
+		case 'sync'		{ print $tcpout_sock "syncgroups ?\n$parts[0] title ?\n$parts[0] artist ?\n"; 
 						  return undef;
 		}
 		case 'time'		{ pupdate($parts[0], "time", int($parts[2]));
@@ -583,17 +583,15 @@ sub playlist
 				if (defined $rawparts[4]) {
 					#$playerstates{$parts[0]}->{Songtitle} = $parts[3];
 					#$playerstates{$parts[0]}->{Artist} = undef;
-					print $tcpout_sock "$rawparts[0] artist ?\n$rawparts[0] remote ?\n";
-					pupdate($parts[0], "Songtitle", $parts[3]);
-					pupdate($parts[0], "Artist", undef);
-					send_state(1);
+					print $tcpout_sock "$rawparts[0] title ?\n$rawparts[0] artist ?\n$rawparts[0] remote ?\n";
+					#pupdate($parts[0], "Songtitle", $parts[3]);
+					#pupdate($parts[0], "Artist", undef);
 					return;
 					#return "$parts[0] $parts[1] $parts[2] $parts[3]";
 				} else { 
 					pupdate($parts[0], "Stream", 1);
 					pupdate($parts[0], "Songtitle", $parts[3]);
 					# LOGDEB "DEBUG: Playlist thinks $parts[0] is a stream #$rawparts[4]#";
-					send_state(1);
 					return;
 				}
 			}	
@@ -606,14 +604,15 @@ sub playlist
 				if ($playerstates{$parts[0]}->{Power} == 0) { return undef; }
 				# LOGDEB "DEBUG: Playlist Pause";
 				if ($rawparts[3] == 1) {
-					send_state(0);
+					pupdate($parts[0], "Pause", 1);
+					pupdate($parts[0], "Mode", 0);
 				} elsif ($rawparts[3] == 0) {
-					send_state(1);
+					pupdate($parts[0], "Pause", 0);
+					pupdate($parts[0], "Mode", 1);
 				}
 				return undef;
 			}
 		case 'stop' { print $tcpout_sock "$rawparts[0] mode ?\n";
-					  #send_state(-1);
 					  return undef;
 			}
 		case 'shuffle' { pupdate($parts[0], "Shuffle", $parts[3]);
@@ -641,67 +640,23 @@ sub mixer
 	}
 }
 
-sub send_state 
-{
-	my ($state) = @_;
-	switch ($state) {
-		case -3		{ 	# Nicht verbunden
-						pupdate($parts[0], "Mode", -3);
-						#pupdate($parts[0], "Title", undef);
-						#pupdate($parts[0], "Artist", undef);
-						pupdate($parts[0], "Power", 0);
-						pupdate($parts[0], "Pause", 0);
-						pupdate($parts[0], "Connected", 0);
-						pupdate($parts[0], "Known", 1);
-					}
-		case -2		{ 	# Zone ausgeschaltet
-						pupdate($parts[0], "Mode", -2);
-						#pupdate($parts[0], "Title", undef);
-						#pupdate($parts[0], "Artist", undef);
-						pupdate($parts[0], "Power", 0);
-						pupdate($parts[0], "Pause", 0);
-						pupdate($parts[0], "Connected", 1);
-						pupdate($parts[0], "Known", 1);
-					}
-		case -1		{ 	# Zone gestoppt
-						pupdate($parts[0], "Mode", -1);
-						#pupdate($parts[0], "Title", undef);
-						#pupdate($parts[0], "Artist", undef);
-						pupdate($parts[0], "Power", 1);
-						pupdate($parts[0], "Pause", 0);
-						pupdate($parts[0], "Connected", 1);
-						pupdate($parts[0], "Known", 1);
-					}
-		case 0		{ 	# Pause
-						pupdate($parts[0], "Mode", 0);
-						pupdate($parts[0], "Power", 1);
-						pupdate($parts[0], "Pause", 1);
-						pupdate($parts[0], "Connected", 1);
-						pupdate($parts[0], "Known", 1);
-					}
-		case 1		{ 	# Play
-						pupdate($parts[0], "Mode", 1);
-						pupdate($parts[0], "Power", 1);
-						pupdate($parts[0], "Pause", 0);
-						pupdate($parts[0], "Connected", 1);
-						pupdate($parts[0], "Known", 1);
-					}
-	}
-}
-
+# New Clients connecting, reconnecting or disconnecting
 sub client
 {
 	switch ($parts[2]) {
-		case 'new'			{ print $tcpout_sock "$parts[0] name ?\n$parts[0] power ?\n$parts[0] title ?\n$parts[0] mixer volume ?\n$parts[0] playlist shuffle ?\n$parts[0] playlist repeat ?\n$parts[0] mixer muting ?\n";
+		case 'new'			{ print $tcpout_sock "$parts[0] name ?\n$parts[0] power ?\n$parts[0] title ?\n$parts[0] artist ?\n$parts[0] mixer volume ?\n$parts[0] playlist shuffle ?\n$parts[0] playlist repeat ?\n$parts[0] mixer muting ?\n";
 							  pupdate($parts[0], "Connected", 1);
 							  pupdate($parts[0], "Known", 1);
 							}
-		case 'reconnect'	{ print $tcpout_sock "$parts[0] name ?\n$parts[0] power ?\n$parts[0] title ?\n$parts[0] mixer volume ?\n$parts[0] playlist shuffle ?\n$parts[0] playlist repeat ?\n$parts[0] mixer muting ?\n"; 
+		case 'reconnect'	{ print $tcpout_sock "$parts[0] name ?\n$parts[0] power ?\n$parts[0] title ?\n$parts[0] artist ?\n$parts[0] mixer volume ?\n$parts[0] playlist shuffle ?\n$parts[0] playlist repeat ?\n$parts[0] mixer muting ?\n"; 
 							  pupdate($parts[0], "Connected", 1);
 							  pupdate($parts[0], "Known", 1);
 							}
 							  
-		case 'disconnect'	{ send_state(-3);
+		case 'disconnect'	{ 
+							  pupdate($parts[0], "Power", 0);
+							  pupdate($parts[0], "Mode", -1);
+							  pupdate($parts[0], "Pause", 0);
 							  pupdate($parts[0], "Connected", 0);
 							  pupdate($parts[0], "Known", 1);
 							}
@@ -730,7 +685,13 @@ sub players
 			$curr_player = $tagvalue;
 			pupdate($curr_player, "Known" , 1);
 			# print "DEBUG: ######### CurPlayer #$curr_player# ############\n";
-			print $tcpout_sock "$curr_player power ?\n$curr_player title ?\n$curr_player mixer volume ?\n$curr_player playlist shuffle ?\n$curr_player playlist repeat ?\n$curr_player mixer muting ?\n";
+			print $tcpout_sock "$curr_player power ?\n";
+			print $tcpout_sock "$curr_player title ?\n";
+			print $tcpout_sock "$curr_player artist ?\n";
+			print $tcpout_sock "$curr_player mixer volume ?\n";
+			print $tcpout_sock "$curr_player playlist shuffle ?\n";
+			print $tcpout_sock "$curr_player playlist repeat ?\n";
+			print $tcpout_sock "$curr_player mixer muting ?\n";
 			next;
 		} elsif ($curr_player) {
 			switch ($tagname) {
@@ -782,11 +743,10 @@ sub pupdate
 {
 	my ($player, $key, $value) = @_;
 	my $newkey_flag = 0;
-	# LOGDEB "pupdate: $player | $key | $value";
-	return if (!$player or ! defined $key);
+	LOGDEB "pupdate: $player | $key | $value";
+	return if (!$player or !defined $key);
 		
-	# print STDERR "pupdate: $player | $key | $value |\n";
-	if (!defined $playerstates{$player}) {
+	if (! defined $playerstates{$player}) {
 		LOGDEB "Playerstates: Create new player $player";
 		$newkey_flag = 1;
 		my %player_href : shared;
@@ -795,21 +755,32 @@ sub pupdate
 		$playerdiffs{$player}{$key} = $value;
 	} else {
 		# LOGDEB "pupdate: Value updated.";
-		$playerdiffs{$player}{$key} = $value if ( $value ne $playerstates{$player}->{$key} );
+		$playerdiffs{$player}{$key} = $value;# if ( $value ne $playerstates{$player}->{$key} );
 		my $currplayer = $playerstates{$player};
 		$$currplayer{$key} = $value;
 	}
 	
 	# Sync setting to sync members
-	my @syncKeys = qw ( Songtitle Artist Stream Pause Shuffle Repeat sync );
-	if( $playerstates{$player}->{sync} and grep { $key eq $_ } @syncKeys ) {
-		#LOGDEB "pupdate: $key is synced";
-		foreach my $member ( get_members($playerstates{$player}->{sync}) ) {
-			next if ($member eq $player);
-			$playerdiffs{$member}{$key} = $value if ( $playerstates{$member}->{$key} ne $value ); 
-			$playerstates{$member}->{$key} = $value;
+	return if( $key eq "Power" and $value eq "0" );
+	return if( !$playerstates{$player}->{sync} );
+	return if( $playerstates{$player}->{Power} == 0 and $key eq "Pause" );
+	return if( $playerstates{$player}->{Power} == 0 and $key eq "Mode" );
+	
+		my @syncKeys = qw ( Songtitle Artist Stream Pause Shuffle Repeat sync Mode );
+		if( grep { $key eq $_ } @syncKeys ) {
+			foreach my $member ( get_members($playerstates{$player}->{sync}) ) {
+				next if (!defined $playerstates{$member});
+				next if ($member eq $player); # Don't sync itself
+				next if ($playerstates{$member}->{Power} == 0 and $key eq "Pause"); # Don't sync pause state on powered off players
+				next if ($playerstates{$member}->{Power} == 0 and $key eq "Mode"); # Don't sync pause state on powered off players
+
+				LOGDEB "pupdate: Replicating $key=$value from $player to $member";
+				$playerdiffs{$member}{$key} = $value if ( $playerstates{$member}->{$key} ne $value ); 
+				$playerstates{$member}->{$key} = $value;
+				
+			}
 		}
-	}
+	
 }
 
 ##
@@ -821,8 +792,6 @@ sub get_members
 	my @members = split(/,/, $membersStr);
 	return @members;
 }
-
-
 
 
 #####################################################################################
@@ -873,13 +842,40 @@ sub send_to_ms()
 	# Check sync states on players with status change
 	# and populate mode texts to titles
 	foreach my $player (keys %playerdiffs) {
+		
 		if($player eq "") {
 			delete $playerdiffs{$player};
 			next;
 		}
 		if (!defined $playerstates{$player}) 
 			{ next; }
+	
+		# Calculate the internal state = Loxone Mode 
+		if (defined $playerdiffs{$player}{Mode} or defined $playerdiffs{$player}{Power} or defined $playerdiffs{$player}{Connected}) {
+			if($playerstates{$player}->{Connected} == 0) {
+				pupdate($player, "State", -3);
+				next;
+			}
+			if(!defined $playerstates{$player}->{Power} or $playerstates{$player}->{Power} == 0) {
+				pupdate($player, "State", -2);
+				#$playerdiffs{$player}{State} = -2;
+				next;
+			} else {
+				if($playerstates{$player}->{Mode} == -1) {
+					pupdate($player, "State", -1);
+					#$playerdiffs{$player}{State} = -1;
+					next;
+				} elsif ($playerstates{$player}->{Mode} == 0) {
+					pupdate($player, "State", 0);
+					#$playerdiffs{$player}{State} = 0;
+				} elsif ($playerstates{$player}->{Mode} == 1) {
+					#$playerdiffs{$player}{State} = 1;
+					pupdate($player, "State", 1);
+				}
+			}
+		}
 	}
+
 
 	# Now we send the changes to MS
 	my $udpout_string;
@@ -892,29 +888,40 @@ sub send_to_ms()
 		my $songtitle;
 		my $artist;
 		
-		if ( $playerdiffs{$player}{Mode} < 0 ) {
-			# Modusänderung im Diff auf Ausschalten
-			switch ($playerdiffs{$player}{Mode}) {
-				case -3 	{ $title_artist = $mode_string{-3}; next;}
-				case -2 	{ $title_artist = $mode_string{-2}; next;}
-				case -1 	{ $title_artist = $mode_string{-1}; next;}
+		if ( 
+			defined $playerdiffs{$player}{Songtitle} or 
+			defined $playerdiffs{$player}{Artist} or 
+			defined $playerdiffs{$player}{State} ) {
+			
+				# Wenn eine Änderung gekommen ist, passiert das, wenn er nicht läuft
+				if ( $playerstates{$player}->{State} == -3 ) {
+					$title_artist = $mode_string{-3};
+				} elsif ( $playerstates{$player}->{State} == -2 ) {
+					$title_artist = $mode_string{-2};
+				} elsif ( $playerstates{$player}->{State} == -1 ) {
+					$title_artist = $mode_string{-1};
+				} elsif ( $playerstates{$player}->{State} == 0 ) {
+					$title_artist = $mode_string{0};
+				} elsif ( $playerstates{$player}->{State} == 1 ) {
+					if( ( $playerdiffs{$player}{Songtitle} and $playerstates{$player}->{Artist} ) or $playerstates{$player}->{Artist} ) {
+						# Jede Änderung von Titel+Artist oder nur Artist
+						$title_artist = "$playerstates{$player}->{Songtitle} - $playerstates{$player}->{Artist}";
+						$songtitle = "$playerstates{$player}->{Songtitle}";
+						$artist = "$playerstates{$player}->{Artist}";
+					} elsif ($playerstates{$player}->{State} == 1 and defined $playerdiffs{$player}{Songtitle}) {
+						# Jede Änderung des Titels
+						$title_artist = "$playerstates{$player}->{Songtitle}";
+						$songtitle = "$playerstates{$player}->{Songtitle}";
+						$artist = "";
+					} else {
+						#$title_artist = "UNKNOWN";
+						#$songtitle = "UNKNOWN";
+					}
+				} else {
+					$title_artist = "UNDEFINED STATE";
+					$songtitle = "UNDEFINED STATE";
+				}
 			}
-			$artist = ""; 
-			$songtitle = $title_artist; 
-		} elsif ( $playerstates{$player}{Mode} < 0 ) {
-			# Jede andere Änderung, wenn aktueller Modus aus
-			# do nothing;
-		} elsif ( ( $playerdiffs{$player}{Songtitle} and $playerstates{$player}->{Artist} ) or $playerstates{$player}->{Artist} ) {
-			# Jede Änderung von Titel+Artist oder nur Artist
-			$title_artist = "$playerstates{$player}->{Songtitle} - $playerstates{$player}->{Artist}";
-			$songtitle = "$playerstates{$player}->{Songtitle}";
-			$artist = "$playerstates{$player}->{Artist}";
-		} elsif (defined $playerdiffs{$player}{Songtitle}) {
-			# Jede Änderung des Titels
-			$title_artist = "$playerstates{$player}->{Songtitle}";
-			$songtitle = "$playerstates{$player}->{Songtitle}";
-			$artist = "";
-		} 
 		# LOGDEB "SONGTITLE calculated: $title_artist";
 		
 		if ($title_artist) {
@@ -946,7 +953,7 @@ sub send_to_ms()
 									  $udpout_string .= "$player name $playerdiffs{$player}{$setting}\n";
 									  next;
 									}
-				case 'Mode'			{ to_ms($player, "mode", $mode_string{$playerdiffs{$player}{$setting}});
+				case 'State'		{ to_ms($player, "mode", $mode_string{$playerdiffs{$player}{$setting}});
 									  $udpout_string .= "$player mode_value $playerdiffs{$player}{$setting}\n";
 									  $udpout_string .= "$player mode_text $mode_string{$playerdiffs{$player}{$setting}}\n";
 									  next;
@@ -993,7 +1000,6 @@ sub send_to_ms()
 
 
 }
-
 
 
 #################################################################################

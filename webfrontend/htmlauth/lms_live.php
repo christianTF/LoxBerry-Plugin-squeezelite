@@ -119,7 +119,7 @@ function generate_list(resp) {
 		playerStr += '<td>'+nameStr+' ('+player+')</td>';
 		playerStr += '<td>'+value.Power+'</td>';
 		playerStr += '<td>'+value.Pause+'</td>';
-		playerStr += '<td>'+value.Mode+'</td>';
+		playerStr += '<td>'+value.State+'</td>';
 		playerStr += '<td>'+SongtitleStr+'</td>';
 		playerStr += '<td>'+value.Artist+'</td>';
 		playerStr += '<td style="font-size:80%">'+SentSongtitleStr+'</td>';

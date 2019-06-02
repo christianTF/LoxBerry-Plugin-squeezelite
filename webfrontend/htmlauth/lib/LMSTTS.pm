@@ -502,44 +502,39 @@ sub handle_callback
 			foreach my $player (@tts_players) {
 				# Read the saved state
 				my $state = $local_queue_data{$qid}{backup_playerstate}{$player};
+								
 				$tl->DEB( "Saved player state:" );
 				$tl->DEB( Data::Dumper::Dumper($state) );
 				$tl->DEB( "Restore: Name $state->{Name} ($player) Mode $state->{Mode} ");
 				$tl->DEB( "Sync $state->{sync}") if ($state->{sync});
 				
-				my @sync = split (/,/, $state->{sync}) if ($state->{sync});
+				my @synced_backup = split (/,/, $state->{sync}) if ($state->{sync});
 				
-				if(@sync) {
-					foreach my $i (0 .. $#sync) {
-						#$tl->DEB("Key i is $i");
-						next if ($tts_players[0] eq $sync[$i]); # Don't sync to itself
-						tcpoutqueue("$sync[$i] sync $tts_players[0]");
-					}
-				
-				}
-				
-				# # Dependend of the sync master we need to restore the sync groups different
-				# if(@sync and $sync[0] ne $player) {
-					# # We are a sync slave - Add me back to the others
-					# foreach my $i (@sync) {
-						# next if ($i==0);
-						# tcpoutqueue("$tts_players[$_] sync $tts_players[0]");
-					# }
-				# } elsif(@sync) {
-					# # We was the sync master - Add the others back
+				if(@synced_backup) {
 					
-
-				# # Restore sync groups
-				# if(@sync and scalar @sync > 1) {
-					# foreach(@sync) {
-						# tcpoutqueue("$tts_players[0] sync $tts_players[$_]");
-					# }
-				# }
-				# Restore the playlists
-				if (! @sync) {
-					$tl->INF ("Was not in a sync group - Stop TTS");
+					### The player was member of a sync group ###
+					
+					# Get all players, that was not in the tts group
+					my @non_tts_members = remove_from_array(\@synced_backup, \@tts_players);
+					
+					if(! @non_tts_members) {
+						# ALL tts members were in the same syncgroup before
+						$tl->DEB( "All tts members were in the same group" );
+						# Do NOTHING
+					} else {
+						# The backuped sync group had more members ->
+						# Sync the current player to the first remaining player
+						## SYNC parameter: Note that in both cases the first <playerid> is the player which is already a member of a sync group. When adding a player to a sync group, the second specified player will be added to the group which includes the first player, if necessary first removing the second player from its existing sync-group. 
+						$tl->DEB( "Synching $playerstates->{$player}->{Name} ($player) to $playerstates->{$non_tts_members[0]}->{Name} ($non_tts_members[0])" );
+						tcpoutqueue("$non_tts_members[0] sync $player");
+					}
+				} else {
+					
+					$tl->DEB( "$player was not synct to a group restore playlist" );
 					tcpoutqueue("$tts_players[0] playlist preview cmd:stop");
 				}
+				
+				
 				Time::HiRes::sleep(0.03);
 				
 				# Restore volume
@@ -568,10 +563,16 @@ sub handle_callback
 				}
 				
 				# Query current mode
-				tcpoutqueue("$player mode ?");
+				tcpoutqueue("$player power ?");
 				tcpoutqueue("$player title ?");
-				
+				tcpoutqueue("$player playlist shuffle ?");
+				tcpoutqueue("$player playlist repeat ?");
+				tcpoutqueue("$player mixer muting ?");
 			}
+			
+			#tcpoutqueue("$player title ?");
+			#tcpoutqueue("syncgroups ?");
+			
 			# Set the queue state to unqueue
 			$tl->INF( "Setting queue element to resumed" );
 			$local_queue_data{$qid}{resuming} = 1;
@@ -603,30 +604,26 @@ sub check_resumed
 			#$tl->DEB( "check_resumed: " . Data::Dumper::Dumper($state) );
 			
 			# Check play state
-			if( ($state->{Mode} == 1 or $state->{Mode} == 0) and $playerstates->{$player}->{Mode} < 0 ) {
-				$tl->DEB("Player $state->{Name} ($player): Mode not yet restored (<0): Saved {$state->{Mode}}, Current {$playerstates->{$player}->{Mode}}");  
-				$ready_to_unqueue = 0;
-				last;
+			if (defined $state->{Mode}) {
+				if( ($state->{Mode} == 1 or $state->{Mode} == 0) and $playerstates->{$player}->{Mode} < 0 ) {
+					$tl->DEB("Player $state->{Name} ($player): Mode not yet restored (<0): Saved {$state->{Mode}}, Current {$playerstates->{$player}->{Mode}}");  
+					$ready_to_unqueue = 0;
+					last;
+				}
+				if( defined $state->{Mode} and $state->{Mode} == -1 and $playerstates->{$player}->{Mode} != -1 ) {
+					$tl->DEB("Player $state->{Name} ($player): Mode not yet restored (!-1): Saved {$state->{Mode}}, Current {$playerstates->{$player}->{Mode}}");  
+					$ready_to_unqueue = 0;
+					last;
+				}
 			}
-			if( $state->{Mode} == -1 and $playerstates->{$player}->{Mode} != -1 ) {
-				$tl->DEB("Player $state->{Name} ($player): Mode not yet restored (!-1): Saved {$state->{Mode}}, Current {$playerstates->{$player}->{Mode}}");  
-				$ready_to_unqueue = 0;
-				last;
+
+			if(defined $state->{Shuffle}) {
+				if( defined $state->{Shuffle} and $state->{Shuffle} != $playerstates->{$player}->{Shuffle} ) {
+					$tl->DEB("Player $state->{Name} ($player): Shuffle not yet restored: Saved {$state->{Shuffle}}, Current {$playerstates->{$player}->{Shuffle}}");  
+					$ready_to_unqueue = 0;
+					last;
+				}
 			}
-			if( $state->{Shuffle} != $playerstates->{$player}->{Shuffle} ) {
-				$tl->DEB("Player $state->{Name} ($player): Shuffle not yet restored: Saved {$state->{Shuffle}}, Current {$playerstates->{$player}->{Shuffle}}");  
-				$ready_to_unqueue = 0;
-				last;
-			}
-			
-			# my @sync = split (/,/, $state->{sync}) if ($state->{sync});
-					
-			# if(@sync) {
-				# foreach my $i (@sync) {
-					# next if ($i==0);
-					# tcpoutqueue("$tts_players[$_] sync $tts_players[0]");
-				# }
-			# }
 		}
 		
 		
@@ -685,7 +682,7 @@ sub tts_play
 	if (scalar @tts_players > 1) {
 		my $playercount = scalar @tts_players;
 		$pl->INF( "PLAY TID$tid: TTS uses $playercount zones - syncing..." );
-		for (my $i = 1; $i < $playercount-1; $i++) {
+		for (my $i = 1; $i <= $playercount-1; $i++) {
 			$pl->DEB ( "PLAY TID$tid:   Sync $tts_players[$i] --> $tts_players[0]" );
 			tcpoutqueue("$tts_players[0] sync $tts_players[$i]");
 		}
@@ -872,12 +869,16 @@ sub calculate_volume
 
 }
 
-
-
-
-
-
-
+########################################################
+# Remove the elements of the second array from the first
+# Parameter 1: arrayref All elements
+# Parameter 2: arrayref Elements to remove
+# Return Resulting Array
+sub remove_from_array
+{
+	my ($full, $away) = @_;
+	return grep { my $f = $_; ! grep $_ eq $f, @$away } @$full;
+}
 
 ##########################
 # Thread
