@@ -335,7 +335,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 				$webport = $squ_lmswebport;
 			} 
 			$lmslinks = "				<li><a target=\"_blank\" href=\"http://$squ_server:$webport/\">Logitech Media Server</a></li>\n" . 
-						"				<li><a target=\"_blank\" href=\"http://$squ_server:$webport/settings/index.html\">LMS Settings</a></li>";
+						"				<li><a target=\"_blank\" href=\"http://$squ_server:$webport/default/settings/index.html\">LMS Settings</a></li>";
 		}
 		
 		# Generate logfile link for navigaton
