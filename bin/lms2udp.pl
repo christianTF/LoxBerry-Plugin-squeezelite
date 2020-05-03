@@ -20,7 +20,7 @@ require "$lbphtmlauthdir/lib/LMSTTS.pm";
 # - libio-socket-timeout-perl
 
 # Version of this script
-$version = "1.0.6";
+$version = "1.0.6.1";
 
 ## Termination handling
 $SIG{INT} = sub { 
@@ -172,6 +172,7 @@ my $tcpin_port = $lms2udp_berrytcpport;
 # This is the host we mirror the TCP incoming messages to (usually the Miniserver)
 my $udpout_host = $miniserverip;
 my $udpout_port = $lms2udp_udpport;
+
 
 # Create sockets
 # Connection to the remote TCP host
@@ -929,6 +930,8 @@ sub send_to_ms()
 			to_ms($player, "title", $playerstates{$player}->{SentSongtitle});
 			to_ms($player, "songtitle", $songtitle);
 			to_ms($player, "artist", $artist);
+			my $rnd = time();
+			to_ms($player, "cover", "http://$squ_server:$squ_lmswebport/music/current/cover.jpg?player=$player&id=$rnd");
 			$udpout_string .= "$player playlist newsong $title_artist\n";
 			$data_changed = 1;
 		}
@@ -1165,6 +1168,7 @@ sub read_config
 	$cfgversion = $cfg->param("Main.ConfigVersion");
 	$squ_server = $cfg->param("Main.LMSServer");
 	$squ_lmswebport = $cfg->param("Main.LMSWebPort");
+	if (!$squ_lmswebport) {$squ_lmswebport = "9000"};
 	$squ_lmscliport = $cfg->param("Main.LMSCLIPort");
 	$squ_lmsdataport = $cfg->param("Main.LMSDataPort");
 	$lms2udp_msnr = $cfg->param("LMS2UDP.msnr");
