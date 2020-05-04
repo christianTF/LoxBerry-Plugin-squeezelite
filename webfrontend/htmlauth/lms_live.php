@@ -73,6 +73,7 @@ function generate_list(resp) {
 	tableStr += '<th>Power</th>';
 	tableStr += '<th>Pause</th>';
 	tableStr += '<th>Mode</th>';
+	tableStr += '<th>Cover</th>';
 	tableStr += '<th>Songtitle</th>';
 	tableStr += '<th>Artist</th>';
 	tableStr += '<th>Songtitle (Sent)</th>';
@@ -112,7 +113,7 @@ function generate_list(resp) {
 		
 		if(value.Artist == null) 
 			value.Artist = "";
-				
+
 		playerStr += '<tr>';
 		// playerContainer = '<div style="display:flex;flex-wrap:wrap;flex-basis:100%;">'
 		playerStr += '<td>'+value.Connected+'</td>';
@@ -120,6 +121,11 @@ function generate_list(resp) {
 		playerStr += '<td>'+value.Power+'</td>';
 		playerStr += '<td>'+value.Pause+'</td>';
 		playerStr += '<td>'+value.State+'</td>';
+		if(value.Cover == null) {
+			playerStr += '<td>&nbsp;</td>';
+		} else {
+			playerStr += '<td><img src="'+value.Cover+'" width=32</img></td>';
+		}
 		playerStr += '<td>'+SongtitleStr+'</td>';
 		playerStr += '<td>'+value.Artist+'</td>';
 		playerStr += '<td style="font-size:80%">'+SentSongtitleStr+'</td>';
