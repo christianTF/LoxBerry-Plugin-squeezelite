@@ -20,7 +20,7 @@ require "$lbphtmlauthdir/lib/LMSTTS.pm";
 # - libio-socket-timeout-perl
 
 # Version of this script
-$version = "1.0.6.1";
+$version = "1.0.6.2";
 
 ## Termination handling
 $SIG{INT} = sub { 
@@ -110,6 +110,7 @@ my %playerstates	: shared;
 	# Connected
 	# Songtitle
 	# Artist
+	# Cover
 	# Power
 	# Mode
 	# Stream
@@ -207,9 +208,9 @@ LOGINF "Loop delay: $loopdelay microseconds";
 
 start_listening();
 
-	close $tcpout_sock;
-	close $udpout_sock;
-	close $tcpin_sock;
+close $tcpout_sock;
+close $udpout_sock;
+close $tcpin_sock;
 # and terminate the connection when we're done
 
 END 
@@ -314,10 +315,10 @@ sub start_listening
 			# print $udpout_sock $input . "\n";
 			# print $input . "\n";
 		}
-			# Debugging with timestamp
-			# my ( $sec, $min, $hour) = localtime;
-			# my $currtime = strftime("%Y-%m-%dT%H:%M:%S", localtime);
-			# print $currtime . " " . uri_unescape($line);
+		# Debugging with timestamp
+		# my ( $sec, $min, $hour) = localtime;
+		# my $currtime = strftime("%Y-%m-%dT%H:%M:%S", localtime);
+		# print $currtime . " " . uri_unescape($line);
 		if ((time%60) == 0) {
 			LOGDEB "Sending Ping-Pong";
 			print $tcpout_sock "listen 1\n";
@@ -332,18 +333,17 @@ sub start_listening
 			if (! $tcpout_sock->connected) { LOGWARN "LMS Socket seems to be down."; }
 			if ($last_lms_receive_time < (time-65)) { LOGWARN "LMS2UDP received no data from LMS since 65 seconds (missing Pong to Ping)"; }
 			LOGINF "RECONNECT TCP Socket...";
-				$tcpout_sock = create_out_socket($tcpout_sock, $tcpout_port, 'tcp', $tcpout_host);
-				sleep(5);
-				if ($tcpout_sock->connected) {
-					$udpout_sock->flush;
-					sleep (1);
-					LOGOK "Reconnected";
-					tcpout_initialization();
-				} else { 
-					LOGINF "Not reconnected - waiting...";
-					sleep (5);
-				}
-					
+			$tcpout_sock = create_out_socket($tcpout_sock, $tcpout_port, 'tcp', $tcpout_host);
+			sleep(5);
+			if ($tcpout_sock->connected) {
+				$udpout_sock->flush;
+				sleep (1);
+				LOGOK "Reconnected";
+				tcpout_initialization();
+			} else { 
+				LOGINF "Not reconnected - waiting...";
+				sleep (5);
+			}
 		} 
 		if (($lastpoll+$pollinterval) < time)  {
 			# Force a periodic poll
@@ -366,9 +366,6 @@ sub start_listening
 				delete $threads{$_};
 			}
 		}
-		
-				
-		
 		
 		# # List running threads (for debugging)
 		# my @running_t = threads->list(threads::running);
@@ -417,8 +414,6 @@ sub start_listening
 		if ((time%5) == 0 ) {
 			read_config();
 		}
-		
-		
 		
 		# Here we sleep some time and start over again
 		if ($input) {
@@ -481,84 +476,84 @@ sub process_line
 	
 	switch ($parts[0]) {
 		case 'players' 	{ # print "DEBUG: Players\n";
-						  players();
-						  return undef;
-				} # sub for parsing inital player list 
+			players();
+			return undef;
+			} # sub for parsing inital player list 
 		case 'syncgroups' { syncgroups();
-							return undef;
-						}
+			return undef;
+			}
 	}
 	
 	switch ($parts[1]) {
 		case 'playlist' { return playlist();}
 		case 'mixer' 	{ return mixer();}
 		case 'title'	{ 
-						  pupdate($parts[0], "Songtitle", $parts[2]);
-						  print $tcpout_sock "$parts[0] artist ?\n$parts[0] remote ?\n";
-						  return undef;
-						}
+				pupdate($parts[0], "Songtitle", $parts[2]);
+				my $rnd = time();
+				pupdate($parts[0], "Cover", "http://$squ_server:$squ_lmswebport/music/current/cover.jpg?player=$parts[0]&id=$rnd");
+				print $tcpout_sock "$parts[0] artist ?\n$parts[0] remote ?\n";
+				return undef;
+			}
 		case 'artist'	{   # pupdate($parts[0], "Songtitle", $playerstates{$parts[0]}->{Songtitle});
-							if(defined $parts[2]) {
-								pupdate($parts[0], "Artist", $parts[2]);
-							} else { 
-								pupdate($parts[0], "Artist", undef);
-							}
-							return undef;
-					}
+				if(defined $parts[2]) {
+					pupdate($parts[0], "Artist", $parts[2]);
+				} else { 
+					pupdate($parts[0], "Artist", undef);
+				}
+				return undef;
+			}
 		case 'power' 	{ # print "DEBUG: $rawparts[0] Power $rawparts[2]\n"; 
-						  print $tcpout_sock "syncgroups ?\n";
-						  pupdate($parts[0], "Connected", 1);
-						  pupdate($parts[0], "Known", 1);
-							
-						  if ($rawparts[2] eq "0") {
-							pupdate($parts[0], "Power", 0);
-							pupdate($parts[0], "Mode", -1);
-							pupdate($parts[0], "Pause", 0);
-						} elsif ($rawparts[2] eq "1") {
-							pupdate($parts[0], "Power", 1);
-							print $tcpout_sock "$rawparts[0] playlist shuffle ?\n";
-						    print $tcpout_sock "$rawparts[0] playlist repeat ?\n";
-							print $tcpout_sock "$rawparts[0] mode ?\n";
-						}
-						return undef;
-					}
+				print $tcpout_sock "syncgroups ?\n";
+				pupdate($parts[0], "Connected", 1);
+				pupdate($parts[0], "Known", 1);
+					
+				if ($rawparts[2] eq "0") {
+					pupdate($parts[0], "Power", 0);
+					pupdate($parts[0], "Mode", -1);
+					pupdate($parts[0], "Pause", 0);
+				} elsif ($rawparts[2] eq "1") {
+					pupdate($parts[0], "Power", 1);
+					print $tcpout_sock "$rawparts[0] playlist shuffle ?\n";
+					print $tcpout_sock "$rawparts[0] playlist repeat ?\n";
+					print $tcpout_sock "$rawparts[0] mode ?\n";
+				}
+				return undef;
+			}
 		case 'mode'		{ 
-					LOGDEB "DEBUG: Mode |$rawparts[2]|$parts[2]|\n";
-					if (defined $rawparts[2]) {
-						if ($rawparts[2] eq 'stop') {
-							pupdate($parts[0], "Mode", -1);
-							pupdate($parts[0], "Pause", 0);
-						} elsif ($rawparts[2] eq 'play') {
-							pupdate($parts[0], "Mode", 1);
-							pupdate($parts[0], "Pause", 0);
-						} elsif ($rawparts[2] eq 'pause') {
-							pupdate($parts[0], "Mode", 0);
-							pupdate($parts[0], "Pause", 1);
-						}
+				LOGDEB "DEBUG: Mode |$rawparts[2]|$parts[2]|\n";
+				if (defined $rawparts[2]) {
+					if ($rawparts[2] eq 'stop') {
+						pupdate($parts[0], "Mode", -1);
+						pupdate($parts[0], "Pause", 0);
+					} elsif ($rawparts[2] eq 'play') {
+						pupdate($parts[0], "Mode", 1);
+						pupdate($parts[0], "Pause", 0);
+					} elsif ($rawparts[2] eq 'pause') {
+						pupdate($parts[0], "Mode", 0);
+						pupdate($parts[0], "Pause", 1);
+					}
+				}
+				return undef;
+			}
+		case 'client'	{ return client(); }
+		case 'name'	{ pupdate($parts[0], "Name", $parts[2]); 
+					return undef;
+				}
+		case 'remote'	{ # print "$parts[0] DEBUG: remote #$parts[2]#\n";
+					if ($parts[2]) { 
+						pupdate($parts[0], "Stream", 1);
+					} else { 
+						pupdate($parts[0], "Stream",  0);
 					}
 					return undef;
 				}
-		case 'client'	{ return client(); }
-		case 'name'		{ pupdate($parts[0], "Name", $parts[2]); 
-						  return undef;
-						}
-		case 'remote'	{ # print "$parts[0] DEBUG: remote #$parts[2]#\n";
-						  if ($parts[2]) { 
-							pupdate($parts[0], "Stream", 1);
-						  } else { 
-						    pupdate($parts[0], "Stream",  0);
-						  }
-						return undef;
+		case 'sync'	{ print $tcpout_sock "syncgroups ?\n$parts[0] title ?\n$parts[0] artist ?\n"; 
+					return undef;
 				}
-		case 'sync'		{ print $tcpout_sock "syncgroups ?\n$parts[0] title ?\n$parts[0] artist ?\n"; 
-						  return undef;
-		}
-		case 'time'		{ pupdate($parts[0], "time", int($parts[2]));
-						  return undef;
-		}
+		case 'time'	{ pupdate($parts[0], "time", int($parts[2]));
+					return undef;
+				}
 	}	
-		
-	
 	return undef;
 }
 
@@ -592,12 +587,16 @@ sub playlist
 				} else { 
 					pupdate($parts[0], "Stream", 1);
 					pupdate($parts[0], "Songtitle", $parts[3]);
+					my $rnd = time();
+					pupdate($parts[0], "Cover", "http://$squ_server:$squ_lmswebport/music/current/cover.jpg?player=$parts[0]&id=$rnd");
 					# LOGDEB "DEBUG: Playlist thinks $parts[0] is a stream #$rawparts[4]#";
 					return;
 				}
 			}	
 		case 'title' {
 					pupdate($parts[0], "Songtitle", $parts[3]);
+					my $rnd = time();
+					pupdate($parts[0], "Cover", "http://$squ_server:$squ_lmswebport/music/current/cover.jpg?player=$parts[0]&id=$rnd");
 					print $tcpout_sock "$rawparts[0] artist ?\n$rawparts[0] remote ?\n";
 					return undef;
 			}
@@ -755,7 +754,7 @@ sub pupdate
 		$playerstates{$player} = \%player_href;
 		$playerdiffs{$player}{$key} = $value;
 	} else {
-		# LOGDEB "pupdate: Value updated.";
+		LOGDEB "pupdate: Value updated.";
 		$playerdiffs{$player}{$key} = $value;# if ( $value ne $playerstates{$player}->{$key} );
 		my $currplayer = $playerstates{$player};
 		$$currplayer{$key} = $value;
