@@ -9,5 +9,5 @@ libforks-perl
 squeezelite
 libwww-curl-perl
 libarray-utils-perl
-
-
+libclone-perl
+libwww-curl-perl
