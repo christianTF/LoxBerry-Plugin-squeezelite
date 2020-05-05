@@ -20,7 +20,7 @@ require "$lbphtmlauthdir/lib/LMSTTS.pm";
 # - libio-socket-timeout-perl
 
 # Version of this script
-$version = "1.0.6.2";
+$version = "1.0.6.1";
 
 ## Termination handling
 $SIG{INT} = sub { 
@@ -51,7 +51,6 @@ print "Startup lms2udp daemon...\n";
 # Own modules
 
 # Perl modules
-
 use Config::Simple;
 use Getopt::Long qw(GetOptions);
 use HTML::Entities;
@@ -88,7 +87,9 @@ our $tts_lmsvol : shared;
 our $tts_minvol : shared = 0;
 our $tts_maxvol : shared = 100;
 our %mode_string;
-
+my $msi_activated;
+my @msi_servers;
+my %msi_zones;
 
 our $tcpin_sock;
 our $tcpout_sock;
@@ -489,8 +490,7 @@ sub process_line
 		case 'mixer' 	{ return mixer();}
 		case 'title'	{ 
 				pupdate($parts[0], "Songtitle", $parts[2]);
-				my $rnd = time();
-				pupdate($parts[0], "Cover", "http://$squ_server:$squ_lmswebport/music/current/cover.jpg?player=$parts[0]&id=$rnd");
+				pupdate($parts[0], "Cover", "http://$squ_server:$squ_lmswebport/music/current/cover.jpg?player=$parts[0]&id=$last_lms_receive_time");
 				print $tcpout_sock "$parts[0] artist ?\n$parts[0] remote ?\n";
 				return undef;
 			}
@@ -587,16 +587,14 @@ sub playlist
 				} else { 
 					pupdate($parts[0], "Stream", 1);
 					pupdate($parts[0], "Songtitle", $parts[3]);
-					my $rnd = time();
-					pupdate($parts[0], "Cover", "http://$squ_server:$squ_lmswebport/music/current/cover.jpg?player=$parts[0]&id=$rnd");
+					pupdate($parts[0], "Cover", "http://$squ_server:$squ_lmswebport/music/current/cover.jpg?player=$parts[0]&id=$last_lms_receive_time");
 					# LOGDEB "DEBUG: Playlist thinks $parts[0] is a stream #$rawparts[4]#";
 					return;
 				}
 			}	
 		case 'title' {
 					pupdate($parts[0], "Songtitle", $parts[3]);
-					my $rnd = time();
-					pupdate($parts[0], "Cover", "http://$squ_server:$squ_lmswebport/music/current/cover.jpg?player=$parts[0]&id=$rnd");
+					pupdate($parts[0], "Cover", "http://$squ_server:$squ_lmswebport/music/current/cover.jpg?player=$parts[0]&id=$last_lms_receive_time");
 					print $tcpout_sock "$rawparts[0] artist ?\n$rawparts[0] remote ?\n";
 					return undef;
 			}
@@ -766,20 +764,20 @@ sub pupdate
 	return if( $playerstates{$player}->{Power} == 0 and $key eq "Pause" );
 	return if( $playerstates{$player}->{Power} == 0 and $key eq "Mode" );
 	
-		my @syncKeys = qw ( Songtitle Artist Stream Pause Shuffle Repeat sync Mode );
-		if( grep { $key eq $_ } @syncKeys ) {
-			foreach my $member ( get_members($playerstates{$player}->{sync}) ) {
-				next if (!defined $playerstates{$member});
-				next if ($member eq $player); # Don't sync itself
-				next if ($playerstates{$member}->{Power} == 0 and $key eq "Pause"); # Don't sync pause state on powered off players
-				next if ($playerstates{$member}->{Power} == 0 and $key eq "Mode"); # Don't sync pause state on powered off players
+	my @syncKeys = qw ( Songtitle Artist Stream Pause Shuffle Repeat sync Mode );
+	if( grep { $key eq $_ } @syncKeys ) {
+		foreach my $member ( get_members($playerstates{$player}->{sync}) ) {
+			next if (!defined $playerstates{$member});
+			next if ($member eq $player); # Don't sync itself
+			next if ($playerstates{$member}->{Power} == 0 and $key eq "Pause"); # Don't sync pause state on powered off players
+			next if ($playerstates{$member}->{Power} == 0 and $key eq "Mode"); # Don't sync pause state on powered off players
 
-				LOGDEB "pupdate: Replicating $key=$value from $player to $member";
-				$playerdiffs{$member}{$key} = $value if ( $playerstates{$member}->{$key} ne $value ); 
-				$playerstates{$member}->{$key} = $value;
-				
-			}
+			LOGDEB "pupdate: Replicating $key=$value from $player to $member";
+			$playerdiffs{$member}{$key} = $value if ( $playerstates{$member}->{$key} ne $value ); 
+			$playerstates{$member}->{$key} = $value;
+			
 		}
+	}
 	
 }
 
@@ -1167,7 +1165,6 @@ sub read_config
 	$cfgversion = $cfg->param("Main.ConfigVersion");
 	$squ_server = $cfg->param("Main.LMSServer");
 	$squ_lmswebport = $cfg->param("Main.LMSWebPort");
-	if (!$squ_lmswebport) {$squ_lmswebport = "9000"};
 	$squ_lmscliport = $cfg->param("Main.LMSCLIPort");
 	$squ_lmsdataport = $cfg->param("Main.LMSDataPort");
 	$lms2udp_msnr = $cfg->param("LMS2UDP.msnr");
@@ -1178,12 +1175,30 @@ sub read_config
 	$lms2udp_refreshdelayms = $cfg->param("LMS2UDP.refreshdelayms");
 	$sendtoms = $cfg->param("LMS2UDP.sendToMS");
 
+	# Read MSI config from config
+	$msi_activated = $cfg->param("MSI.Activated");
+	if ( $msi_activated ) {	
+		LOGINF "MSI is ENABLED";
+		for ( my $i=1; $i<=5; $i++ ) { # 5 MusicServer max
+			if ( $cfg->param("MSI.Musicserver$i\_Ip") ) {
+				if (! $cfg->param("MSI.Musicserver$i\_Port") ) {
+					$cfg->param("MSI.Musicserver$i\_Port") = 6091 - 1 + $i;
+				}
+				LOGDEB "Found Musicserver config for " . $cfg->param("MSI.Musicserver$i\_Ip") . ":" . $cfg->param("MSI.Musicserver$i\_Port");
+				push ( @msi_servers, $cfg->param("MSI.Musicserver$i\_Ip") . ":" . $cfg->param("MSI.Musicserver$i\_Port") );
+				for ( my $ii=1; $ii<=30; $ii++ ) { # 30 Zones max
+					if ( $cfg->param("MSI.Musicserver$i\_Z$ii") ) {
+						$msi_zones{ $cfg->param("MSI.Musicserver$i\_Z$ii") } = $ii;
+						LOGDEB "Zone $ii is player: " . $cfg->param("MSI.Musicserver$i\_Z$ii");
+					}
+				}
+			}
+		}
+	}
 	# Read volumes from config
-	
 	if( $cfg->param("LMSTTS.tts_lmsvol") ) { $tts_lmsvol = $cfg->param("LMSTTS.tts_lmsvol"); }
 	if( $cfg->param("LMSTTS.tts_minvol") ) { $tts_minvol = $cfg->param("LMSTTS.tts_minvol"); }
 	if( $cfg->param("LMSTTS.tts_maxvol") ) { $tts_maxvol = $cfg->param("LMSTTS.tts_maxvol"); }
-	
 	LOGINF "TTS volumes from config: $tts_lmsvol, $tts_minvol, $tts_maxvol";
 	
 	# Labels
@@ -1207,6 +1222,7 @@ sub read_config
 	}
 
 	# Init default values if empty
+	if (! $squ_lmswebport) { $squ_lmswebport = 9000; }
 	if (! $squ_lmscliport) { $squ_lmscliport = 9090; }
 	if (! $lms2udp_berrytcpport) { $lms2udp_berrytcpport = 9092; }
 	if (! $lms2udp_udpport) { $lms2udp_udpport = 9093; }
@@ -1224,11 +1240,10 @@ sub read_config
 	}
 
 	# my $miniserver = $lms2udp_msnr;
-	our $miniserverip        = $miniservers{$lms2udp_msnr}{IPAddress};
+	our 	$miniserverip        = $miniservers{$lms2udp_msnr}{IPAddress};
 	our	$miniserverport      = $miniservers{$lms2udp_msnr}{Port};
 	our	$miniserveradmin     = $miniservers{$lms2udp_msnr}{Admin};
 	our	$miniserverpass      = $miniservers{$lms2udp_msnr}{Pass};
-
 	LOGINF "MSIP $miniserverip MSPORT $miniserverport LMS $squ_server\n";
 
 }
