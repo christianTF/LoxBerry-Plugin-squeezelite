@@ -88,8 +88,10 @@ our $tts_minvol : shared = 0;
 our $tts_maxvol : shared = 100;
 our %mode_string;
 my $msi_activated;
-my @msi_servers;
+my %msi_servers;
 my %msi_zones;
+my %msi_players;
+my %udpmsiout_sock;
 
 our $tcpin_sock;
 our $tcpout_sock;
@@ -187,6 +189,16 @@ $in_list = IO::Select->new ($tcpin_sock);
 # Create a guest UDP stream
 $udpout_sock = create_out_socket($udpout_sock, $udpout_port, 'udp', $udpout_host);
 $udpout_sock->flush;
+
+# Create UDP streams for MSI
+if ( $msi_activated ) {	
+	for my $msino (keys %msi_servers) {
+		my ($host,$port) = split(/:/,$msi_servers{$msino});
+		#print "Server is $host, Port is $port\n";
+		$udpmsiout_sock{$msino} = create_out_socket($udpimsiout_sock{$msino}, $port, 'udp', $host);
+		$udpmsiout_sock{$msino}->flush;
+	}
+}
 
 our $answer; 
 
@@ -1185,16 +1197,18 @@ sub read_config
 					$cfg->param("MSI.Musicserver$i\_Port") = 6091 - 1 + $i;
 				}
 				LOGDEB "Found Musicserver config for " . $cfg->param("MSI.Musicserver$i\_Ip") . ":" . $cfg->param("MSI.Musicserver$i\_Port");
-				push ( @msi_servers, $cfg->param("MSI.Musicserver$i\_Ip") . ":" . $cfg->param("MSI.Musicserver$i\_Port") );
+				$msi_servers{ $i } = $cfg->param("MSI.Musicserver$i\_Ip") . ":" . $cfg->param("MSI.Musicserver$i\_Port");
 				for ( my $ii=1; $ii<=30; $ii++ ) { # 30 Zones max
 					if ( $cfg->param("MSI.Musicserver$i\_Z$ii") ) {
 						$msi_zones{ $cfg->param("MSI.Musicserver$i\_Z$ii") } = $ii;
-						LOGDEB "Zone $ii is player: " . $cfg->param("MSI.Musicserver$i\_Z$ii");
+						$msi_players{ $cfg->param("MSI.Musicserver$i\_Z$ii") } = $i;
+						LOGDEB "Zone $ii of " . $cfg->param("MSI.Musicserver$i\_Ip") . ":" . $cfg->param("MSI.Musicserver$i\_Port") . " is player: " . $cfg->param("MSI.Musicserver$i\_Z$ii");
 					}
 				}
 			}
 		}
 	}
+	
 	# Read volumes from config
 	if( $cfg->param("LMSTTS.tts_lmsvol") ) { $tts_lmsvol = $cfg->param("LMSTTS.tts_lmsvol"); }
 	if( $cfg->param("LMSTTS.tts_minvol") ) { $tts_minvol = $cfg->param("LMSTTS.tts_minvol"); }
