@@ -62,6 +62,7 @@ use POSIX qw/ strftime /;
 use Switch;
 use Time::HiRes qw(usleep);
 use URI::Escape;
+use Data::Dumper;
 # use TCPUDP;
 
 my $home = $lbhomedir;
@@ -91,7 +92,7 @@ my $msi_activated;
 my %msi_servers;
 my %msi_zones;
 my %msi_players;
-my %udpmsiout_sock;
+my %msiudpout_sock;
 
 our $tcpin_sock;
 our $tcpout_sock;
@@ -114,6 +115,8 @@ my %playerstates	: shared;
 	# Songtitle
 	# Artist
 	# Cover
+	# Album
+	# Duration
 	# Power
 	# Mode
 	# Stream
@@ -195,8 +198,8 @@ if ( $msi_activated ) {
 	for my $msino (keys %msi_servers) {
 		my ($host,$port) = split(/:/,$msi_servers{$msino});
 		#print "Server is $host, Port is $port\n";
-		$udpmsiout_sock{$msino} = create_out_socket($udpimsiout_sock{$msino}, $port, 'udp', $host);
-		$udpmsiout_sock{$msino}->flush;
+		$msiudpout_sock{$msino} = create_out_socket($msiudpout_sock{$msino}, $port, 'udp', $host);
+		$msiudpout_sock{$msino}->flush;
 	}
 }
 
@@ -503,7 +506,7 @@ sub process_line
 		case 'title'	{ 
 				pupdate($parts[0], "Songtitle", $parts[2]);
 				pupdate($parts[0], "Cover", "http://$squ_server:$squ_lmswebport/music/current/cover.jpg?player=$parts[0]&id=$last_lms_receive_time");
-				print $tcpout_sock "$parts[0] artist ?\n$parts[0] remote ?\n";
+				print $tcpout_sock "$parts[0] artist ?\n$parts[0] album ?\n$parts[0] duration ?\n$parts[0] remote ?\n";
 				return undef;
 			}
 		case 'artist'	{   # pupdate($parts[0], "Songtitle", $playerstates{$parts[0]}->{Songtitle});
@@ -511,6 +514,14 @@ sub process_line
 					pupdate($parts[0], "Artist", $parts[2]);
 				} else { 
 					pupdate($parts[0], "Artist", undef);
+				}
+				return undef;
+			}
+		case 'album'	{
+				if(defined $parts[2]) {
+					pupdate($parts[0], "Album", $parts[2]);
+				} else { 
+					pupdate($parts[0], "Album", undef);
 				}
 				return undef;
 			}
@@ -562,7 +573,10 @@ sub process_line
 		case 'sync'	{ print $tcpout_sock "syncgroups ?\n$parts[0] title ?\n$parts[0] artist ?\n"; 
 					return undef;
 				}
-		case 'time'	{ pupdate($parts[0], "time", int($parts[2]));
+		case 'time'	{ pupdate($parts[0], "time", $parts[2]);
+					return undef;
+				}
+		case 'duration'	{ pupdate($parts[0], "Duration", $parts[2]);
 					return undef;
 				}
 	}	
@@ -776,6 +790,11 @@ sub pupdate
 	return if( $playerstates{$player}->{Power} == 0 and $key eq "Pause" );
 	return if( $playerstates{$player}->{Power} == 0 and $key eq "Mode" );
 	
+	###############################################
+	#
+	# HINT SCHLENN: Add Album and Cover here, too?
+	#
+	###############################################
 	my @syncKeys = qw ( Songtitle Artist Stream Pause Shuffle Repeat sync Mode );
 	if( grep { $key eq $_ } @syncKeys ) {
 		foreach my $member ( get_members($playerstates{$player}->{sync}) ) {
@@ -887,8 +906,12 @@ sub send_to_ms()
 	}
 
 
-	# Now we send the changes to MS
+	# Now we send the changes to MS and MSI
 	my $udpout_string;
+	my %msiudpout_string;
+	my $msiserver;
+	my $msizone;
+	my $msisend = 1;
 	my $data_changed;
 	
 	foreach my $player (keys %playerdiffs) {
@@ -897,10 +920,20 @@ sub send_to_ms()
 		my $title_artist;
 		my $songtitle;
 		my $artist;
-		
+
+		# Which Zone and MusicServer
+		if ( $msi_activated ) {
+			$msiserver = $msi_players{$player};
+			$msizone = $msi_zones{$player};
+		}
+		if ( !$msiserver || !$msizone || !$msi_activated ) {
+			$msisend = 0;
+		}
+
 		if ( 
 			defined $playerdiffs{$player}{Songtitle} or 
 			defined $playerdiffs{$player}{Artist} or 
+			defined $playerdiffs{$player}{Album} or 
 			defined $playerdiffs{$player}{State} ) {
 			
 				# Wenn eine Änderung gekommen ist, passiert das, wenn er nicht läuft
@@ -939,9 +972,13 @@ sub send_to_ms()
 			to_ms($player, "title", $playerstates{$player}->{SentSongtitle});
 			to_ms($player, "songtitle", $songtitle);
 			to_ms($player, "artist", $artist);
-			my $rnd = time();
-			to_ms($player, "cover", "http://$squ_server:$squ_lmswebport/music/current/cover.jpg?player=$player&id=$rnd");
+			to_ms($player, "cover", "$playerstates{$player}->{Cover}");
+			to_ms($player, "album", "$playerstates{$player}->{Album}");
 			$udpout_string .= "$player playlist newsong $title_artist\n";
+			$msiudpout_string{$msiserver} .= "$msizone\::setCover::$playerstates{$player}->{Cover}\n";
+			$msiudpout_string{$msiserver} .= "$msizone\::setArtist::$artist\n";
+			$msiudpout_string{$msiserver} .= "$msizone\::setAlbum::$playerstates{$player}->{Album}\n";
+			$msiudpout_string{$msiserver} .= "$msizone\::setTitle::$songtitle\n";
 			$data_changed = 1;
 		}
 			
@@ -950,26 +987,38 @@ sub send_to_ms()
 			if (length($udpout_string) > 200) {
 				if ($sendtoms) {
 					print $udpout_sock $udpout_string;
-					LOGINF ">>>>>  START SEND >>>>>\n" .
+					LOGINF ">>>>>  START SEND TO MS (UDP) >>>>>\n" .
 						trim($udpout_string);
-					LOGINF "<<<<< FINISHED SEND <<<<< (" . length($udpout_string) . " Bytes)";
-					LOGDEB "Fast response mode";
-					usleep($loopdelay/$loopdivisor);
+					LOGINF "<<<<< FINISHED SEND TO MS (UDP) <<<<< (" . length($udpout_string) . " Bytes)";
 				}
-			$data_changed = 1;
-			$udpout_string = undef;
+
+				if ( $msi_activated && $msisend ) {
+					for (my $i=1;$i <= 5; $i++) { # 5 Musicserver max
+						if ($msiudpout_string{$i}) {
+							#print $msiudpout_sock{$i} $msiudpout_string{$i};
+							LOGINF ">>>>> START SEND TO MSI No. $i (UDP) >>>>>\n" .
+							trim($msiudpout_string{$i});
+							LOGINF "<<<<< FINISHED SEND TO MSI No. $i (UDP) <<<<< (" . length($msiudpout_string{$i}) . " Bytes)";
+						}
+					}
+				}
+				LOGDEB "Fast response mode";
+				usleep($loopdelay/$loopdivisor);
+				$data_changed = 1;
+				$udpout_string = undef;
+				$msiudpout_string{$i} = undef;
 			}
-			
+
 			switch ($setting) {
-				case 'Name'			{ to_ms($player, "name", $playerdiffs{$player}{$setting});
-									  $udpout_string .= "$player name $playerdiffs{$player}{$setting}\n";
-									  next;
-									}
+				case 'Name'		{ to_ms($player, "name", $playerdiffs{$player}{$setting});
+							  $udpout_string .= "$player name $playerdiffs{$player}{$setting}\n";
+							  next;
+							}
 				case 'State'		{ to_ms($player, "mode", $mode_string{$playerdiffs{$player}{$setting}});
-									  $udpout_string .= "$player mode_value $playerdiffs{$player}{$setting}\n";
-									  $udpout_string .= "$player mode_text $mode_string{$playerdiffs{$player}{$setting}}\n";
-									  next;
-									} 
+							  $udpout_string .= "$player mode_value $playerdiffs{$player}{$setting}\n";
+							  $udpout_string .= "$player mode_text $mode_string{$playerdiffs{$player}{$setting}}\n";
+							  next;
+							} 
 				case 'Power'		{ $udpout_string .= "$player power $playerdiffs{$player}{$setting}\n"; next;}
 				case 'Shuffle' 		{ $udpout_string .= "$player playlist shuffle $playerdiffs{$player}{$setting}\n"; next;}
 				case 'Repeat' 		{ $udpout_string .= "$player playlist repeat $playerdiffs{$player}{$setting}\n"; next;}
@@ -979,24 +1028,44 @@ sub send_to_ms()
 				case 'treble' 		{ $udpout_string .= "$player mixer treble $playerdiffs{$player}{$setting}\n"; next;}
 				case 'muting' 		{ $udpout_string .= "$player mixer muting $playerdiffs{$player}{$setting}\n"; next;}
 				case 'Connected'	{ $udpout_string .= "$player connected $playerdiffs{$player}{$setting}\n"; next;}
-				case 'sync'			{ my $is_synced;
-									  if ($playerdiffs{$player}{$setting}) {
-										 $is_synced = 1;
-									  } else { $is_synced = 0; }
-									  $udpout_string .= "$player is_synced $is_synced\n"; next;}
+				case 'Duration'		{ $udpout_string .= "$player duration $playerdiffs{$player}{$setting}\n";
+							  $msiudpout_string{$msiserver} .= "$msizone\::setDuration::$playerdiffs{$player}{$setting}\n";
+				       			  next;
+						  	}
+				case 'sync'		{ my $is_synced;
+							  if ($playerdiffs{$player}{$setting}) {
+								$is_synced = 1;
+							  } else {
+								$is_synced = 0;
+							  }
+							  $udpout_string .= "$player is_synced $is_synced\n";
+							  next;
+							}
 			}
 		}
 	}	
 	if ($udpout_string) {
 		if($sendtoms) {
 			print $udpout_sock $udpout_string;
-			LOGINF ">>>>> START SEND >>>>>\n" .
+			LOGINF ">>>>> START SEND TO MS (UDP) >>>>>\n" .
 				trim($udpout_string);
-			LOGINF "<<<<< FINISHED SEND <<<<< (" . length($udpout_string) . " Bytes)";
+			LOGINF "<<<<< FINISHED SEND TO MS (UDP) <<<<< (" . length($udpout_string) . " Bytes)";
 		}
 		$data_changed = 1;
 	}
-	
+
+	# MSI
+	if ( $msi_activated && $msisend ) {
+		for (my $i=1;$i <= 5; $i++) { # 5 Musicserver max
+			if ($msiudpout_string{$i}) {
+				#print $msiudpout_sock{$i} $msiudpout_string{$i};
+				LOGINF ">>>>> START SEND TO MSI No. $i (UDP) >>>>>\n" .
+					trim($msiudpout_string{$i});
+				LOGINF "<<<<< FINISHED SEND TO MSI No. $i (UDP) <<<<< (" . length($msiudpout_string{$i}) . " Bytes)";
+			}
+		}
+	}
+
 	if ($data_changed) {
 		# Generate JSON file for UI
 		LOGINF "Writing current LMS data to $datafile";
@@ -1196,13 +1265,13 @@ sub read_config
 				if (! $cfg->param("MSI.Musicserver$i\_Port") ) {
 					$cfg->param("MSI.Musicserver$i\_Port") = 6091 - 1 + $i;
 				}
-				LOGDEB "Found Musicserver config for " . $cfg->param("MSI.Musicserver$i\_Ip") . ":" . $cfg->param("MSI.Musicserver$i\_Port");
+				LOGINF "MSI $i IP " . $cfg->param("MSI.Musicserver$i\_Ip") . " PORT " . $cfg->param("MSI.Musicserver$i\_Port");
 				$msi_servers{ $i } = $cfg->param("MSI.Musicserver$i\_Ip") . ":" . $cfg->param("MSI.Musicserver$i\_Port");
 				for ( my $ii=1; $ii<=30; $ii++ ) { # 30 Zones max
 					if ( $cfg->param("MSI.Musicserver$i\_Z$ii") ) {
 						$msi_zones{ $cfg->param("MSI.Musicserver$i\_Z$ii") } = $ii;
 						$msi_players{ $cfg->param("MSI.Musicserver$i\_Z$ii") } = $i;
-						LOGDEB "Zone $ii of " . $cfg->param("MSI.Musicserver$i\_Ip") . ":" . $cfg->param("MSI.Musicserver$i\_Port") . " is player: " . $cfg->param("MSI.Musicserver$i\_Z$ii");
+						LOGINF "MSI ZONE $ii PLAYER " . $cfg->param("MSI.Musicserver$i\_Z$ii");
 					}
 				}
 			}
