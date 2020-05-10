@@ -20,7 +20,7 @@ require "$lbphtmlauthdir/lib/LMSTTS.pm";
 # - libio-socket-timeout-perl
 
 # Version of this script
-$version = "1.0.6.1";
+$version = "1.0.6.2";
 
 ## Termination handling
 $SIG{INT} = sub { 
@@ -92,7 +92,13 @@ my $msi_activated;
 my %msi_servers;
 my %msi_zones;
 my %msi_players;
-my %msiudpout_sock;
+#my %msiudpout_sock;
+my $msiudpout_sock;
+my $msiudpout_sock1;
+my $msiudpout_sock2;
+my $msiudpout_sock3;
+my $msiudpout_sock4;
+my $msiudpout_sock5;
 
 our $tcpin_sock;
 our $tcpout_sock;
@@ -197,9 +203,32 @@ $udpout_sock->flush;
 if ( $msi_activated ) {	
 	for my $msino (keys %msi_servers) {
 		my ($host,$port) = split(/:/,$msi_servers{$msino});
-		#print "Server is $host, Port is $port\n";
-		$msiudpout_sock{$msino} = create_out_socket($msiudpout_sock{$msino}, $port, 'udp', $host);
-		$msiudpout_sock{$msino}->flush;
+		#
+		# This is really ugly - maybe we find a better solution using a hash with the sub create_out_socket
+		# currently it seems not to work with a hash...
+		#
+		#$msiudpout_sock{$msino} = create_out_socket($msiudpout_sock{$msino}, $port, 'udp', $host);
+		#$msiudpout_sock{$msino}->flush;
+		if ( $msino == 1 ) {
+			$msiudpout_sock1 = create_out_socket($msiudpout_sock1, $port, 'udp', $host);
+			$msiudpout_sock1->flush;
+		}
+		if ( $msino == 2 ) {
+			$msiudpout_sock2 = create_out_socket($msiudpout_sock2, $port, 'udp', $host);
+			$msiudpout_sock2->flush;
+		}
+		if ( $msino == 3 ) {
+			$msiudpout_sock3 = create_out_socket($msiudpout_sock3, $port, 'udp', $host);
+			$msiudpout_sock3->flush;
+		}
+		if ( $msino == 4 ) {
+			$msiudpout_sock4 = create_out_socket($msiudpout_sock4, $port, 'udp', $host);
+			$msiudpout_sock4->flush;
+		}
+		if ( $msino == 5 ) {
+			$msiudpout_sock5 = create_out_socket($msiudpout_sock5, $port, 'udp', $host);
+			$msiudpout_sock5->flush;
+		}
 	}
 }
 
@@ -430,6 +459,18 @@ sub start_listening
 		if ((time%5) == 0 ) {
 			read_config();
 		}
+
+		############################################################
+		# Check Player State and update song time if player is playing
+		############################################################
+		
+		if ((time%1) == 0 ) {
+			foreach my $player (keys %playerstates) {
+				if ( $playerstates{$player}->{Mode} == 1 ) {
+					print $tcpout_sock "$player time ?\n";
+				}
+			}
+		}
 		
 		# Here we sleep some time and start over again
 		if ($input) {
@@ -573,7 +614,7 @@ sub process_line
 		case 'sync'	{ print $tcpout_sock "syncgroups ?\n$parts[0] title ?\n$parts[0] artist ?\n"; 
 					return undef;
 				}
-		case 'time'	{ pupdate($parts[0], "time", $parts[2]);
+		case 'time'	{ pupdate($parts[0], "Time", $parts[2]);
 					return undef;
 				}
 		case 'duration'	{ pupdate($parts[0], "Duration", $parts[2]);
@@ -991,22 +1032,10 @@ sub send_to_ms()
 						trim($udpout_string);
 					LOGINF "<<<<< FINISHED SEND TO MS (UDP) <<<<< (" . length($udpout_string) . " Bytes)";
 				}
-
-				if ( $msi_activated && $msisend ) {
-					for (my $i=1;$i <= 5; $i++) { # 5 Musicserver max
-						if ($msiudpout_string{$i}) {
-							#print $msiudpout_sock{$i} $msiudpout_string{$i};
-							LOGINF ">>>>> START SEND TO MSI No. $i (UDP) >>>>>\n" .
-							trim($msiudpout_string{$i});
-							LOGINF "<<<<< FINISHED SEND TO MSI No. $i (UDP) <<<<< (" . length($msiudpout_string{$i}) . " Bytes)";
-						}
-					}
-				}
 				LOGDEB "Fast response mode";
 				usleep($loopdelay/$loopdivisor);
 				$data_changed = 1;
 				$udpout_string = undef;
-				$msiudpout_string{$i} = undef;
 			}
 
 			switch ($setting) {
@@ -1030,6 +1059,10 @@ sub send_to_ms()
 				case 'Connected'	{ $udpout_string .= "$player connected $playerdiffs{$player}{$setting}\n"; next;}
 				case 'Duration'		{ $udpout_string .= "$player duration $playerdiffs{$player}{$setting}\n";
 							  $msiudpout_string{$msiserver} .= "$msizone\::setDuration::$playerdiffs{$player}{$setting}\n";
+				       			  next;
+						  	}
+				case 'Time'		{ $udpout_string .= "$player time $playerdiffs{$player}{$setting}\n";
+							  $msiudpout_string{$msiserver} .= "$msizone\::setTime::$playerdiffs{$player}{$setting}\n";
 				       			  next;
 						  	}
 				case 'sync'		{ my $is_synced;
@@ -1058,7 +1091,22 @@ sub send_to_ms()
 	if ( $msi_activated && $msisend ) {
 		for (my $i=1;$i <= 5; $i++) { # 5 Musicserver max
 			if ($msiudpout_string{$i}) {
+				#
+				# This is really ugly - maybe we find a better solution using a hash with the sub create_out_socket
+				# currently it seems not to work with a hash...
+				#
+				if ( $i == 1 ) { $msiudpout_sock = $msiudpout_sock1; }
+				if ( $i == 2 ) { $msiudpout_sock = $msiudpout_sock2; }
+				if ( $i == 3 ) { $msiudpout_sock = $msiudpout_sock3; }
+				if ( $i == 4 ) { $msiudpout_sock = $msiudpout_sock4; }
+				if ( $i == 5 ) { $msiudpout_sock = $msiudpout_sock5; }
 				#print $msiudpout_sock{$i} $msiudpout_string{$i};
+				# Sending a string splitted by linefeeds \n seems not to work with MSI Plugin.
+				# So loop through the msiudpout_string...
+				my @lines = split(/\n/,$msiudpout_string{$i});
+				foreach (@lines) {
+					print $msiudpout_sock "$_";
+				}
 				LOGINF ">>>>> START SEND TO MSI No. $i (UDP) >>>>>\n" .
 					trim($msiudpout_string{$i});
 				LOGINF "<<<<< FINISHED SEND TO MSI No. $i (UDP) <<<<< (" . length($msiudpout_string{$i}) . " Bytes)";
