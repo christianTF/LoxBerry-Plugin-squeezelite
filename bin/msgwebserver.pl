@@ -1,4 +1,30 @@
 #!/usr/bin/perl
+
+# This is a webserver to serve and receive commands for the MSG Gateway
+# (Musicserver Gateway)
+#
+# Config file ~/config/plugins/squeezelite/plugin_squeezelite.cfg
+# needs following instance:
+#
+# [MSG]
+# Activated=True
+# Musicserver1_Port=8091
+# Musicserver1_Z1=c4:32:5e:e7:32:39
+# Musicserver1_Z3=b8:27:eb:b4:1d:8d
+# Musicserver1_Z4=aa:aa:84:bf:25:07
+# Musicserver1_Z5=74:da:38:05:07:66
+# Musicserver1_Z6=3d:a9:8d:0d:e3:88
+#
+# Up to 30 zones per Music server are supported
+#
+# Install MSG Plugin and point it to this IP to port 8091
+#
+# Start the webserver with:
+#
+# ./msgwebserver.pl --ms=1 --verbose
+#
+# where ms is the number of your music server
+#
 use Mojolicious::Lite;
 use LoxBerry::Log;
 use LoxBerry::System;
