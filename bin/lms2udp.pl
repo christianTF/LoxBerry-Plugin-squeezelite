@@ -8,6 +8,9 @@ use LoxBerry::IO;
 use LoxBerry::Log;
 use LoxBerry::JSON;
 
+use warnings;
+use strict;
+
 require "$lbphtmlauthdir/lib/LMSTTS.pm";
 									
 # Christian Fenzl, christiantf@gmx.at 2017-2019
@@ -20,28 +23,7 @@ require "$lbphtmlauthdir/lib/LMSTTS.pm";
 # - libio-socket-timeout-perl
 
 # Version of this script
-$version = "1.0.6.3";
-
-## Termination handling
-$SIG{INT} = sub { 
-	if($log) {
-		$log->default();
-		LOGOK("LMS2UDP interrupted by Ctrl-C"); 
-		LOGTITLE("LMS2UDP interrupted by Ctrl-C"); 
-		LOGEND("lms2udp.pl ended");
-	}
-	exit 1;
-};
-
-$SIG{TERM} = sub { 
-	if($log) {
-		$log->default();
-		LOGOK("LMS2UDP requested to stop"); 
-		LOGTITLE("LMS2UDP requested to stop"); 
-		LOGEND;
-	}
-	exit 1;	
-};
+my $version = "1.0.6.3";
 
 print "Startup lms2udp daemon...\n";
 
@@ -70,6 +52,7 @@ my $home = $lbhomedir;
 # Config parameters
 my $datafile = "/dev/shm/lms2udp_data.json";
 our $cfg;
+our $log;
 my $cfg_timestamp = 0;
 my $lms2udp_activated;
 our $cfgversion;
@@ -84,15 +67,18 @@ our $lms2udp_usehttpfortext : shared;
 my $lms2udp_forcepolldelay;
 my $lms2udp_refreshdelayms;
 
+my $miniserverip;
+my $miniserverport;
+my $miniserveradmin;
+my $miniserverpass;
+
 our $sendtoms;
 our $tts_lmsvol : shared;
 our $tts_minvol : shared = 0;
 our $tts_maxvol : shared = 100;
 our %mode_string;
 my $msi_activated;
-my %msi_servers;
-my %msi_zones;
-my %msi_players;
+our %msi_servers : shared;
 #my %msiudpout_sock;
 my $msiudpout_sock;
 my $msiudpout_sock1;
@@ -155,9 +141,9 @@ our @tcpout_queue : shared;
 print "Plugindir: $lbpplugindir\n";
 
 # Init Logfile
-our $log = LoxBerry::Log->new (
+$log = LoxBerry::Log->new (
     name => 'LMS2UDP',
-	# stderr => 1,
+	stderr => 1,
 	addtime => 1,
 #	nofile => 1,
 );
@@ -208,38 +194,38 @@ $in_list = IO::Select->new ($tcpin_sock);
 $udpout_sock = create_out_socket($udpout_sock, $udpout_port, 'udp', $udpout_host);
 $udpout_sock->flush;
 
-# Create UDP streams for MSI
-if ( $msi_activated ) {	
-	for my $msino (keys %msi_servers) {
-		my ($host,$port) = split(/:/,$msi_servers{$msino});
-		#
-		# This is really ugly - maybe we find a better solution using a hash with the sub create_out_socket
-		# currently it seems not to work with a hash...
-		#
-		#$msiudpout_sock{$msino} = create_out_socket($msiudpout_sock{$msino}, $port, 'udp', $host);
-		#$msiudpout_sock{$msino}->flush;
-		if ( $msino == 1 ) {
-			$msiudpout_sock1 = create_out_socket($msiudpout_sock1, $port, 'udp', $host);
-			$msiudpout_sock1->flush;
-		}
-		if ( $msino == 2 ) {
-			$msiudpout_sock2 = create_out_socket($msiudpout_sock2, $port, 'udp', $host);
-			$msiudpout_sock2->flush;
-		}
-		if ( $msino == 3 ) {
-			$msiudpout_sock3 = create_out_socket($msiudpout_sock3, $port, 'udp', $host);
-			$msiudpout_sock3->flush;
-		}
-		if ( $msino == 4 ) {
-			$msiudpout_sock4 = create_out_socket($msiudpout_sock4, $port, 'udp', $host);
-			$msiudpout_sock4->flush;
-		}
-		if ( $msino == 5 ) {
-			$msiudpout_sock5 = create_out_socket($msiudpout_sock5, $port, 'udp', $host);
-			$msiudpout_sock5->flush;
-		}
-	}
-}
+# # Create UDP streams for MSI
+# if ( $msi_activated ) {	
+	# for my $msino (keys %msi_servers) {
+		# my ($host,$port) = split(/:/,$msi_servers{$msino});
+		# #
+		# # This is really ugly - maybe we find a better solution using a hash with the sub create_out_socket
+		# # currently it seems not to work with a hash...
+		# #
+		# #$msiudpout_sock{$msino} = create_out_socket($msiudpout_sock{$msino}, $port, 'udp', $host);
+		# #$msiudpout_sock{$msino}->flush;
+		# if ( $msino == 1 ) {
+			# $msiudpout_sock1 = create_out_socket($msiudpout_sock1, $port, 'udp', $host);
+			# $msiudpout_sock1->flush;
+		# }
+		# if ( $msino == 2 ) {
+			# $msiudpout_sock2 = create_out_socket($msiudpout_sock2, $port, 'udp', $host);
+			# $msiudpout_sock2->flush;
+		# }
+		# if ( $msino == 3 ) {
+			# $msiudpout_sock3 = create_out_socket($msiudpout_sock3, $port, 'udp', $host);
+			# $msiudpout_sock3->flush;
+		# }
+		# if ( $msino == 4 ) {
+			# $msiudpout_sock4 = create_out_socket($msiudpout_sock4, $port, 'udp', $host);
+			# $msiudpout_sock4->flush;
+		# }
+		# if ( $msino == 5 ) {
+			# $msiudpout_sock5 = create_out_socket($msiudpout_sock5, $port, 'udp', $host);
+			# $msiudpout_sock5->flush;
+		# }
+	# }
+# }
 
 our $answer; 
 
@@ -259,6 +245,8 @@ my $last_lms_receive_time;
 my $pollinterval = $lms2udp_forcepolldelay;
 my $loopdelay = $lms2udp_refreshdelayms*1000;
 LOGINF "Loop delay: $loopdelay microseconds";
+
+MSGWEB::start_msgthreads();
 
 start_listening();
 
@@ -311,7 +299,7 @@ sub start_listening
 						$guest_line = trim($guest_line);
 						LOGINF "GUEST says: $guest_line";
 						my @guest_params = split(/ /, $guest_line);
-						my @guest_params = grep(s/\s*$//g, @guest_params);
+						@guest_params = grep(s/\s*$//g, @guest_params);
 						LOGDEB "GUEST_PARAMS[0]: $guest_params[0]";
 						if (lc($guest_params[0]) eq 'lmsgtw') {
 							LOGINF "GUEST-Param is lmsgtw - entering Plugin commands.";
@@ -349,7 +337,7 @@ sub start_listening
 					LOGDEB "GUEST: Closing connection";
 					$in_list->remove($guest);
 					$guest->close;
-					$guest_lines = undef;
+					#$guest_lines = undef;
 					
 				}
 			}
@@ -797,7 +785,7 @@ sub syncgroups
 {
 	# print "DEBUG: SYNCGROUPS entering\n";
 	# First we set all syncs to undef 
-	foreach $player (keys %playerstates) {
+	foreach my $player (keys %playerstates) {
 		if ($playerstates{$player}->{sync}) {  
 			pupdate($player, "sync", undef);
 		}
@@ -1003,13 +991,13 @@ sub send_to_ms()
 		my $artist;
 
 		# Which Zone and MusicServer
-		if ( $msi_activated ) {
-			$msiserver = $msi_players{$player};
-			$msizone = $msi_zones{$player};
-		}
-		if ( !$msiserver || !$msizone || !$msi_activated ) {
-			$msisend = 0;
-		}
+		# if ( $msi_activated ) {
+			# $msiserver = $msi_players{$player};
+			# $msizone = $msi_zones{$player};
+		# }
+		# if ( !$msiserver || !$msizone || !$msi_activated ) {
+			# $msisend = 0;
+		# }
 
 		if ( 
 			defined $playerdiffs{$player}{Songtitle} or 
@@ -1165,7 +1153,7 @@ sub send_to_ms()
 		undef $lmsjsonobj;
 	}
 	
-	%playerdiffs = undef;
+	undef %playerdiffs;
 
 
 }
@@ -1348,20 +1336,37 @@ sub read_config
 	$msi_activated = $cfg->param("MSI.Activated");
 	if ( $msi_activated ) {	
 		LOGINF "MSI is ENABLED";
+		require "$lbphtmlauthdir/lib/msgwebserver.pm";
 		for ( my $i=1; $i<=5; $i++ ) { # 5 MusicServer max
+			my $LocalWebPort;
 			if ( $cfg->param("MSI.Musicserver$i\_Ip") ) {
 				if (! $cfg->param("MSI.Musicserver$i\_Port") ) {
 					$cfg->param("MSI.Musicserver$i\_Port") = 6091 - 1 + $i;
 				}
-				LOGINF "MSI $i IP " . $cfg->param("MSI.Musicserver$i\_Ip") . " PORT " . $cfg->param("MSI.Musicserver$i\_Port");
-				$msi_servers{ $i } = $cfg->param("MSI.Musicserver$i\_Ip") . ":" . $cfg->param("MSI.Musicserver$i\_Port");
+				$LocalWebPort = defined $cfg->param("MSI.Musicserver$i\_LocalWebPort") ? $cfg->param("MSI.Musicserver$i\_LocalWebPort") : 6091-1+$i;
+								
+				my %fms : shared;
+				#LOGINF "MSI $i IP " . $cfg->param("MSI.Musicserver$i\_Ip") . " PORT " . $cfg->param("MSI.Musicserver$i\_Port");
+				LOGINF "MSI $i LocalWebPort " . $cfg->param("MSI.Musicserver$i\_LocalWebPort");
+				
+				# $msi_servers{ $i } = $cfg->param("MSI.Musicserver$i\_Ip") . ":" . $cfg->param("MSI.Musicserver$i\_Port");
+				$fms{host} = $cfg->param("MSI.Musicserver$i\_Ip") . ":" . $cfg->param("MSI.Musicserver$i\_Port");
+				$fms{LocalWebPort} = $LocalWebPort;
+				
+				my %fmszone : shared;
+				my %fmsplayer : shared;
 				for ( my $ii=1; $ii<=30; $ii++ ) { # 30 Zones max
 					if ( $cfg->param("MSI.Musicserver$i\_Z$ii") ) {
-						$msi_zones{ $cfg->param("MSI.Musicserver$i\_Z$ii") } = $ii;
-						$msi_players{ $cfg->param("MSI.Musicserver$i\_Z$ii") } = $i;
+						#$msi_zones{ $cfg->param("MSI.Musicserver$i\_Z$ii") } = $ii;
+						#$msi_players{ $cfg->param("MSI.Musicserver$i\_Z$ii") } = $i;
 						LOGINF "MSI ZONE $ii PLAYER " . $cfg->param("MSI.Musicserver$i\_Z$ii");
+						$fmszone{$ii} = $cfg->param("MSI.Musicserver$i\_Z$ii");
+						$fmsplayer{$cfg->param("MSI.Musicserver$i\_Z$ii")} = $ii;
 					}
 				}
+				$fms{zone} = \%fmszone;
+				$fms{player} = \%fmsplayer;
+				$msi_servers{$i} = \%fms;
 			}
 		}
 	}
@@ -1405,16 +1410,16 @@ sub read_config
 
 	# Miniserver data
 	my %miniservers = LoxBerry::System::get_miniservers();
-	if(! %miniservers{$lms2udp_msnr}) {
+	if(! $miniservers{$lms2udp_msnr}) {
 		LOGCRIT "Configured Miniserver $lms2udp_msnr does not exist. Check your Miniservers in the LoxBerry Miniserver widget and your plugin configuration.";
 		exit(1);
 	}
 
 	# my $miniserver = $lms2udp_msnr;
-	our 	$miniserverip        = $miniservers{$lms2udp_msnr}{IPAddress};
-	our	$miniserverport      = $miniservers{$lms2udp_msnr}{Port};
-	our	$miniserveradmin     = $miniservers{$lms2udp_msnr}{Admin};
-	our	$miniserverpass      = $miniservers{$lms2udp_msnr}{Pass};
+	$miniserverip        = $miniservers{$lms2udp_msnr}{IPAddress};
+	$miniserverport      = $miniservers{$lms2udp_msnr}{Port};
+	$miniserveradmin     = $miniservers{$lms2udp_msnr}{Admin};
+	$miniserverpass      = $miniservers{$lms2udp_msnr}{Pass};
 	LOGINF "MSIP $miniserverip MSPORT $miniserverport LMS $squ_server\n";
 
 }
@@ -1433,3 +1438,28 @@ sub testthread
 
 
 }
+
+
+
+
+## Termination handling
+$SIG{INT} = sub { 
+	if($log) {
+		$log->default();
+		LOGOK("LMS2UDP interrupted by Ctrl-C"); 
+		LOGTITLE("LMS2UDP interrupted by Ctrl-C"); 
+		LOGEND("lms2udp.pl ended");
+	}
+	exit 1;
+};
+
+$SIG{TERM} = sub { 
+	if($log) {
+		$log->default();
+		LOGOK("LMS2UDP requested to stop"); 
+		LOGTITLE("LMS2UDP requested to stop"); 
+		LOGEND;
+	}
+	exit 1;	
+};
+
