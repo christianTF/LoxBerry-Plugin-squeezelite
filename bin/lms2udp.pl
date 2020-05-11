@@ -20,7 +20,7 @@ require "$lbphtmlauthdir/lib/LMSTTS.pm";
 # - libio-socket-timeout-perl
 
 # Version of this script
-$version = "1.0.6.2";
+$version = "1.0.6.3";
 
 ## Termination handling
 $SIG{INT} = sub { 
@@ -83,6 +83,7 @@ my $lms2udp_berrytcpport;
 our $lms2udp_usehttpfortext : shared;
 my $lms2udp_forcepolldelay;
 my $lms2udp_refreshdelayms;
+
 our $sendtoms;
 our $tts_lmsvol : shared;
 our $tts_minvol : shared = 0;
@@ -106,6 +107,12 @@ our $udpout_sock;
 our $in_list;
 our $out_list;
 my $sel;
+
+# Variables for player time
+my $lms2udp_time_refreshsec=60;  	# Interval: Each x seconds, the player time should be requested from LMS
+my $lms2udp_time_nextrefresh=0;		# Stores the actial next time LMS should be queried (epoch)
+my $lms2udp_time_sendintervalms=500;# Send the time every x ms to Miniserver / MSG
+my $lms2udp_time_nextsend=0;		# Stores the actual time when the next push should happen
 
 our $line;
 our $loopdivisor = 3;
@@ -132,7 +139,9 @@ my %playerstates	: shared;
 	# volume
 	# treble
 	# bass
-	# time (seconds of the song - only if explicitely requested)
+	# time (seconds of the song from the last time query)
+	# time_fuzzy (this is the calculated time based on the last time query)
+	# time_queried_epoch (epoch time as float of the last 'time' update)
 	# sync (comma separated list of playerid's, or undef)
 	# State (calculates from Mode and Power to Loxones Mode
 
@@ -333,7 +342,7 @@ sub start_listening
 								print $guest $guest_answer;
 							}
 						} else {
-							print $tcpout_sock $guest_line;
+							print $tcpout_sock $guest_line . "\n";
 							# We close the connection after that
 						}
 					#}	
@@ -461,15 +470,16 @@ sub start_listening
 		}
 
 		############################################################
-		# Check Player State and update song time if player is playing
+		# Time update from LMS
 		############################################################
 		
-		if ((time%1) == 0 ) {
+		if ($lms2udp_time_nextrefresh < Time::HiRes::time()) {
 			foreach my $player (keys %playerstates) {
-				if ( $playerstates{$player}->{Mode} == 1 ) {
+				if( $playerstates{$player}->{Power} == 1 ) {
 					print $tcpout_sock "$player time ?\n";
 				}
 			}
+			$lms2udp_time_nextrefresh = Time::HiRes::time() + $lms2udp_time_refreshsec;
 		}
 		
 		# Here we sleep some time and start over again
@@ -547,7 +557,7 @@ sub process_line
 		case 'title'	{ 
 				pupdate($parts[0], "Songtitle", $parts[2]);
 				pupdate($parts[0], "Cover", "http://$squ_server:$squ_lmswebport/music/current/cover.jpg?player=$parts[0]&id=$last_lms_receive_time");
-				print $tcpout_sock "$parts[0] artist ?\n$parts[0] album ?\n$parts[0] duration ?\n$parts[0] remote ?\n";
+				print $tcpout_sock "$parts[0] artist ?\n$parts[0] album ?\n$parts[0] duration ?\n$parts[0] remote ?\n$parts[0] time ?\n";
 				return undef;
 			}
 		case 'artist'	{   # pupdate($parts[0], "Songtitle", $playerstates{$parts[0]}->{Songtitle});
@@ -580,6 +590,7 @@ sub process_line
 					print $tcpout_sock "$rawparts[0] playlist shuffle ?\n";
 					print $tcpout_sock "$rawparts[0] playlist repeat ?\n";
 					print $tcpout_sock "$rawparts[0] mode ?\n";
+					print $tcpout_sock "$rawparts[0] time ?\n";
 				}
 				return undef;
 			}
@@ -589,7 +600,9 @@ sub process_line
 					if ($rawparts[2] eq 'stop') {
 						pupdate($parts[0], "Mode", -1);
 						pupdate($parts[0], "Pause", 0);
+						pupdate($parts[0], "time", 0);
 					} elsif ($rawparts[2] eq 'play') {
+						print $tcpout_sock "$rawparts[0] time ?\n";
 						pupdate($parts[0], "Mode", 1);
 						pupdate($parts[0], "Pause", 0);
 					} elsif ($rawparts[2] eq 'pause') {
@@ -614,7 +627,9 @@ sub process_line
 		case 'sync'	{ print $tcpout_sock "syncgroups ?\n$parts[0] title ?\n$parts[0] artist ?\n"; 
 					return undef;
 				}
-		case 'time'	{ pupdate($parts[0], "Time", $parts[2]);
+		case 'time'	{ pupdate($parts[0], "time", $parts[2]);
+					  pupdate($parts[0], "time_fuzzy", $parts[2]);
+					  $playerstates{$parts[0]}->{time_queried_epoch} = Time::HiRes::time();
 					return undef;
 				}
 		case 'duration'	{ pupdate($parts[0], "Duration", $parts[2]);
@@ -646,12 +661,13 @@ sub playlist
 				if (defined $rawparts[4]) {
 					#$playerstates{$parts[0]}->{Songtitle} = $parts[3];
 					#$playerstates{$parts[0]}->{Artist} = undef;
-					print $tcpout_sock "$rawparts[0] title ?\n$rawparts[0] artist ?\n$rawparts[0] remote ?\n";
+					print $tcpout_sock "$rawparts[0] title ?\n$rawparts[0] artist ?\n$rawparts[0] remote ?\n$rawparts[0] time ?\n";
 					#pupdate($parts[0], "Songtitle", $parts[3]);
 					#pupdate($parts[0], "Artist", undef);
 					return;
 					#return "$parts[0] $parts[1] $parts[2] $parts[3]";
 				} else { 
+					print $tcpout_sock "$rawparts[0] time ?\n";
 					pupdate($parts[0], "Stream", 1);
 					pupdate($parts[0], "Songtitle", $parts[3]);
 					pupdate($parts[0], "Cover", "http://$squ_server:$squ_lmswebport/music/current/cover.jpg?player=$parts[0]&id=$last_lms_receive_time");
@@ -669,15 +685,18 @@ sub playlist
 				if ($playerstates{$parts[0]}->{Power} == 0) { return undef; }
 				# LOGDEB "DEBUG: Playlist Pause";
 				if ($rawparts[3] == 1) {
+					print $tcpout_sock "$rawparts[0] time ?\n";
 					pupdate($parts[0], "Pause", 1);
 					pupdate($parts[0], "Mode", 0);
 				} elsif ($rawparts[3] == 0) {
+					print $tcpout_sock "$rawparts[0] time ?\n";
 					pupdate($parts[0], "Pause", 0);
 					pupdate($parts[0], "Mode", 1);
 				}
 				return undef;
 			}
 		case 'stop' { print $tcpout_sock "$rawparts[0] mode ?\n";
+					  print $tcpout_sock "$rawparts[0] time ?\n";
 					  return undef;
 			}
 		case 'shuffle' { pupdate($parts[0], "Shuffle", $parts[3]);
@@ -709,11 +728,11 @@ sub mixer
 sub client
 {
 	switch ($parts[2]) {
-		case 'new'			{ print $tcpout_sock "$parts[0] name ?\n$parts[0] power ?\n$parts[0] title ?\n$parts[0] artist ?\n$parts[0] mixer volume ?\n$parts[0] playlist shuffle ?\n$parts[0] playlist repeat ?\n$parts[0] mixer muting ?\n";
+		case 'new'			{ print $tcpout_sock "$parts[0] name ?\n$parts[0] power ?\n$parts[0] title ?\n$parts[0] artist ?\n$parts[0] mixer volume ?\n$parts[0] playlist shuffle ?\n$parts[0] playlist repeat ?\n$parts[0] mixer muting ?\n$parts[0] time ?\n";
 							  pupdate($parts[0], "Connected", 1);
 							  pupdate($parts[0], "Known", 1);
 							}
-		case 'reconnect'	{ print $tcpout_sock "$parts[0] name ?\n$parts[0] power ?\n$parts[0] title ?\n$parts[0] artist ?\n$parts[0] mixer volume ?\n$parts[0] playlist shuffle ?\n$parts[0] playlist repeat ?\n$parts[0] mixer muting ?\n"; 
+		case 'reconnect'	{ print $tcpout_sock "$parts[0] name ?\n$parts[0] power ?\n$parts[0] title ?\n$parts[0] artist ?\n$parts[0] mixer volume ?\n$parts[0] playlist shuffle ?\n$parts[0] playlist repeat ?\n$parts[0] mixer muting ?\n$parts[0] time ?\n"; 
 							  pupdate($parts[0], "Connected", 1);
 							  pupdate($parts[0], "Known", 1);
 							}
@@ -724,6 +743,7 @@ sub client
 							  pupdate($parts[0], "Pause", 0);
 							  pupdate($parts[0], "Connected", 0);
 							  pupdate($parts[0], "Known", 1);
+							  pupdate($parts[0], "time", 0);
 							}
 	}
 }
@@ -757,6 +777,7 @@ sub players
 			print $tcpout_sock "$curr_player playlist shuffle ?\n";
 			print $tcpout_sock "$curr_player playlist repeat ?\n";
 			print $tcpout_sock "$curr_player mixer muting ?\n";
+			print $tcpout_sock "$curr_player time ?\n";
 			next;
 		} elsif ($curr_player) {
 			switch ($tagname) {
@@ -836,7 +857,7 @@ sub pupdate
 	# HINT SCHLENN: Add Album and Cover here, too?
 	#
 	###############################################
-	my @syncKeys = qw ( Songtitle Artist Stream Pause Shuffle Repeat sync Mode );
+	my @syncKeys = qw ( Songtitle Artist Album Cover Stream Pause Shuffle Repeat sync Mode time time_queried_epoch );
 	if( grep { $key eq $_ } @syncKeys ) {
 		foreach my $member ( get_members($playerstates{$player}->{sync}) ) {
 			next if (!defined $playerstates{$member});
@@ -955,6 +976,25 @@ sub send_to_ms()
 	my $msisend = 1;
 	my $data_changed;
 	
+	
+	# Time update for MS/MSG
+		
+	if ($lms2udp_time_nextsend < Time::HiRes::time()) {
+		# LOGDEB "Time update";
+		foreach my $player (keys %playerstates) {
+			if( $playerstates{$player}->{Mode} == 1 ) {
+				# Calculate the current time
+				$playerdiffs{$player}{time} = $playerstates{$player}{time} + Time::HiRes::time() - $playerstates{$player}{time_queried_epoch};
+				pupdate($player, 'time_fuzzy', $playerdiffs{$player}{time});
+			}
+		}
+		$lms2udp_time_nextsend = Time::HiRes::time() + $lms2udp_time_sendintervalms/1000;
+		$data_changed = 1;
+	}
+		
+	
+	
+	
 	foreach my $player (keys %playerdiffs) {
 		
 		# Mode and title changes for each player
@@ -1061,7 +1101,7 @@ sub send_to_ms()
 							  $msiudpout_string{$msiserver} .= "$msizone\::setDuration::$playerdiffs{$player}{$setting}\n";
 				       			  next;
 						  	}
-				case 'Time'		{ $udpout_string .= "$player time $playerdiffs{$player}{$setting}\n";
+				case 'time'		{ $udpout_string .= "$player time $playerdiffs{$player}{$setting}\n";
 							  $msiudpout_string{$msiserver} .= "$msizone\::setTime::$playerdiffs{$player}{$setting}\n";
 				       			  next;
 						  	}
