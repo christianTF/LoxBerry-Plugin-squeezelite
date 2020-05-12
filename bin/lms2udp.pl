@@ -23,7 +23,7 @@ require "$lbphtmlauthdir/lib/LMSTTS.pm";
 # - libio-socket-timeout-perl
 
 # Version of this script
-my $version = "1.0.6.3";
+my $version = "1.0.6.4";
 
 print "Startup lms2udp daemon...\n";
 
@@ -77,16 +77,8 @@ our $tts_lmsvol : shared;
 our $tts_minvol : shared = 0;
 our $tts_maxvol : shared = 100;
 our %mode_string;
-my $msi_activated;
-our %msi_servers : shared;
-#my %msiudpout_sock;
-my $msiudpout_sock;
-my $msiudpout_sock1;
-my $msiudpout_sock2;
-my $msiudpout_sock3;
-my $msiudpout_sock4;
-my $msiudpout_sock5;
-
+my $msg_activated;
+our %msg_servers : shared;
 our $tcpin_sock;
 our $tcpout_sock;
 our $udpout_sock;
@@ -193,39 +185,6 @@ $in_list = IO::Select->new ($tcpin_sock);
 # Create a guest UDP stream
 $udpout_sock = create_out_socket($udpout_sock, $udpout_port, 'udp', $udpout_host);
 $udpout_sock->flush;
-
-# # Create UDP streams for MSI
-# if ( $msi_activated ) {	
-	# for my $msino (keys %msi_servers) {
-		# my ($host,$port) = split(/:/,$msi_servers{$msino});
-		# #
-		# # This is really ugly - maybe we find a better solution using a hash with the sub create_out_socket
-		# # currently it seems not to work with a hash...
-		# #
-		# #$msiudpout_sock{$msino} = create_out_socket($msiudpout_sock{$msino}, $port, 'udp', $host);
-		# #$msiudpout_sock{$msino}->flush;
-		# if ( $msino == 1 ) {
-			# $msiudpout_sock1 = create_out_socket($msiudpout_sock1, $port, 'udp', $host);
-			# $msiudpout_sock1->flush;
-		# }
-		# if ( $msino == 2 ) {
-			# $msiudpout_sock2 = create_out_socket($msiudpout_sock2, $port, 'udp', $host);
-			# $msiudpout_sock2->flush;
-		# }
-		# if ( $msino == 3 ) {
-			# $msiudpout_sock3 = create_out_socket($msiudpout_sock3, $port, 'udp', $host);
-			# $msiudpout_sock3->flush;
-		# }
-		# if ( $msino == 4 ) {
-			# $msiudpout_sock4 = create_out_socket($msiudpout_sock4, $port, 'udp', $host);
-			# $msiudpout_sock4->flush;
-		# }
-		# if ( $msino == 5 ) {
-			# $msiudpout_sock5 = create_out_socket($msiudpout_sock5, $port, 'udp', $host);
-			# $msiudpout_sock5->flush;
-		# }
-	# }
-# }
 
 our $answer; 
 
@@ -958,15 +917,9 @@ sub send_to_ms()
 
 	# Now we send the changes to MS and MSI
 	my $udpout_string;
-	my %msiudpout_string;
-	my $msiserver;
-	my $msizone;
-	my $msisend = 1;
 	my $data_changed;
 	
-	
 	# Time update for MS/MSG
-		
 	if ($lms2udp_time_nextsend < Time::HiRes::time()) {
 		# LOGDEB "Time update";
 		foreach my $player (keys %playerstates) {
@@ -980,24 +933,12 @@ sub send_to_ms()
 		$data_changed = 1;
 	}
 		
-	
-	
-	
 	foreach my $player (keys %playerdiffs) {
 		
 		# Mode and title changes for each player
 		my $title_artist;
 		my $songtitle;
 		my $artist;
-
-		# Which Zone and MusicServer
-		# if ( $msi_activated ) {
-			# $msiserver = $msi_players{$player};
-			# $msizone = $msi_zones{$player};
-		# }
-		# if ( !$msiserver || !$msizone || !$msi_activated ) {
-			# $msisend = 0;
-		# }
 
 		if ( 
 			defined $playerdiffs{$player}{Songtitle} or 
@@ -1044,10 +985,6 @@ sub send_to_ms()
 			to_ms($player, "cover", "$playerstates{$player}->{Cover}");
 			to_ms($player, "album", "$playerstates{$player}->{Album}");
 			$udpout_string .= "$player playlist newsong $title_artist\n";
-			$msiudpout_string{$msiserver} .= "$msizone\::setCover::$playerstates{$player}->{Cover}\n";
-			$msiudpout_string{$msiserver} .= "$msizone\::setArtist::$artist\n";
-			$msiudpout_string{$msiserver} .= "$msizone\::setAlbum::$playerstates{$player}->{Album}\n";
-			$msiudpout_string{$msiserver} .= "$msizone\::setTitle::$songtitle\n";
 			$data_changed = 1;
 		}
 			
@@ -1086,11 +1023,9 @@ sub send_to_ms()
 				case 'muting' 		{ $udpout_string .= "$player mixer muting $playerdiffs{$player}{$setting}\n"; next;}
 				case 'Connected'	{ $udpout_string .= "$player connected $playerdiffs{$player}{$setting}\n"; next;}
 				case 'Duration'		{ $udpout_string .= "$player duration $playerdiffs{$player}{$setting}\n";
-							  $msiudpout_string{$msiserver} .= "$msizone\::setDuration::$playerdiffs{$player}{$setting}\n";
 				       			  next;
 						  	}
 				case 'time'		{ $udpout_string .= "$player time $playerdiffs{$player}{$setting}\n";
-							  $msiudpout_string{$msiserver} .= "$msizone\::setTime::$playerdiffs{$player}{$setting}\n";
 				       			  next;
 						  	}
 				case 'sync'		{ my $is_synced;
@@ -1113,33 +1048,6 @@ sub send_to_ms()
 			LOGINF "<<<<< FINISHED SEND TO MS (UDP) <<<<< (" . length($udpout_string) . " Bytes)";
 		}
 		$data_changed = 1;
-	}
-
-	# MSI
-	if ( $msi_activated && $msisend ) {
-		for (my $i=1;$i <= 5; $i++) { # 5 Musicserver max
-			if ($msiudpout_string{$i}) {
-				#
-				# This is really ugly - maybe we find a better solution using a hash with the sub create_out_socket
-				# currently it seems not to work with a hash...
-				#
-				if ( $i == 1 ) { $msiudpout_sock = $msiudpout_sock1; }
-				if ( $i == 2 ) { $msiudpout_sock = $msiudpout_sock2; }
-				if ( $i == 3 ) { $msiudpout_sock = $msiudpout_sock3; }
-				if ( $i == 4 ) { $msiudpout_sock = $msiudpout_sock4; }
-				if ( $i == 5 ) { $msiudpout_sock = $msiudpout_sock5; }
-				#print $msiudpout_sock{$i} $msiudpout_string{$i};
-				# Sending a string splitted by linefeeds \n seems not to work with MSI Plugin.
-				# So loop through the msiudpout_string...
-				my @lines = split(/\n/,$msiudpout_string{$i});
-				foreach (@lines) {
-					print $msiudpout_sock "$_";
-				}
-				LOGINF ">>>>> START SEND TO MSI No. $i (UDP) >>>>>\n" .
-					trim($msiudpout_string{$i});
-				LOGINF "<<<<< FINISHED SEND TO MSI No. $i (UDP) <<<<< (" . length($msiudpout_string{$i}) . " Bytes)";
-			}
-		}
 	}
 
 	if ($data_changed) {
@@ -1333,40 +1241,33 @@ sub read_config
 	$sendtoms = $cfg->param("LMS2UDP.sendToMS");
 
 	# Read MSI config from config
-	$msi_activated = $cfg->param("MSI.Activated");
-	if ( $msi_activated ) {	
-		LOGINF "MSI is ENABLED";
+	$msg_activated = $cfg->param("MSG.Activated");
+	if ( $msg_activated ) {	
+		LOGINF "MSG is ENABLED";
 		require "$lbphtmlauthdir/lib/msgwebserver.pm";
 		for ( my $i=1; $i<=5; $i++ ) { # 5 MusicServer max
 			my $LocalWebPort;
-			if ( $cfg->param("MSI.Musicserver$i\_Ip") ) {
-				if (! $cfg->param("MSI.Musicserver$i\_Port") ) {
-					$cfg->param("MSI.Musicserver$i\_Port") = 6091 - 1 + $i;
-				}
-				$LocalWebPort = defined $cfg->param("MSI.Musicserver$i\_LocalWebPort") ? $cfg->param("MSI.Musicserver$i\_LocalWebPort") : 6091-1+$i;
-								
+			if ( is_enabled( $cfg->param("MSG.FMS$i\_Activated") ) {
+				$LocalWebPort = defined $cfg->param("MSG.FMS$i\_LocalWebPort") ? $cfg->param("MSG.FMS$i\_LocalWebPort") : 8090 + $i;
 				my %fms : shared;
-				#LOGINF "MSI $i IP " . $cfg->param("MSI.Musicserver$i\_Ip") . " PORT " . $cfg->param("MSI.Musicserver$i\_Port");
-				LOGINF "MSI $i LocalWebPort " . $cfg->param("MSI.Musicserver$i\_LocalWebPort");
+				LOGINF "FMS $i LocalWebPort " . $cfg->param("MSG.FMS$i\_LocalWebPort");
 				
-				# $msi_servers{ $i } = $cfg->param("MSI.Musicserver$i\_Ip") . ":" . $cfg->param("MSI.Musicserver$i\_Port");
-				$fms{host} = $cfg->param("MSI.Musicserver$i\_Ip") . ":" . $cfg->param("MSI.Musicserver$i\_Port");
+				$fms{MSGWebHost} = $cfg->param("MSG.FMS$i\_MSGWebHost");
+				$fms{MSGWebPort} = $cfg->param("MSG.FMS$i\_MSGWebPort");
 				$fms{LocalWebPort} = $LocalWebPort;
 				
 				my %fmszone : shared;
 				my %fmsplayer : shared;
 				for ( my $ii=1; $ii<=30; $ii++ ) { # 30 Zones max
-					if ( $cfg->param("MSI.Musicserver$i\_Z$ii") ) {
-						#$msi_zones{ $cfg->param("MSI.Musicserver$i\_Z$ii") } = $ii;
-						#$msi_players{ $cfg->param("MSI.Musicserver$i\_Z$ii") } = $i;
-						LOGINF "MSI ZONE $ii PLAYER " . $cfg->param("MSI.Musicserver$i\_Z$ii");
-						$fmszone{$ii} = $cfg->param("MSI.Musicserver$i\_Z$ii");
-						$fmsplayer{$cfg->param("MSI.Musicserver$i\_Z$ii")} = $ii;
+					if ( $cfg->param("MSG.FMT$i\_Player_Z$ii") ) {
+						LOGINF "MSG ZONE $ii PLAYER " . $cfg->param("MSG.FMS$i\_Player_Z$ii");
+						$fmszone{$ii} = $cfg->param("MSG.FMS$i\_Player_Z$ii");
+						$fmsplayer{$cfg->param("MSG.FMS$i\_Player_Z$ii")} = $ii;
 					}
 				}
 				$fms{zone} = \%fmszone;
 				$fms{player} = \%fmsplayer;
-				$msi_servers{$i} = \%fms;
+				$msg_servers{$i} = \%fms;
 			}
 		}
 	}
