@@ -28,6 +28,7 @@ package MSGWEB;
 # Install MSG Plugin somewhere and point it to this IP to port 8091
 # https://github.com/mjesun/loxberry-music-server-gateway
 #
+use JSON::PP;
 use Mojolicious::Lite;
 use LoxBerry::Log;
 use Switch;
@@ -202,30 +203,27 @@ sub create_state {
 
 	
 	# Create json
-	my $response = {
-		player => {
-			id => $player,
-			mode => $mode,
-			time => $playerstates->{$player}->{time_fuzzy}*1000,
-			volume => $playerstates->{$player}->{volume},
-			repeat => $playerstates->{$player}->{Repeat},
-			shuffle => $playerstates->{$player}->{Shuffle},
+	my %response = (
+		'player' => {
+			'id' => $player,
+			'mode' => $mode,
+			'time' => $playerstates->{$player}->{time_fuzzy}*1000,
+			'volume' => $playerstates->{$player}->{volume},
+			'repeat' => $playerstates->{$player}->{Repeat},
+			'shuffle' => $playerstates->{$player}->{Shuffle}
 		},
-		track => {
-			id => $player,
-			title => $playerstates->{$player}->{Songtitle},
-			album => $playerstates->{$player}->{Album},
-			artist => $playerstates->{$player}->{Artist},
-			duration => $playerstates->{$player}->{Duration}*1000,
-			image => $playerstates->{$player}->{Cover},
+		'track' => {
+			'title' => $playerstates->{$player}->{Songtitle},
+			'album' => $playerstates->{$player}->{Album},
+			'id' => $player,
+			'artist' => $playerstates->{$player}->{Artist},
+			'duration' => $playerstates->{$player}->{Duration}*1000,
+			'image' => $playerstates->{$player}->{Cover}
 		}
-	};
-	$fl->DEB("Response state data:\n" . Data::Dumper::Dumper($response)); 
-	my $json = JSON::to_json (\$response);
-
-
-
-	return($json);
+	);
+	$fl->DEB("Response state data:\n" . Data::Dumper::Dumper(\%response)); 
+	my $jsonresponse = JSON::PP::encode_json(\%response);
+	return($jsonresponse);
 
 }
 
