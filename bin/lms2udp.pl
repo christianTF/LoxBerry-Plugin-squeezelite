@@ -23,7 +23,7 @@ require "$lbphtmlauthdir/lib/LMSTTS.pm";
 # - libio-socket-timeout-perl
 
 # Version of this script
-my $version = "1.0.6.4";
+my $version = "1.0.6.5";
 
 print "Startup lms2udp daemon...\n";
 
@@ -34,7 +34,6 @@ print "Startup lms2udp daemon...\n";
 
 # Perl modules
 use Config::Simple;
-use Getopt::Long qw(GetOptions);
 use HTML::Entities;
 use IO::Select;
 use IO::Socket;
@@ -147,12 +146,11 @@ open(my $fh, '>', $pidfile);
 print $fh "$$";
 close $fh;
 
-
 # For debugging purposes, allow option --activate to override disabled setting in the config
 my $option_activate;
-GetOptions('activate' => \$option_activate) or die "Usage: $0 --activate to override config unactivate\n";
-
-# our $pluginname = $lbpplugindir;
+if( begins_with($ARGV[0], '--a') ) {
+	$option_activate = 1;
+}
 
 my $cfgfilename = "$lbpconfigdir/plugin_squeezelite.cfg";
 read_config();
