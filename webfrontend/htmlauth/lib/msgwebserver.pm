@@ -8,24 +8,25 @@ package MSGWEB;
 # Config file ~/config/plugins/squeezelite/plugin_squeezelite.cfg
 # needs following instance:
 #
+#
+#
 # [MSG]
 # Activated=True
-# Musicserver1_Port=8091
-# Musicserver1_Z1=c4:32:5e:e7:32:39
-# Musicserver1_Z3=b8:27:eb:b4:1d:8d
-# Musicserver1_Z4=aa:aa:84:bf:25:07
-# Musicserver1_Z5=74:da:38:05:07:66
-# Musicserver1_Z6=3d:a9:8d:0d:e3:88
+# FMS1_Activated=True
+# FMS1_LocalWebPort=8091
+# FMS1_MSGWebHost=192.168.3.22
+# FMS1_MSGWebPort=8090
+# FMS1_Player_Z1=c4:32:5e:e7:32:39
+# FMS1_Player_Z2=aa:aa:85:38:be:18
+# FMS1_Player_Z3=b8:27:eb:b4:1d:8d
+# FMS1_Player_Z4=aa:aa:84:bf:25:07
+# FMS1_Player_Z5=74:da:38:05:07:66
+# FMS1_Player_Z6=3d:a9:8d:0d:e3:88
 #
 # Up to 30 zones per Music server are supported
 #
-# Install MSG Plugin and point it to this IP to port 8091
-#
-# Start the webserver with:
-#
-# ./msgwebserver.pl --ms=1 --verbose
-#
-# where ms is the number of your music server
+# Install MSG Plugin somewhere and point it to this IP to port 8091
+# https://github.com/mjesun/loxberry-music-server-gateway
 #
 use Mojolicious::Lite;
 use LoxBerry::Log;
@@ -34,7 +35,7 @@ use strict;
 use warnings;
 
 #our @msgweb_thr : shared; # List of MSGWeb threads (for multiple Musicservers)
-my $version = "1.0.6.1";
+my $version = "1.0.6.2";
 my $lmscommand;
 my $fl; # is the log object
 my $fms;
@@ -60,7 +61,7 @@ sub start_fmsweb
 
 	
 	# From now on, $fms is the hashref to the actual MSG server and it's config
-	$fms = $main::msi_servers{$fmsid};
+	$fms = $main::msg_servers{$fmsid};
 	# e.g. $fms->{host} is the host:port
 
 	# # Creating pid
@@ -70,11 +71,7 @@ sub start_fmsweb
 	# close $fh;
 	# $fl->DEB("$$ My PID is: $$");
 
-	$fl->INF("$$ This webserver runs for Musicserver $fmsid on port " . $fms->{LocalWebPort});
-
-	# # Read config
-	# my $cfgfilename = "$lbpconfigdir/plugin_squeezelite.cfg";
-	# read_config();
+	$fl->INF("$$ This webserver runs for Fake Musicserver (FMS) $fmsid on port " . $fms->{LocalWebPort});
 
 	###############################################
 	## Definition of incoming requests
@@ -334,8 +331,8 @@ sub change_state {
 sub start_msgthreads
 {
 	$main::log->INF("Entering start_msgthreads");
-	$main::log->DEB("FMS configuration:\n" . Data::Dumper::Dumper(\%main::msi_servers));
-	foreach my $key ( keys %main::msi_servers ) {
+	$main::log->DEB("FMS configuration:\n" . Data::Dumper::Dumper(\%main::msg_servers));
+	foreach my $key ( keys %main::msg_servers ) {
 		$main::log->INF("Trying to start webserver $key");
 		my $thr = threads->create('MSGWEB::start_fmsweb', $key);
 		$main::log->OK("MSGWEB: Created MSGWEB $key thread with thread id " . $thr->tid());
