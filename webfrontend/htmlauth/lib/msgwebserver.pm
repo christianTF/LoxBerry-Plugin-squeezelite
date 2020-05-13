@@ -96,7 +96,7 @@ sub start_fmsweb
 				$playerstates->{$player}->{Mode} = 1;
 			}
 			case 'resume' { 
-				$lmscommand = "play";
+				$lmscommand = "pause 0";
 				$playerstates->{$player}->{Mode} = 1;
 			}
 			case 'stop' { 
@@ -104,7 +104,7 @@ sub start_fmsweb
 				$playerstates->{$player}->{Mode} = 0;
 			}
 			case 'pause' { 
-				$lmscommand = "pause";
+				$lmscommand = "pause 1";
 				$playerstates->{$player}->{Mode} = 0;
 			}
 			case 'shuffle' { 
@@ -118,6 +118,16 @@ sub start_fmsweb
 			case 'volume' { 
 				$lmscommand = "mixer volume $value";
 				$playerstates->{$player}->{Volume} = $value;
+			}
+			case 'next' { 
+				$lmscommand = "playlist index +1";
+			}
+			case 'previous' { 
+				$lmscommand = "playlist index -1";
+			}
+			case 'time' { 
+				$lmscommand = "time $value";
+				$playerstates->{$player}->{time} = $value;
 			}
 		}
 
