@@ -23,7 +23,7 @@ require "$lbphtmlauthdir/lib/LMSTTS.pm";
 # - libio-socket-timeout-perl
 
 # Version of this script
-my $version = "1.0.6.5";
+my $version = "1.0.6.6";
 
 print "Startup lms2udp daemon...\n";
 
@@ -56,7 +56,7 @@ my $cfg_timestamp = 0;
 my $lms2udp_activated;
 our $cfgversion;
 my $squ_server : shared;
-my $squ_lmswebport;
+my $squ_lmswebport : shared;
 my $squ_lmscliport : shared;
 my $squ_lmsdataport;
 my $lms2udp_msnr : shared;
