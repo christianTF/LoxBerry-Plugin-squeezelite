@@ -55,12 +55,12 @@ our $log;
 my $cfg_timestamp = 0;
 my $lms2udp_activated;
 our $cfgversion;
-my $squ_server : shared;
-my $squ_lmswebport : shared;
-my $squ_lmscliport : shared;
+our $squ_server : shared;
+our $squ_lmswebport : shared;
+our $squ_lmscliport : shared;
 my $squ_lmsdataport;
-my $lms2udp_msnr : shared;
-my $lms2udp_udpport : shared;
+our $lms2udp_msnr : shared;
+our $lms2udp_udpport : shared;
 my $lms2udp_berrytcpport;
 our $lms2udp_usehttpfortext : shared;
 my $lms2udp_forcepolldelay;
@@ -780,7 +780,7 @@ sub pupdate
 	if (! defined $playerstates{$player}) {
 		LOGDEB "Playerstates: Create new player $player";
 		$newkey_flag = 1;
-		my %player_href : shared;
+		our %player_href : shared;
 		$player_href{$key} = $value;
 		$playerstates{$player} = \%player_href;
 		$playerdiffs{$player}{$key} = $value;
@@ -1247,15 +1247,15 @@ sub read_config
 			my $LocalWebPort;
 			if ( is_enabled( $cfg->param("MSG.FMS$i\_Activated") ) ) {
 				$LocalWebPort = defined $cfg->param("MSG.FMS$i\_LocalWebPort") ? $cfg->param("MSG.FMS$i\_LocalWebPort") : 8090 + $i;
-				my %fms : shared;
+				our %fms : shared;
 				LOGINF "FMS $i LocalWebPort " . $cfg->param("MSG.FMS$i\_LocalWebPort");
 				
 				$fms{MSGWebHost} = $cfg->param("MSG.FMS$i\_MSGWebHost");
 				$fms{MSGWebPort} = $cfg->param("MSG.FMS$i\_MSGWebPort");
 				$fms{LocalWebPort} = $LocalWebPort;
 				
-				my %fmszone : shared;
-				my %fmsplayer : shared;
+				our %fmszone : shared;
+				our %fmsplayer : shared;
 				for ( my $ii=1; $ii<=30; $ii++ ) { # 30 Zones max
 					if ( $cfg->param("MSG.FMS$i\_Player_Z$ii") ) {
 						LOGINF "MSG ZONE $ii PLAYER " . $cfg->param("MSG.FMS$i\_Player_Z$ii");
