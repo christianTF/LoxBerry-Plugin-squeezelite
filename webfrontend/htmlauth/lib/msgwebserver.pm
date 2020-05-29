@@ -32,9 +32,10 @@ use LoxBerry::Log;
 use Switch;
 use strict;
 use warnings;
+use Data::Dumper;
 
 #our @msgweb_thr : shared; # List of MSGWeb threads (for multiple Musicservers)
-my $version = "1.0.6.2";
+my $version = "1.0.6.3";
 my $lmscommand;
 my $fl; # is the log object
 my $fms;
@@ -75,7 +76,7 @@ sub start_fmsweb
 	#
 	# Anwser requests
 	#
-	post '/zone/:zone/:command/:value' => {zone => '0', command => '0', value => '0'} => sub {
+	post '/zone/:zone/:command/*value' => {zone => '0', command => '0', value => '0'} => sub {
 
 		my $c = shift;
 		my $zone = $c->stash('zone');
@@ -96,7 +97,11 @@ sub start_fmsweb
 
 		switch ($command) {
 			case 'play'  { 
-				$lmscommand = "play";
+				if ($value) {
+					$lmscommand = "playlist play $value";
+				} else {
+					$lmscommand = "play";
+				}
 				$playerstates->{$player}->{Mode} = 1;
 			}
 			case 'resume' { 
@@ -136,13 +141,7 @@ sub start_fmsweb
 		}
 
 		# Send to LMS tcp queue
-		# The queue is managed by the main thread
-		{
-			# During lock, other threads will wait for release 
-			threads::shared::lock(@main::tcpout_queue);
-			push @main::tcpout_queue, "$player $lmscommand\n";
-			# Lock is released automatically after leaving the scope of the block
-		}
+		&send($lmscommand);
 	
 		# Read Player States and create output
 		my $state = &create_state($zone);
@@ -185,19 +184,41 @@ sub start_fmsweb
 		my $address = $c->tx->remote_address;
 		my $port    = $c->tx->remote_port;
 		
-		$fl->DEB("Received favorites/0 from $address\:$port");
+		$fl->DEB("Received /favorites/0 from $address\:$port");
 
 		# Read global favorites from LMS
 		my $lmsfavs = &create_fav();
 		
 		# Render in UTF8
-		#utf8::decode($state);
-		#utf8::decode($state);
-		#$c->res->headers->header('Content-Type' => 'application/json');
-		#$c->render(text => $state);
+		utf8::decode($lmsfavs);
+		utf8::decode($lmsfavs);
+		$c->res->headers->header('Content-Type' => 'application/json');
+		$c->render(text => $lmsfavs);
 
 	};
 
+	# Answer with room Favorites
+	get '/zone/:zone/favorites/0' => sub {
+
+		my $c = shift;
+		my $zone = $c->stash('zone');
+
+		# Check peer information
+		my $address = $c->tx->remote_address;
+		my $port    = $c->tx->remote_port;
+		
+		$fl->DEB("Received /zone/$zone/favorites/0 from $address\:$port");
+
+		# Read global favorites from LMS
+		my $lmsfavs = &create_fav($zone);
+		
+		# Render in UTF8
+		utf8::decode($lmsfavs);
+		utf8::decode($lmsfavs);
+		$c->res->headers->header('Content-Type' => 'application/json');
+		$c->render(text => $lmsfavs);
+
+	};
 
 
 
@@ -214,6 +235,7 @@ sub start_fmsweb
 
 #
 # Create Player State
+# Parameter is zone number
 #
 sub create_state {
 
@@ -227,7 +249,7 @@ sub create_state {
 		$fl->DEB("create_state: playerstates not yet defined. Will read them from main::playerstates");
 	}
 
-	$fl->DEB("Creating state for player " . $player);
+	$fl->DEB("create_state: Creating state for player " . $player);
 
 	if( !zone_available($zone) ) {
 		$fl->ERR("Zone $zone does not match to a valid player mac in LMS");
@@ -241,7 +263,7 @@ sub create_state {
 	elsif ( $playerstates->{$player}->{Mode} eq "1" ) { $mode = "play"; }
 	else { $mode = "buffer"; }
 
-	$fl->DEB("Mode is " . $playerstates->{$player}->{Mode});
+	$fl->DEB("create_state: Mode is " . $playerstates->{$player}->{Mode});
 	
 	# Create json
 	my %response = (
@@ -264,7 +286,9 @@ sub create_state {
 	);
 	undef $playerstates;
 
-	#$fl->DEB("Response state data:\n" . Data::Dumper::Dumper(\%response)); 
+	$fl->DEB("create_state: Response state:\n" . Data::Dumper::Dumper(%response)); 
+
+	#$fl->DEB("create_state: Response state data:\n" . Data::Dumper::Dumper(\%response)); 
 	my $jsonresponse = JSON::PP::encode_json(\%response);
 
 	return($jsonresponse);
@@ -273,22 +297,37 @@ sub create_state {
 
 #
 # Create Favorites
+# Parameter is zone
 #
 sub create_fav {
 	
 	$fl->DEB("create_fav called");
 
 	my $zone = shift;
-	my $player;
+	my $item;
 
-	# If no player is specified, grab global favs
-	if (!$zone) {
-		my $player = "XX:XX:XX:XX:XX:XX";
+	#if (@_ != 2) {
+	#	$fl->WARN("get_lmsdata: odd number of parameters");
+	#	return;
+	#}
+
+	# Check fav subfolder for zone
+	if ($zone) {
+		$item = &get_fav_sub($zone);
+		if ( !$item ) { # Create Subfolder if not exist
+			my $player = $fms->{zone}->{$zone};
+			my $playername = $main::playerstates{$player}->{Name};
+			my $title = "Zone $zone $playername";
+			$title =~ s/\s/%20/g;
+			my $lmscommand = "favorites addlevel title:$title";
+			&send($lmscommand);
+			return();
+		}
 	} else {
-		my $player = $fms->{zone}->{$zone};
+		$item = "";
 	}
 
-	$fl->DEB("Grabbing favorites for player " . $player);
+	$fl->DEB("create_fav: Grabbing favorites");
 
 	#if( !zone_available($zone) ) {
 	#	$fl->ERR("Zone $zone does not match to a valid player mac in LMS");
@@ -296,53 +335,121 @@ sub create_fav {
 	#}
 	
 	# Grab favorites from LMS
-	my $lmsresp = &get_lmsdata($player, '{"id":1,"method":"slim.request","params":["XX:XX:XX:XX:XX:XX", ["favorites","items",0,10,"menu:favorites","useContextMenu:1"]]}');
+	my $lmsresp;
+	if ( $item ) {
+		$lmsresp = &get_lmsdata('{"id":1,"method":"slim.request","params":["XX:XX:XX:XX:XX:XX", ["favorites","items",0,10,"menu:favorites","useContextMenu:1","item_id:' . $item . '"]]}');
+	} else {
+		$lmsresp = &get_lmsdata('{"id":1,"method":"slim.request","params":["XX:XX:XX:XX:XX:XX", ["favorites","items",0,10,"menu:favorites","useContextMenu:1"]]}');
+	}
 
-	$fl->DEB("Response fav lms data:\n" . Data::Dumper::Dumper($lmsresp)); 
+	#$fl->DEB("create_fav: Response fav lms data:\n" . Data::Dumper::Dumper($lmsresp)); 
 	
 	# Create json
-	#my %response = (
-	#	'player' => {
-	#		'id' => $player,
-	#		'mode' => $mode,
-	#		'time' => int($playerstates->{$player}->{time_fuzzy}*1000),
-	#		'volume' => $playerstates->{$player}->{volume},
-	#		'repeat' => $playerstates->{$player}->{Repeat},
-	#		'shuffle' => $playerstates->{$player}->{Shuffle}
-	#	},
-	#	'track' => {
-	#		'title' => $playerstates->{$player}->{Songtitle},
-	#		'album' => $playerstates->{$player}->{Album},
-	#		'id' => $player,
-	#		'artist' => $playerstates->{$player}->{Artist},
-	#		'duration' => int($playerstates->{$player}->{Duration}*1000),
-	#		'image' => $playerstates->{$player}->{Cover}
-	#	}
-	#);
-	#undef $playerstates;
+	my $json;
+	eval {
+		$json = JSON::PP::decode_json( $lmsresp );
+		1;
+	} or do {
+		$fl->DEB("create_fav: Results seems not be valid json string");
+		return;
+	};
 
+	my @items;
+	for my $item( @{$json->{result}->{item_loop}} ){
+		$fl->DEB("create_fav: Found item $item->{text}");
+		# Skip menu buttons
+		if ( !$item->{'presetParams'} ) {
+			next;
+		}
+		# There are several ways icons are given
+		my $icon;
+		if ( $item->{'presetParams'}->{'icon'} =~ /^http/ ) {
+			$icon = $item->{'presetParams'}->{'icon'};
+		} else {
+			$item->{'presetParams'}->{'icon'} =~ s/^\/+//g;
+			$icon = "http://" . $main::squ_server . ":" . $main::squ_lmswebport . "/" . $item->{'presetParams'}->{'icon'}
+		}
+		my %itemdata = (
+			'id' => $item->{'presetParams'}->{'favorites_url'},
+			'title' => $item->{'presetParams'}->{'favorites_title'},
+			'image' => $icon
+		);
 
-	#my $jsonresponse = JSON::PP::encode_json(\%response);
-	my $jsonresponse = "";
+		#$fl->DEB("create_fav: Created hash:\n" . Data::Dumper::Dumper(\%itemdata)); 
+		push (@items, \%itemdata);
+	}
+	
+	#$fl->DEB("create_fav: Created hash:\n" . Data::Dumper::Dumper(\@items)); 
+
+	my %response = (
+		'total' => scalar @items,
+		'items' => \@items
+	);
+
+	my $jsonresponse = JSON::PP::encode_json(\%response);
 
 	return($jsonresponse);
 
 }
 
 #
+# Get index_id for subfolder of room fav
+# Parameter is zone
+#
+sub get_fav_sub {
+	
+	$fl->DEB("get_fav_sub called");
+
+	my $zone = shift;
+	my $id;
+
+	$fl->DEB("get_fav_sub: Grabbing favorites");
+
+	# Grab favorites from LMS
+	my $lmsresp = &get_lmsdata('{"id":1,"method":"slim.request","params":["XX:XX:XX:XX:XX:XX", ["favorites","items",0,10,"menu:favorites","useContextMenu:1"]]}');
+
+	#$fl->DEB("create_fav: Response fav lms data:\n" . Data::Dumper::Dumper($lmsresp)); 
+	
+	# Create json
+	my $json;
+	eval {
+		$json = JSON::PP::decode_json( $lmsresp );
+		1;
+	} or do {
+		$fl->DEB("get_fav_sub: Results seems not be valid json string");
+		return;
+	};
+
+	my @items;
+	for my $item( @{$json->{result}->{item_loop}} ){
+		$fl->DEB("get_fav_sub: Found item $item->{text}");
+		# This is a subfolder - check
+		if ( $item->{addAction} && $item->{addAction} eq "go" ) {
+			my ($txt,$subzone) = split ( / /, $item->{text} );
+			if ( $subzone eq $zone ) { # Found correct subfolder
+				$fl->DEB("get_fav_sub: Found subfolder for zone $zone: $item->{text}");
+				$id = $item->{actions}->{go}->{params}->{item_id};
+				last;
+			}
+		} else {
+			next;
+		}
+	}
+	
+	return($id);
+
+}
+
+#
 # Grab data from LMS in JSON format
+# Parameter is request in JSON format
 #
 sub get_lmsdata {
 
 	$fl->DEB("get_lmsdata called");
 
 	use WWW::Curl::Easy;
-	my ($player,$request) = @_;
-	
-	if (@_ != 2) {
-		$fl->WARN("get_lmsdata: odd number of parameters");
-		return;
-	}
+	my ($request) = @_;
 	
 	# This is an example for grabbing data from the commandline using curl
 	# curl -s -H "Content-Type: application/json" -X POST -d '{"id":1,"method":"slim.request","params":["XX:XX:XX:XX:XX:XX", \\
@@ -373,17 +480,19 @@ sub get_lmsdata {
  
 	# Looking at the results...
 	if ($retcode != 0) {
-        	$fl->ERR("An error happened: $retcode ".$curl->strerror($retcode)." ".$curl->errbuf);
+        	$fl->ERR("get_lmsdata: An error happened: $retcode ".$curl->strerror($retcode)." ".$curl->errbuf);
 		return;
 	}
-	$fl->DEB("Request successfull");
+	$fl->DEB("get_lmsdata: Request successfull");
 
-	return ( $curl->getinfo(WWW::Curl::Easy::CURLINFO_HTTP_CODE) );
+	return ( $response_body );
 
 }
 
+#
 # Checks if the requested zone has an available mac defined
 # Parameter is zone number
+#
 sub zone_available
 {
 	$fl->DEB("zone_available called");
@@ -414,6 +523,26 @@ sub zone_available
 	return 1;
 	
 }
+
+#
+# Send to LMS tcp queue
+# The queue is managed by the main thread
+# Parameter is lms command
+#
+sub send
+{
+
+	my ($lmscommand) = @_;
+
+	# During lock, other threads will wait for release 
+	$fl->DEB("Sending command to LMS: $lmscommand");
+	threads::shared::lock(@main::tcpout_queue);
+	push @main::tcpout_queue, "$lmscommand\n";
+	# Lock is released automatically after leaving the scope of the block
+	return();
+
+}
+	
 
 
 sub start_msgthreads
