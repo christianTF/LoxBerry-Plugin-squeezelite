@@ -62,7 +62,6 @@ sub start_fmsweb
 	$fl->LOGSTART("Thread MSGSERVER $fmsid started (PID $$)");
 	$fl->DEB("$$ This is $0 Version $version");
 
-	
 	# From now on, $fms is the hashref to the actual MSG server and it's config
 	$fms = $main::msg_servers{$fmsid};
 	# e.g. $fms->{host} is the host:port
@@ -89,6 +88,11 @@ sub start_fmsweb
 		my $port    = $c->tx->remote_port;
 		
 		$fl->DEB("Received /zone/$zone/$command/$value request from $address\:$port");
+
+		if( !zone_available($zone) ) {
+			$fl->ERR("Zone $zone does not match to a valid player mac in LMS");
+			return $c->reply->not_found
+		}
 
 		# Define playerstates here because we have to modify the state below to 
 		# sync the Loxone WebGUI 
@@ -141,7 +145,7 @@ sub start_fmsweb
 		}
 
 		# Send to LMS tcp queue
-		&send($lmscommand);
+		&send("$player $lmscommand");
 	
 		# Read Player States and create output
 		my $state = &create_state($zone);
@@ -163,6 +167,12 @@ sub start_fmsweb
 		my $port    = $c->tx->remote_port;
 		
 		$fl->DEB("Received /zone/$zone/state request from $address\:$port");
+
+		if( !zone_available($zone) ) {
+			$fl->ERR("Zone $zone does not match to a valid player mac in LMS");
+			return $c->reply->not_found
+		}
+
 		# Read Player States and create output
 		my $state = &create_state($zone);
 		
@@ -209,6 +219,11 @@ sub start_fmsweb
 		
 		$fl->DEB("Received /zone/$zone/favorites/0 from $address\:$port");
 
+		if( !zone_available($zone) ) {
+			$fl->ERR("Zone $zone does not match to a valid player mac in LMS");
+			return $c->reply->not_found
+		}
+
 		# Read global favorites from LMS
 		my $lmsfavs = &create_fav($zone);
 		
@@ -220,6 +235,37 @@ sub start_fmsweb
 
 	};
 
+	# Receive new favorites
+	put '/zone/:zone/favorites/:position' => sub {
+
+		my $c = shift;
+		my $zone = $c->stash('zone');
+		my $position = $c->stash('position');
+		my $jsonrec = $c->req->body;
+
+		# Check peer information
+		my $address = $c->tx->remote_address;
+		my $port    = $c->tx->remote_port;
+		
+		$fl->DEB("Received /zone/$zone/favorites/$position from $address\:$port");
+
+		if( !zone_available($zone) ) {
+			$fl->ERR("Zone $zone does not match to a valid player mac in LMS");
+			return $c->reply->not_found
+		}
+
+		$fl->DEB("Received JSON: $jsonrec");
+
+		# Read global favorites from LMS
+		#my $lmsfavs = &create_fav();
+		
+		# Render in UTF8
+		#utf8::decode($lmsfavs);
+		#utf8::decode($lmsfavs);
+		#$c->res->headers->header('Content-Type' => 'application/json');
+		#$c->render(text => $lmsfavs);
+
+	};
 
 
 
@@ -315,9 +361,13 @@ sub create_fav {
 	if ($zone) {
 		$item = &get_fav_sub($zone);
 		if ( !$item ) { # Create Subfolder if not exist
+			$fl->DEB("create_fav: Could not find subfolder for room favs for Zone $zone");
 			my $player = $fms->{zone}->{$zone};
+			$fl->DEB("create_fav: Player MAC is $player");
 			my $playername = $main::playerstates{$player}->{Name};
+			$fl->DEB("create_fav: Player Name is $playername");
 			my $title = "Zone $zone $playername";
+			$fl->DEB("create_fav: Creating subfolder for roomfavs: $title");
 			$title =~ s/\s/%20/g;
 			my $lmscommand = "favorites addlevel title:$title";
 			&send($lmscommand);
@@ -329,11 +379,6 @@ sub create_fav {
 
 	$fl->DEB("create_fav: Grabbing favorites");
 
-	#if( !zone_available($zone) ) {
-	#	$fl->ERR("Zone $zone does not match to a valid player mac in LMS");
-	#	return;
-	#}
-	
 	# Grab favorites from LMS
 	my $lmsresp;
 	if ( $item ) {
@@ -355,6 +400,7 @@ sub create_fav {
 	};
 
 	my @items;
+	my $i;
 	for my $item( @{$json->{result}->{item_loop}} ){
 		$fl->DEB("create_fav: Found item $item->{text}");
 		# Skip menu buttons
@@ -376,6 +422,10 @@ sub create_fav {
 		);
 
 		#$fl->DEB("create_fav: Created hash:\n" . Data::Dumper::Dumper(\%itemdata)); 
+
+		# Only 8 favs are supported by Loxones UI
+		$i++;
+		if ( $i > 8 ) { last; };
 		push (@items, \%itemdata);
 	}
 	
