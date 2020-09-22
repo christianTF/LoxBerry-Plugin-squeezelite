@@ -780,7 +780,7 @@ sub pupdate
 	if (! defined $playerstates{$player}) {
 		LOGDEB "Playerstates: Create new player $player";
 		$newkey_flag = 1;
-		our %player_href : shared;
+		my %player_href : shared;
 		$player_href{$key} = $value;
 		$playerstates{$player} = \%player_href;
 		$playerdiffs{$player}{$key} = $value;
