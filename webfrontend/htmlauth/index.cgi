@@ -421,7 +421,11 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		
 		my $outputnr = 0 ;
 		foreach $output (@outputdevs) { 
+			if($outputdescs[$outputnr] eq "") {
+			$htmlout .= "<option value=\"$output\">$output</option>";
+			} else {
 			$htmlout .= "<option value=\"$output\">$output - $outputdescs[$outputnr]</option>";
+			}
 			$outputnr += 1;
 		}
 		$htmlout .= '
