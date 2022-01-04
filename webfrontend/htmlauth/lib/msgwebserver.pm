@@ -50,7 +50,6 @@ sub start_fmsweb
 	# Create a logging object
 	$fl = LoxBerry::Log->new (
 		name => "msgwebserver $fmsid",
-		filename => $LoxBerry::System::lbplogdir."/msgwebserver_$fmsid.log",
 		addtime => 1,
 		append => 1,
 		stdout => 1,
@@ -149,7 +148,7 @@ sub start_fmsweb
 
 		# Read Player States and create output
 		my $state = &create_state($zone);
-		
+
 		# Render in UTF8
 		utf8::decode($state);
 		$c->render(text => $state);
@@ -175,21 +174,13 @@ sub create_state {
 	my $zone = shift;
 	my $player = $fms->{zone}->{$zone};
 
-	my $playerstates = \%main::playerstates; 
+	my $playerstates = $main::playerstates; 
 	# KISS (copy the ref to not need the write the main:: package qualifier
 	# $playerstates is not a copy of data. It is the actual state of lms2udp
-	
-	$fl->DEB("create_state playerstates\n" . Data::Dumper::Dumper($playerstates));
 	
 	# &read_states();
 
 	$fl->DEB("Zone is $zone, Player is $player");
-	
-	if( !zone_available($zone) ) {
-		$fl->ERR("Zone $zone does not match to a valid player mac in LMS");
-		return;
-	}
-
 	
 	# Recalculate Mode
 	my $mode;
@@ -198,11 +189,8 @@ sub create_state {
 	elsif ( $playerstates->{$player}->{Mode} eq "1" ) { $mode = "play"; }
 	else { $mode = "buffer"; }
 
-	$fl->DEB("Mode is " . $playerstates->{$player}->{Mode});
-
-	
 	# Create json
-	my $response = {
+	my $json = to_json {
 		player => {
 			id => $player,
 			mode => $mode,
@@ -220,10 +208,6 @@ sub create_state {
 			image => $playerstates->{$player}->{Cover},
 		}
 	};
-	$fl->DEB("Response state data:\n" . Data::Dumper::Dumper($response)); 
-	my $json = JSON::to_json (\$response);
-
-
 
 	return($json);
 
@@ -342,37 +326,6 @@ sub change_state {
 	# $socket->write_timeout(2);
 	# return $socket;
 # }
-
-# Checks if the requested zone has an available mac defined
-# Parameter is zone number
-sub zone_available
-{
-	my ($zone) = @_;
-	if (!defined $zone) {
-		$fl->WARN("zone_available: zone parameter missing or empty");
-		return;
-	}
-	
-	$fl->DEB(Data::Dumper::Dumper($fms));
-	
-	my $player = $fms->{zone}->{$zone};
-	if (!$player) {
-		$fl->WARN("zone_available: zone $zone has no player defined");
-		return;
-	}
-	
-	$fl->DEB("Playerstates:\n" . Data::Dumper::Dumper(\%main::playerstates));
-	
-	
-	if( !defined $main::playerstates{$player} ) {
-		$fl->WARN("zone_available: player $player is not a valid player in LMS");
-		return;
-	}
-
-	$fl->OK("zone_available: Zone $zone is player $player (" . $main::playerstates{$player}->{Name} . ")");
-	return 1;
-	
-}
 
 
 sub start_msgthreads

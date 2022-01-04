@@ -96,7 +96,7 @@ our $loopdivisor = 3;
 our @rawparts;
 our @parts;
 
-our %playerstates	: shared;
+my %playerstates	: shared;
 # The playerstats hash uses the key PLAYERMAC
 # It includes the following hash items
 	# Known
