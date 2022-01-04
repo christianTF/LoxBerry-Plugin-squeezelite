@@ -44,7 +44,6 @@ my $playerstates;
 # Parameter is fmsid as number (1,2,....) like in the config file
 sub start_fmsweb 
 {
-	require Clone;
 	
 	my ($fmsid) = @_;
 	
@@ -87,8 +86,7 @@ sub start_fmsweb
 
 		# Define playerstates here because we have to modify the state below to 
 		# sync the Loxone WebGUI 
-		$playerstates = Clone::clone(\%main::playerstates);
-		# $playerstates = \%main::playerstates; 
+		$playerstates = \%main::playerstates; 
 
 		switch ($command) {
 			case 'play'  { 
@@ -182,7 +180,9 @@ sub create_state {
 	my $player = $fms->{zone}->{$zone};
 
 	if (! $playerstates ) {
-		$playerstates = Clone::clone(\%main::playerstates);
+		$playerstates = \%main::playerstates; 
+		# KISS (copy the ref to not need the write the main:: package qualifier
+		# $playerstates is not a copy of data. It is the actual state of lms2udp
 		$fl->DEB("create_state: playerstates not yet defined. Will read them from main::playerstates");
 	}
 
