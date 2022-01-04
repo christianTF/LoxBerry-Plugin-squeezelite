@@ -91,7 +91,16 @@ sub start_fmsweb
 		my $value = $c->stash('value');
 		my $player = $fms->{zone}->{$zone};
 		
+<<<<<<< HEAD
 		$fl->DEB("Received COMMAND $command $value for ZONE $zone");
+=======
+		$fl->DEB("Received /zone/$zone/$command/$value request from $address\:$port");
+
+		# Define playerstates here because we have to modify the state below to 
+		# sync the Loxone WebGUI 
+		$playerstates = Clone::clone(\%main::playerstates);
+		# $playerstates = \%main::playerstates; 
+>>>>>>> parent of f41622d (Some mods)
 
 		switch ($command) {
 			case 'play'  { 
@@ -122,6 +131,7 @@ sub start_fmsweb
 
 		#
 		# Send to LMS tcp queue
+<<<<<<< HEAD
 		# The queue is managed by the main thread
 		#
 		# print $tcpout_sock "$player $lmscommand\n";
@@ -132,6 +142,9 @@ sub start_fmsweb
 			push @main::tcpout_queue, "$player $lmscommand\n";
 			# Lock is released automatically after leaving the scope of the block
 		}
+=======
+		&send($lmscommand);
+>>>>>>> parent of f41622d (Some mods)
 	
 		
 		# Read Player States and create output
@@ -149,6 +162,14 @@ sub start_fmsweb
 		my $c = shift;
 		my $zone = $c->stash('zone');
 
+<<<<<<< HEAD
+=======
+		# Check peer information
+		my $address = $c->tx->remote_address;
+		my $port    = $c->tx->remote_port;
+		
+		$fl->DEB("Received /zone/$zone/state request from $address\:$port");
+>>>>>>> parent of f41622d (Some mods)
 		# Read Player States and create output
 		my $state = &create_state($zone);
 
@@ -158,6 +179,59 @@ sub start_fmsweb
 
 	};
 
+<<<<<<< HEAD
+=======
+	# Answer with global Favorites
+	get '/favorites/0' => sub {
+
+		my $c = shift;
+		#my $zone = $c->stash('zone');
+
+		# Check peer information
+		my $address = $c->tx->remote_address;
+		my $port    = $c->tx->remote_port;
+		
+		$fl->DEB("Received /favorites/0 from $address\:$port");
+
+		# Read global favorites from LMS
+		my $lmsfavs = &create_fav();
+		
+		# Render in UTF8
+		utf8::decode($lmsfavs);
+		utf8::decode($lmsfavs);
+		$c->res->headers->header('Content-Type' => 'application/json');
+		$c->render(text => $lmsfavs);
+
+	};
+
+	# Answer with room Favorites
+	get '/zone/:zone/favorites/0' => sub {
+
+		my $c = shift;
+		my $zone = $c->stash('zone');
+
+		# Check peer information
+		my $address = $c->tx->remote_address;
+		my $port    = $c->tx->remote_port;
+		
+		$fl->DEB("Received /zone/$zone/favorites/0 from $address\:$port");
+
+		# Read global favorites from LMS
+		my $lmsfavs = &create_fav($zone);
+		
+		# Render in UTF8
+		utf8::decode($lmsfavs);
+		utf8::decode($lmsfavs);
+		$c->res->headers->header('Content-Type' => 'application/json');
+		$c->render(text => $lmsfavs);
+
+	};
+
+
+
+
+	
+>>>>>>> parent of f41622d (Some mods)
 	#
 	# Start server
 	#
@@ -217,11 +291,107 @@ sub create_state {
 }
 
 #
+<<<<<<< HEAD
 # Read states from tmpfs datafile (created by lms2udp.pl)
 # 
 sub read_states {
 
 	# CF: Zugriff auf die Daten direkt mittels $playerstates->{$mac}->{...Attribut...}
+=======
+# Create Favorites
+# Parameter is zone
+#
+sub create_fav {
+	
+	$fl->DEB("create_fav called");
+
+	my $zone = shift;
+	my $item;
+
+	#if (@_ != 2) {
+	#	$fl->WARN("get_lmsdata: odd number of parameters");
+	#	return;
+	#}
+
+	# Check fav subfolder for zone
+	if ($zone) {
+		$item = &get_fav_sub($zone);
+		if ( !$item ) { # Create Subfolder if not exist
+			my $player = $fms->{zone}->{$zone};
+			my $playername = $main::playerstates{$player}->{Name};
+			my $title = "Zone $zone $playername";
+			$title =~ s/\s/%20/g;
+			my $lmscommand = "favorites addlevel title:$title";
+			&send($lmscommand);
+			return();
+		}
+	} else {
+		$item = "";
+	}
+
+	$fl->DEB("create_fav: Grabbing favorites");
+
+	#if( !zone_available($zone) ) {
+	#	$fl->ERR("Zone $zone does not match to a valid player mac in LMS");
+	#	return;
+	#}
+	
+	# Grab favorites from LMS
+	my $lmsresp;
+	if ( $item ) {
+		$lmsresp = &get_lmsdata('{"id":1,"method":"slim.request","params":["XX:XX:XX:XX:XX:XX", ["favorites","items",0,10,"menu:favorites","useContextMenu:1","item_id:' . $item . '"]]}');
+	} else {
+		$lmsresp = &get_lmsdata('{"id":1,"method":"slim.request","params":["XX:XX:XX:XX:XX:XX", ["favorites","items",0,10,"menu:favorites","useContextMenu:1"]]}');
+	}
+
+	#$fl->DEB("create_fav: Response fav lms data:\n" . Data::Dumper::Dumper($lmsresp)); 
+	
+	# Create json
+	my $json;
+	eval {
+		$json = JSON::PP::decode_json( $lmsresp );
+		1;
+	} or do {
+		$fl->DEB("create_fav: Results seems not be valid json string");
+		return;
+	};
+
+	my @items;
+	for my $item( @{$json->{result}->{item_loop}} ){
+		$fl->DEB("create_fav: Found item $item->{text}");
+		# Skip menu buttons
+		if ( !$item->{'presetParams'} ) {
+			next;
+		}
+		# There are several ways icons are given
+		my $icon;
+		if ( $item->{'presetParams'}->{'icon'} =~ /^http/ ) {
+			$icon = $item->{'presetParams'}->{'icon'};
+		} else {
+			$item->{'presetParams'}->{'icon'} =~ s/^\/+//g;
+			$icon = "http://" . $main::squ_server . ":" . $main::squ_lmswebport . "/" . $item->{'presetParams'}->{'icon'}
+		}
+		my %itemdata = (
+			'id' => $item->{'presetParams'}->{'favorites_url'},
+			'title' => $item->{'presetParams'}->{'favorites_title'},
+			'image' => $icon
+		);
+
+		#$fl->DEB("create_fav: Created hash:\n" . Data::Dumper::Dumper(\%itemdata)); 
+		push (@items, \%itemdata);
+	}
+	
+	#$fl->DEB("create_fav: Created hash:\n" . Data::Dumper::Dumper(\@items)); 
+
+	my %response = (
+		'total' => scalar @items,
+		'items' => \@items
+	);
+
+	my $jsonresponse = JSON::PP::encode_json(\%response);
+
+	return($jsonresponse);
+>>>>>>> parent of f41622d (Some mods)
 
 	$fl->DEB("Sub read_states - OBSOLETE");
 	# my $jsonobj = LoxBerry::JSON->new();

@@ -36,7 +36,7 @@ no strict "refs"; # we need it for template system
 ##########################################################################
 
 # Version of this script
-our $version = "1.0.7.1";
+our $version = "1.0.1.1";
 
 our $cfg;
 our $namef;
@@ -257,18 +257,12 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		my $line;
 		my @outputdevs;
 		my @outputdescs;
+
 		foreach $line (@outputlist) {
-				if( substr( $line, 0, 2) ne '  ' ) {
-					next;
-				}
 				my @splitoutputs = split(/-/, $line, 2);
-				if ((length(trim($splitoutputs[0])) ne 0)) {
+				if ((length(trim($splitoutputs[0])) ne 0) && (defined $splitoutputs[1])) {
 						push (@outputdevs, trim($splitoutputs[0]));
-						if( $splitoutputs[1] ) {
-							push (@outputdescs, trim($splitoutputs[1]));
-						} else {
-							push (@outputdescs, undef);
-						}
+						push (@outputdescs, trim($splitoutputs[1]));
 				}
 		}
 
@@ -335,7 +329,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 				$webport = $squ_lmswebport;
 			} 
 			$lmslinks = "				<li><a target=\"_blank\" href=\"http://$squ_server:$webport/\">Logitech Media Server</a></li>\n" . 
-						"				<li><a target=\"_blank\" href=\"http://$squ_server:$webport/default/settings/index.html\">LMS Settings</a></li>";
+						"				<li><a target=\"_blank\" href=\"http://$squ_server:$webport/settings/index.html\">LMS Settings</a></li>";
 		}
 		
 		# Generate logfile link for navigaton
@@ -421,11 +415,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 		
 		my $outputnr = 0 ;
 		foreach $output (@outputdevs) { 
-			if($outputdescs[$outputnr] eq "") {
-			$htmlout .= "<option value=\"$output\">$output</option>";
-			} else {
 			$htmlout .= "<option value=\"$output\">$output - $outputdescs[$outputnr]</option>";
-			}
 			$outputnr += 1;
 		}
 		$htmlout .= '

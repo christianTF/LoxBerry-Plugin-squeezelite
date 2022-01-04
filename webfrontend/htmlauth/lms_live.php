@@ -73,11 +73,9 @@ function generate_list(resp) {
 	tableStr += '<th>Power</th>';
 	tableStr += '<th>Pause</th>';
 	tableStr += '<th>Mode</th>';
-	tableStr += '<th>Cover</th>';
 	tableStr += '<th>Songtitle</th>';
 	tableStr += '<th>Artist</th>';
 	tableStr += '<th>Songtitle (Sent)</th>';
-	tableStr += '<th>Time</th>';
 	tableStr += '<th>Volume</th>';
 	tableStr += '<th>Repeat</th>';
 	tableStr += '<th>Shuffle</th>';
@@ -114,7 +112,7 @@ function generate_list(resp) {
 		
 		if(value.Artist == null) 
 			value.Artist = "";
-
+				
 		playerStr += '<tr>';
 		// playerContainer = '<div style="display:flex;flex-wrap:wrap;flex-basis:100%;">'
 		playerStr += '<td>'+value.Connected+'</td>';
@@ -122,15 +120,9 @@ function generate_list(resp) {
 		playerStr += '<td>'+value.Power+'</td>';
 		playerStr += '<td>'+value.Pause+'</td>';
 		playerStr += '<td>'+value.State+'</td>';
-		if(value.Cover == null) {
-			playerStr += '<td>&nbsp;</td>';
-		} else {
-			playerStr += '<td><img src="'+value.Cover+'" width=32</img></td>';
-		}
 		playerStr += '<td>'+SongtitleStr+'</td>';
 		playerStr += '<td>'+value.Artist+'</td>';
 		playerStr += '<td style="font-size:80%">'+SentSongtitleStr+'</td>';
-		playerStr += '<td>'+fancyTimeFormat(value.time_fuzzy)+'</td>';
 		playerStr += '<td>'+value.volume+'</td>';
 		playerStr += '<td>'+value.Repeat+'</td>';
 		playerStr += '<td>'+value.Shuffle+'</td>';
@@ -156,25 +148,6 @@ function getSelectedText() {
 		text = document.selection.createRange().text;
 	}
 return text;
-}
-
-function fancyTimeFormat(time)
-{   
-    // Hours, minutes and seconds
-    var hrs = ~~(time / 3600);
-    var mins = ~~((time % 3600) / 60);
-    var secs = ~~time % 60;
-
-    // Output like "1:01" or "4:03:59" or "123:03:59"
-    var ret = "";
-
-    if (hrs > 0) {
-        ret += "" + hrs + ":" + (mins < 10 ? "0" : "");
-    }
-
-    ret += "" + mins + ":" + (secs < 10 ? "0" : "");
-    ret += "" + secs;
-    return ret;
 }
 
 </script>
