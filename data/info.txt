@@ -1,1 +1,3 @@
 Squeezelite Versions from https://sourceforge.net/projects/lmsclients/files/squeezelite/
+
+Version 1.9.9.1392
