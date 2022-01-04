@@ -184,7 +184,7 @@ sub start_fmsweb
 
 	};
 
-	# Answer with global favorites
+	# Answer with global Favorites
 	get '/favorites/0' => sub {
 
 		my $c = shift;
@@ -235,11 +235,11 @@ sub start_fmsweb
 
 	};
 
-	# Receive new global favorite
-	post '/favorites/:position' => sub {
+	# Receive new favorites
+	put '/zone/:zone/favorites/:position' => sub {
 
 		my $c = shift;
-		#my $zone = $c->stash('zone');
+		my $zone = $c->stash('zone');
 		my $position = $c->stash('position');
 		my $jsonrec = $c->req->body;
 
@@ -247,45 +247,23 @@ sub start_fmsweb
 		my $address = $c->tx->remote_address;
 		my $port    = $c->tx->remote_port;
 		
-		$fl->DEB("Received PUT /favorites/$position from $address\:$port");
+		$fl->DEB("Received /zone/$zone/favorites/$position from $address\:$port");
 
-		#if( !zone_available($zone) ) {
-		#	$fl->ERR("Zone $zone does not match to a valid player mac in LMS");
-		#	return $c->reply->not_found
-		#}
-
-		#$fl->DEB("Received JSON: $jsonrec");
-
-		# Create json
-		my $json;
-		eval {
-			$json = JSON::PP::decode_json( $jsonrec );
-			1;
-		} or do {
-			$fl->DEB("Received JSON: Results seems not be valid json string");
-			return;
-		};
-
-		$fl->DEB("Received JSON:\n" . Data::Dumper::Dumper($json)); 
-
-		# Create new fav
-		for my $item( @{$json} ){
-			my $title = $item->{'title'};
-			$title =~ s/\s/%20/g;
-
-			# Send to LMS tcp queue
-			$lmscommand = "favorites add url:$item->{'id'} title:$title";
-			&send("$lmscommand");
+		if( !zone_available($zone) ) {
+			$fl->ERR("Zone $zone does not match to a valid player mac in LMS");
+			return $c->reply->not_found
 		}
 
+		$fl->DEB("Received JSON: $jsonrec");
+
 		# Read global favorites from LMS
-		my $lmsfavs = &create_fav();
+		#my $lmsfavs = &create_fav();
 		
 		# Render in UTF8
-		utf8::decode($lmsfavs);
-		utf8::decode($lmsfavs);
-		$c->res->headers->header('Content-Type' => 'application/json');
-		$c->render(text => $lmsfavs);
+		#utf8::decode($lmsfavs);
+		#utf8::decode($lmsfavs);
+		#$c->res->headers->header('Content-Type' => 'application/json');
+		#$c->render(text => $lmsfavs);
 
 	};
 
@@ -346,7 +324,7 @@ sub create_state {
 		'track' => {
 			'title' => $playerstates->{$player}->{Songtitle},
 			'album' => $playerstates->{$player}->{Album},
-			'id' => $playerstates->{$player}->{Path},
+			'id' => $player,
 			'artist' => $playerstates->{$player}->{Artist},
 			'duration' => int($playerstates->{$player}->{Duration}*1000),
 			'image' => $playerstates->{$player}->{Cover}
@@ -356,6 +334,7 @@ sub create_state {
 
 	$fl->DEB("create_state: Response state:\n" . Data::Dumper::Dumper(%response)); 
 
+	#$fl->DEB("create_state: Response state data:\n" . Data::Dumper::Dumper(\%response)); 
 	my $jsonresponse = JSON::PP::encode_json(\%response);
 
 	return($jsonresponse);
@@ -392,13 +371,7 @@ sub create_fav {
 			$title =~ s/\s/%20/g;
 			my $lmscommand = "favorites addlevel title:$title";
 			&send($lmscommand);
-			sleep(10);
-			$item = &get_fav_sub($zone);
-			for (my $i = 1;$i <= 8;$i++) {
-				my $lmscommand = "favorites add title:Fav%20$i url:file:/// item_id:$item.$i";
-				&send($lmscommand);
-			}
-			#return();
+			return();
 		}
 	} else {
 		$item = "";
@@ -442,21 +415,12 @@ sub create_fav {
 			$item->{'presetParams'}->{'icon'} =~ s/^\/+//g;
 			$icon = "http://" . $main::squ_server . ":" . $main::squ_lmswebport . "/" . $item->{'presetParams'}->{'icon'}
 		}
-		# Filter empty FAVs
-		my %itemdata;
-		if ( $item->{'presetParams'}->{'favorites_title'} =~ m/^Fav \d$/ ) {
-			%itemdata = (
-				'id' => '',
-				'title' => '',
-				'image' => ''
-			);
-		} else {
-			%itemdata = (
-				'id' => $item->{'presetParams'}->{'favorites_url'},
-				'title' => $item->{'presetParams'}->{'favorites_title'},
-				'image' => $icon
-			);
-		}
+		my %itemdata = (
+			'id' => $item->{'presetParams'}->{'favorites_url'},
+			'title' => $item->{'presetParams'}->{'favorites_title'},
+			'image' => $icon
+		);
+
 		#$fl->DEB("create_fav: Created hash:\n" . Data::Dumper::Dumper(\%itemdata)); 
 
 		# Only 8 favs are supported by Loxones UI
@@ -514,8 +478,7 @@ sub get_fav_sub {
 			my ($txt,$subzone) = split ( / /, $item->{text} );
 			if ( $subzone eq $zone ) { # Found correct subfolder
 				$fl->DEB("get_fav_sub: Found subfolder for zone $zone: $item->{text}");
-				my ($rnd,$itemid) = split ( /\./, $item->{actions}->{go}->{params}->{item_id} );
-				$id = $itemid;
+				$id = $item->{actions}->{go}->{params}->{item_id};
 				last;
 			}
 		} else {
