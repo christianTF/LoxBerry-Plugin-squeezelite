@@ -113,7 +113,7 @@ sub tts {
 		}
 	}
 	foreach my $key(@invalid_players) {
-		unset($opt{player}[$key]);
+		delete($opt{player}[$key]);
 	}
 	
 	if( ! @{$opt{player}} ) {

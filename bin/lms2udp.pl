@@ -20,7 +20,7 @@ require "$lbphtmlauthdir/lib/LMSTTS.pm";
 # - libio-socket-timeout-perl
 
 # Version of this script
-$version = "1.0.6";
+$version = "1.1.0";
 
 ## Termination handling
 $SIG{INT} = sub { 
