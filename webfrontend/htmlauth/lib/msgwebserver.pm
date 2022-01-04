@@ -82,12 +82,8 @@ sub start_fmsweb
 		my $command = $c->stash('command');
 		my $value = $c->stash('value');
 		my $player = $fms->{zone}->{$zone};
-
-		# Check peer information
-		my $address = $c->tx->remote_address;
-		my $port    = $c->tx->remote_port;
 		
-		$fl->DEB("Received /zone/$zone/$command/$value request from $address\:$port");
+		$fl->DEB("Received COMMAND $command $value for ZONE $zone");
 
 		# Define playerstates here because we have to modify the state below to 
 		# sync the Loxone WebGUI 
@@ -163,7 +159,8 @@ sub start_fmsweb
 		my $address = $c->tx->remote_address;
 		my $port    = $c->tx->remote_port;
 		
-		$fl->DEB("Received /zone/$zone/state request from $address\:$port");
+		$fl->DEB("Request from $address\:$port");
+
 		# Read Player States and create output
 		my $state = &create_state($zone);
 		
@@ -175,34 +172,6 @@ sub start_fmsweb
 
 	};
 
-	# Answer with global Favorites
-	get '/favorites/0' => sub {
-
-		my $c = shift;
-		#my $zone = $c->stash('zone');
-
-		# Check peer information
-		my $address = $c->tx->remote_address;
-		my $port    = $c->tx->remote_port;
-		
-		$fl->DEB("Received favorites/0 from $address\:$port");
-
-		# Read global favorites from LMS
-		my $lmsfavs = &create_fav();
-		
-		# Render in UTF8
-		#utf8::decode($state);
-		#utf8::decode($state);
-		#$c->res->headers->header('Content-Type' => 'application/json');
-		#$c->render(text => $state);
-
-	};
-
-
-
-
-
-	
 	#
 	# Start server
 	#
@@ -217,7 +186,7 @@ sub start_fmsweb
 #
 sub create_state {
 
-	$fl->DEB("create_state called");
+	$fl->DEB("Sub create_state");
 
 	my $zone = shift;
 	my $player = $fms->{zone}->{$zone};
@@ -227,7 +196,7 @@ sub create_state {
 		$fl->DEB("create_state: playerstates not yet defined. Will read them from main::playerstates");
 	}
 
-	$fl->DEB("Creating state for player " . $player);
+	$fl->DEB("Creating State for Player " . $player);
 
 	if( !zone_available($zone) ) {
 		$fl->ERR("Zone $zone does not match to a valid player mac in LMS");
@@ -271,123 +240,10 @@ sub create_state {
 
 }
 
-#
-# Create Favorites
-#
-sub create_fav {
-	
-	$fl->DEB("create_fav called");
-
-	my $zone = shift;
-	my $player;
-
-	# If no player is specified, grab global favs
-	if (!$zone) {
-		my $player = "XX:XX:XX:XX:XX:XX";
-	} else {
-		my $player = $fms->{zone}->{$zone};
-	}
-
-	$fl->DEB("Grabbing favorites for player " . $player);
-
-	#if( !zone_available($zone) ) {
-	#	$fl->ERR("Zone $zone does not match to a valid player mac in LMS");
-	#	return;
-	#}
-	
-	# Grab favorites from LMS
-	my $lmsresp = &get_lmsdata($player, '{"id":1,"method":"slim.request","params":["XX:XX:XX:XX:XX:XX", ["favorites","items",0,10,"menu:favorites","useContextMenu:1"]]}');
-
-	$fl->DEB("Response fav lms data:\n" . Data::Dumper::Dumper($lmsresp)); 
-	
-	# Create json
-	#my %response = (
-	#	'player' => {
-	#		'id' => $player,
-	#		'mode' => $mode,
-	#		'time' => int($playerstates->{$player}->{time_fuzzy}*1000),
-	#		'volume' => $playerstates->{$player}->{volume},
-	#		'repeat' => $playerstates->{$player}->{Repeat},
-	#		'shuffle' => $playerstates->{$player}->{Shuffle}
-	#	},
-	#	'track' => {
-	#		'title' => $playerstates->{$player}->{Songtitle},
-	#		'album' => $playerstates->{$player}->{Album},
-	#		'id' => $player,
-	#		'artist' => $playerstates->{$player}->{Artist},
-	#		'duration' => int($playerstates->{$player}->{Duration}*1000),
-	#		'image' => $playerstates->{$player}->{Cover}
-	#	}
-	#);
-	#undef $playerstates;
-
-
-	#my $jsonresponse = JSON::PP::encode_json(\%response);
-	my $jsonresponse = "";
-
-	return($jsonresponse);
-
-}
-
-#
-# Grab data from LMS in JSON format
-#
-sub get_lmsdata {
-
-	$fl->DEB("get_lmsdata called");
-
-	use WWW::Curl::Easy;
-	my ($player,$request) = @_;
-	
-	if (@_ != 2) {
-		$fl->WARN("get_lmsdata: odd number of parameters");
-		return;
-	}
-	
-	# This is an example for grabbing data from the commandline using curl
-	# curl -s -H "Content-Type: application/json" -X POST -d '{"id":1,"method":"slim.request","params":["XX:XX:XX:XX:XX:XX", \\
-	# ["favorites","items",0,10,"menu:favorites","useContextMenu:1"]]}' \\
-	# http://localhost:9000/jsonrpc.js | jq
-
-	my $curl = WWW::Curl::Easy->new;
-	$curl->setopt(WWW::Curl::Easy::CURLOPT_NOPROGRESS, 1);
-	$curl->setopt(WWW::Curl::Easy::CURLOPT_HEADER, 0); # don't include headers in body
-	my @headers  = ("Content-Type: application/json");
-	$curl->setopt(WWW::Curl::Easy::CURLOPT_HTTPHEADER, \@headers);
-	$curl->setopt(WWW::Curl::Easy::CURLOPT_ENCODING, 'gzip');
-	$curl->setopt(WWW::Curl::Easy::CURLOPT_POST, 1);
-	# This is the request which should be send to LMS
-	$curl->setopt(WWW::Curl::Easy::CURLOPT_POSTFIELDS, $request );
-	
-	# either of the following speeds curl up massively
-	$curl->setopt(WWW::Curl::Easy::CURLOPT_TCP_NODELAY, 1);
-	#$curl->setopt(CURLOPT_FORBID_REUSE, 1);
-
-	# A filehandle, reference to a scalar or reference to a typeglob can be used here.
-	my $response_body;
-	$curl->setopt(WWW::Curl::Easy::CURLOPT_WRITEDATA,\$response_body);
-	
-	# Starts the actual request
-	$curl->setopt(WWW::Curl::Easy::CURLOPT_URL, "http://" . $main::squ_server . ":" . $main::squ_lmswebport . "/jsonrpc.js");
-	my $retcode = $curl->perform;
- 
-	# Looking at the results...
-	if ($retcode != 0) {
-        	$fl->ERR("An error happened: $retcode ".$curl->strerror($retcode)." ".$curl->errbuf);
-		return;
-	}
-	$fl->DEB("Request successfull");
-
-	return ( $curl->getinfo(WWW::Curl::Easy::CURLINFO_HTTP_CODE) );
-
-}
-
 # Checks if the requested zone has an available mac defined
 # Parameter is zone number
 sub zone_available
 {
-	$fl->DEB("zone_available called");
-
 	my ($zone) = @_;
 	if (!defined $zone) {
 		$fl->WARN("zone_available: zone parameter missing or empty");
@@ -418,7 +274,6 @@ sub zone_available
 
 sub start_msgthreads
 {
-
 	$main::log->INF("Entering start_msgthreads");
 	$main::log->DEB("FMS configuration:\n" . Data::Dumper::Dumper(\%main::msg_servers));
 	foreach my $key ( keys %main::msg_servers ) {
