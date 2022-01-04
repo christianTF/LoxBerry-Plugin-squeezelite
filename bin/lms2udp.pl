@@ -8,8 +8,8 @@ use LoxBerry::IO;
 use LoxBerry::Log;
 use LoxBerry::JSON;
 
-#use warnings;
-#use strict;
+use warnings;
+use strict;
 
 require "$lbphtmlauthdir/lib/LMSTTS.pm";
 									
@@ -134,7 +134,7 @@ print "Plugindir: $lbpplugindir\n";
 # Init Logfile
 $log = LoxBerry::Log->new (
     name => 'LMS2UDP',
-	stderr => 0,
+	stderr => 1,
 	addtime => 1,
 #	nofile => 1,
 );
@@ -1245,7 +1245,7 @@ sub read_config
 		require "$lbphtmlauthdir/lib/msgwebserver.pm";
 		for ( my $i=1; $i<=5; $i++ ) { # 5 MusicServer max
 			my $LocalWebPort;
-			if ( is_enabled( $cfg->param("MSG.FMS$i\_Activated") ) ) {
+			if ( is_enabled( $cfg->param("MSG.FMS$i\_Activated") ) {
 				$LocalWebPort = defined $cfg->param("MSG.FMS$i\_LocalWebPort") ? $cfg->param("MSG.FMS$i\_LocalWebPort") : 8090 + $i;
 				my %fms : shared;
 				LOGINF "FMS $i LocalWebPort " . $cfg->param("MSG.FMS$i\_LocalWebPort");
@@ -1257,7 +1257,7 @@ sub read_config
 				my %fmszone : shared;
 				my %fmsplayer : shared;
 				for ( my $ii=1; $ii<=30; $ii++ ) { # 30 Zones max
-					if ( $cfg->param("MSG.FMS$i\_Player_Z$ii") ) {
+					if ( $cfg->param("MSG.FMT$i\_Player_Z$ii") ) {
 						LOGINF "MSG ZONE $ii PLAYER " . $cfg->param("MSG.FMS$i\_Player_Z$ii");
 						$fmszone{$ii} = $cfg->param("MSG.FMS$i\_Player_Z$ii");
 						$fmsplayer{$cfg->param("MSG.FMS$i\_Player_Z$ii")} = $ii;
