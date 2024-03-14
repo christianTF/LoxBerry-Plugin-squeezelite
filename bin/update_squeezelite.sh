@@ -4,7 +4,11 @@
 # "stolen" from MS4H - thanks!
 
 # Vars
-pluginname=$(perl -e 'use LoxBerry::System; print $lbpplugindir; exit;')
+if [[ $2 != "" ]]; then
+	pluginname=$2
+else
+	pluginname=$(perl -e 'use LoxBerry::System; print $lbpplugindir; exit;')
+fi
 
 squp_url="https://github.com/ralph-irving/squeezelite/"
 squp_url_version="https://raw.githubusercontent.com/ralph-irving/squeezelite/master/squeezelite.h"
@@ -12,7 +16,7 @@ dir="`mktemp --directory`"
 cd "$dir"
 
 # print out versions
-if [[ $1 == "current" || $1 == "" ]]; then
+if [[ $1 == "current" || $1 == "initial" || $1 == "" ]]; then
 	. $LBHOMEDIR/libs/bashlib/iniparser.sh
 	iniparser $LBPCONFIG/$pluginname/plugin_squeezelite.cfg "Main"
 	if [[ $MainUseAlternativeBinaries == "1" ]]; then
@@ -26,7 +30,7 @@ if [[ $1 == "current" || $1 == "" ]]; then
 		exit 0
 	fi
 fi
-if [[ $1 == "available" || $1 == "" ]]; then
+if [[ $1 == "available" || $1 == "initial" || $1 == "" ]]; then
 	wget -t 5 -q -O /tmp/sqo.version $squp_url_version
 	versonline0=$(grep "#define MAJOR_VERSION" /tmp/sqo.version | awk '{print $3}' | sed 's/\"/ /g' | sed 's/ //g' )
 	versonline1=$(grep "#define MINOR_VERSION" /tmp/sqo.version | awk '{print $3}' | sed 's/\"/ /g' | sed 's/ //g' )

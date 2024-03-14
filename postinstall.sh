@@ -51,7 +51,7 @@ fi
 
 echo "<INFO> Compiling newest Squeezelite binaries"
 echo "<INFO> --------------------------------------------------------------"
-$ARGV5/bin/plugins/$ARGV2/update_squeezelite.sh
+$ARGV5/bin/plugins/$ARGV2/update_squeezelite.sh initial $2
 echo "<INFO> --------------------------------------------------------------"
 
 # Exit with Status 0
