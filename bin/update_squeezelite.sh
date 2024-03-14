@@ -11,7 +11,7 @@ else
 	pluginname=$(perl -e 'use LoxBerry::System; print $lbpplugindir; exit;')
 fi
 
-squp_url="https://github.com/ralph-irving/squeezelite/"
+squp_url="https://github.com/ralph-irving/squeezelite/archive/refs/heads/master.zip"
 squp_url_version="https://raw.githubusercontent.com/ralph-irving/squeezelite/master/squeezelite.h"
 
 # print out versions
@@ -65,10 +65,12 @@ LOGINF "Version installed:   "$versinstall
 LOGINF "Download Squeezelite..."
 dir="`mktemp --directory`"
 cd "$dir"
-git clone $squp_url | tee -a ${FILENAME}
+#git clone $squp_url | tee -a ${FILENAME}
+wget -t 5 -O master.zip $squp_url | tee -a ${FILENAME}
+unzip master.zip | tee -a ${FILENAME}
 
 LOGINF "Compile Squeezelite..."
-cd squeezelite
+cd squeezelite-master
 CORES=$(grep ^processor /proc/cpuinfo | wc -l)
 make -j $CORES | tee -a ${FILENAME}
 
