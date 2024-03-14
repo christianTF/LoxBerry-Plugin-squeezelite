@@ -16,7 +16,7 @@ dir="`mktemp --directory`"
 cd "$dir"
 
 # print out versions
-if [[ $1 == "current" || $1 == "initial" || $1 == "" ]]; then
+if [[ $1 == "current" || $1 == "" ]]; then
 	. $LBHOMEDIR/libs/bashlib/iniparser.sh
 	iniparser $LBPCONFIG/$pluginname/plugin_squeezelite.cfg "Main"
 	if [[ $MainUseAlternativeBinaries == "1" ]]; then
