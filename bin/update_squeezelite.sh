@@ -37,7 +37,7 @@ if [[ $1 == "available" || $1 == "initial" || $1 == "" ]]; then
 	versonline2=$(grep "#define MICRO_VERSION" /tmp/sqo.version | awk '{print $3}' | sed 's/\"/ /g' | sed 's/ //g' )
 	versonline=$(echo "$versonline0.$versonline1-$versonline2")
 	rm /tmp/sqo.version
-	if [[ $1 != "" ]]; then
+	if [[ $1 == "available" ]]; then
 		echo -n $versonline
 		exit 0
 	fi
