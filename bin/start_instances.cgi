@@ -20,7 +20,7 @@ use Cwd 'abs_path';
 # use Tie::LogFile;
 
 # Version of this script
-our $version = "1.0.1.3";
+our $version = "1.2.0.1";
 
 my  $home; 
 my  $lang;
@@ -144,24 +144,16 @@ my $sl_path;
 if (! $squ_altbinaries) {
 	# Use original Debian binary
 	LOGOK("Using original Debian Squeezelite binary");
-	$sl_path = 'squeezelite';
+	$sl_path = `which squeezelite`;
 } else {
 	# Use alternative binaries
 	
 	# Check architecture
-	my $archstring = `/bin/uname -a`;
-	if ( index($archstring, 'armv') != -1 ) {
-		LOGOK("Using ARM Squeezelite binary");
-		$sl_path = "$lbpdatadir/squeezelite-armv6hf";
-	} elsif ( index($archstring, 'x86_64') != -1 ) { 
-		LOGOK ("Using x64 Squeezelite binary");
-		$sl_path = "$lbpdatadir/squeezelite-x64";
-	} elsif ( index($archstring, 'x86') != -1 ) { 
-		LOGOK ("Using x86 Squeezelite binary");
-		$sl_path = "$lbpdatadir/squeezelite-x86";
+	if ( -e $lbpdatadir/squeezelite ) {
+		$sl_path = "$lbpdatadir/squeezelite";
 	} else {
 		LOGERR ("Could not determine architecture - falling back to original Debian Squeezelite binary");
-		$sl_path = 'squeezelite';
+		$sl_path = `which squeezelite`;
 	}
 }
 

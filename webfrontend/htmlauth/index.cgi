@@ -36,7 +36,7 @@ no strict "refs"; # we need it for template system
 ##########################################################################
 
 # Version of this script
-our $version = "1.0.7.1";
+our $version = "1.2.0.1";
 
 our $cfg;
 our $namef;
@@ -699,25 +699,14 @@ sub sl_path {
 	if (! $cfg->param("Main.UseAlternativeBinaries") ) {
 		# Use original Debian binary
 		LOGOK("Using original Debian Squeezelite binary");
-		$sl_path = 'squeezelite';
+		$sl_path = `which squeezelite`;
 	} else {
 		# Use alternative binaries
-		
-		# Check architecture
-		my $archstring = `/bin/uname -a`;
-		LOGDEB("uname -a: $archstring");
-		if ( index($archstring, 'armv') != -1 ) {
-			LOGOK("Using ARM Squeezelite binary");
-			$sl_path = "$lbpdatadir/squeezelite-armv6hf";
-		} elsif ( index($archstring, 'x86_64') != -1 ) {
-			LOGOK("Using x64 Squeezelite binary");
-			$sl_path = "$lbpdatadir/squeezelite-x64";
-		} elsif ( index($archstring, 'x86') != -1 ) {
-			LOGOK("Using x86 Squeezelite binary");
-			$sl_path = "$lbpdatadir/squeezelite-x86";
+		if ( -e "$lbpdatadir/squeezelite" ) {
+			$sl_path = "$lbpdatadir/squeezelite";
 		} else {
 			LOGERR("Could not determine architecture - falling back to original Debian Squeezelite binary");
-			$sl_path = 'squeezelite';
+			$sl_path = `which squeezelite`;
 		}
 	}
 	return $sl_path;
