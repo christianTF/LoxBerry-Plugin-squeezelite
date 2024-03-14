@@ -149,7 +149,7 @@ if (! $squ_altbinaries) {
 	# Use alternative binaries
 	
 	# Check architecture
-	if ( -e $lbpdatadir/squeezelite ) {
+	if ( -e "$lbpdatadir/squeezelite" ) {
 		$sl_path = "$lbpdatadir/squeezelite";
 	} else {
 		LOGERR ("Could not determine architecture - falling back to original Debian Squeezelite binary");
