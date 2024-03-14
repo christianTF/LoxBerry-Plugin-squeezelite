@@ -605,7 +605,7 @@ foreach (split(/&/,$ENV{'QUERY_STRING'}))
 	sub lbheader 
 	{
 		 # Create Help page
-	  $helplink = "http://www.loxwiki.eu:80/x/_4Cm";
+	  $helplink = "https://wiki.loxberry.de/plugins/squeezelite_player/start";
 	  
 	  	
 	# Read Plugin Help transations
