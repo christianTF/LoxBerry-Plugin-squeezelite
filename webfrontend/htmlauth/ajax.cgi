@@ -18,8 +18,12 @@ my $req;
 my %response;
 
 my $cgi = CGI->new;
+my $q = $cgi->Vars;
 
-# Check input
+# Update Squeezelite
+if ( $q->{ajax} eq "squeezelite_update" ) {
+	my $su = `$lbpbindir/update_squeezelite.sh`;
+}
 
 # Read plugin settings
 my $cfgfilename = "$lbpconfigdir/plugin_squeezelite.cfg";
@@ -55,6 +59,15 @@ for (my $instance = 1; $instance <= $cfg->param("Main.Instances"); $instance++) 
 }
 
 $response{'instancecount'} = trim(`pgrep -c squeezelite`);
+
+# ALTERNATE BINARIES
+if (is_enabled($cfg->param('Main.UseAlternativeBinaries'))) {
+	$response{'versonline'} = trim(`$lbpbindir/update_squeezelite.sh available`);
+	$response{'versinstalled'} = trim(`$lbpbindir/update_squeezelite.sh current`);
+	undef($response{'versinstalled'}) if $response{'versinstalled'} == "-1"; # Running update
+} else {
+	$response{'versonline'} = "--";
+}
 
 print_response();
 

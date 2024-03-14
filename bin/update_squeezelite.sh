@@ -3,6 +3,7 @@
 # SQUEEZELITE UPDATE
 # "stolen" from MS4H - thanks!
 
+
 # Vars
 if [[ $2 != "" ]]; then
 	pluginname=$2
@@ -12,21 +13,24 @@ fi
 
 squp_url="https://github.com/ralph-irving/squeezelite/"
 squp_url_version="https://raw.githubusercontent.com/ralph-irving/squeezelite/master/squeezelite.h"
-dir="`mktemp --directory`"
-cd "$dir"
 
 # print out versions
 if [[ $1 == "current" || $1 == "" ]]; then
-	. $LBHOMEDIR/libs/bashlib/iniparser.sh
-	iniparser $LBPCONFIG/$pluginname/plugin_squeezelite.cfg "Main"
-	if [[ $MainUseAlternativeBinaries == "1" ]]; then
-		SQUEEZEBIN="${LBPDATA}/${pluginname}/squeezelite"
+	I=`pgrep -c -f "update_squeezelite.sh"`
+	if [[ $I > 1 ]]; then # Another instance is running - most likely a running update
+		versinstall="-1"
 	else
-		SQUEEZEBIN=`which squeezelite`
+		. $LBHOMEDIR/libs/bashlib/iniparser.sh
+		iniparser $LBPCONFIG/$pluginname/plugin_squeezelite.cfg "Main"
+		if [[ $MainUseAlternativeBinaries == "1" ]]; then
+			SQUEEZEBIN="${LBPDATA}/${pluginname}/squeezelite"
+		else
+			SQUEEZEBIN=`which squeezelite`
+		fi
+		versinstall=`$SQUEEZEBIN -? | grep "Squeezelite v" | awk '{print $2}' | cut -d "v" -f2 | cut -d "," -f1`
 	fi
-	versinstall=`$SQUEEZEBIN -? | grep "Squeezelite v" | awk '{print $2}' | cut -d "v" -f2 | cut -d "," -f1`
 	if [[ $1 != "" ]]; then
-		echo -n $versinstall
+		echo -n "$versinstall"
 		exit 0
 	fi
 fi
@@ -59,17 +63,19 @@ LOGINF "Version online:      "$versonline
 LOGINF "Version installed:   "$versinstall
 
 LOGINF "Download Squeezelite..."
-git clone $squp_url
+dir="`mktemp --directory`"
+cd "$dir"
+git clone $squp_url | tee -a ${FILENAME}
 
 LOGINF "Compile Squeezelite..."
 cd squeezelite
 CORES=$(grep ^processor /proc/cpuinfo | wc -l)
-make -j $CORES
+make -j $CORES | tee -a ${FILENAME}
 
 LOGINF "Install new version..."
 cp -f squeezelite ${LBPDATA}/${pluginname}/squeezelite
-sudo systemctl stop squeezelite.service
-sudo systemctl disable squeezelite
+sudo systemctl stop squeezelite.service | tee -a ${FILENAME}
+sudo systemctl disable squeezelite | tee -a ${FILENAME}
 
 if [ -e ${LBPDATA}/${pluginname}/squeezelite ]; then
 	newversinstall=`${LBPDATA}/${pluginname}/squeezelite -? | grep "Squeezelite v" | awk '{print $2}' | cut -d "v" -f2 | cut -d "," -f1`
@@ -80,6 +86,10 @@ if [[ $newversinstall == $versonline ]]; then
 else 
 	LOGERR "ERROR WHILE UPDATING! Keeping old version."
 fi
+
+# CleanUp
+cd ~
+rm -fr $dir
 
 LOGEND "Upgrading squeezelite finished."
 exit 0
