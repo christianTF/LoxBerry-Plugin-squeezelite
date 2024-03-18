@@ -25,7 +25,13 @@
 	  <tr>
 	  <td style="border-width : 0px;"><!--$T::BASIC_ALTERNATIVEBINARIES--></td>
 	  <td style="border-width : 0px;"><input type="checkbox" data-role="flipswitch" name="altbinaries" id="altbinaries" <!--$squ_altbinaries_enabled--></td>
-	  <td style="border-width : 0px;"><!--$T::BASIC_ALTERNATIVEBINARIES_FORMAT--></td>
+	  <td style="border-width : 0px;"><table border=0><tr><td><!--$T::BASIC_VERSIONINSTALLED-->:</td><td rowspan=2>&nbsp;&nbsp;&nbsp;</td><td><b><span id="versinstalled">--</span></b></td><td rowspan=2>&nbsp;&nbsp;&nbsp;</td>
+	  				<td rowspan=2><a id="btnsqupdate" data-role="button" data-inline="true" data-mini="true" data-icon="recycle" href="#" onclick="squeezelite_update()"><!--$T::BUTTON_UPDATE--></a></td>
+					<td rowspan=2>&nbsp;&nbsp;&nbsp;</td><td rowspan=2><a id="btnsqupdatelog" href="/admin/system/tools/logfile.cgi?logfile=/plugins/<!--$pluginname-->squeezelite/squeezelite_upgrade.log&header=html&format=template" target="_blank" class="ui-disabled"><!--$T::BUTTON_LOGFILE--></a></td></tr>
+					<tr><td><!--$T::BASIC_VERSIONONLINE-->:</td><td><b><span id="versonline">--</span></b></td></tr></table></td>
+	  </tr>
+	  <tr>
+	  <td style="border-width : 0px;"></td>
 	  </tr>
 	  </tr>
 	</table>
@@ -116,12 +122,12 @@ function checkMAC(fieldname) {
 
 
 // Animation for the "show more" link
-    $("body").off("click", "#basic_showmore");
-    $("body").on("click", "#basic_showmore",
-        function(){
-            $("#basic_table_advanced").slideToggle("fast");
-        }
-    );
+$("body").off("click", "#basic_showmore");
+$("body").on("click", "#basic_showmore",
+	function(){
+		$("#basic_table_advanced").slideToggle("fast");
+	}
+);
 
 $('#btncancel').click(function() {
     location.reload();
@@ -130,6 +136,28 @@ $('#btncancel').click(function() {
 
 function openTemplateWizzard() {
 	window.open('./templatebuilder.cgi', '_blank', 'menubar=0,scrollbars=1,status=0,toolbar=0', 'replace=false');
+}
+
+function squeezelite_update() {
+	$("#versinstalled").html("Updating...");
+	$('#btnsqupdate').addClass('ui-disabled');
+	$('#btnsqupdatelog').removeClass('ui-disabled');
+	$.ajax( {
+			url:  'ajax.cgi',
+			type: 'POST',
+			data: {
+				ajax: 'squeezelite_update'
+			}
+		} )
+	.fail(function( data ) {
+		$("#versinstalled").html("Failed.");
+	})
+	.done(function( data ) {
+	})
+	.always(function( data ) {
+		running_states();
+		$('#btnsqupdate').removeClass('ui-disabled');
+	});
 }
 
 /*

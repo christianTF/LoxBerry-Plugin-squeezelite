@@ -11,4 +11,7 @@ libwww-curl-perl
 libarray-utils-perl
 libclone-perl
 libwww-curl-perl
-
+libasound2-dev
+libfaad-dev
+libmad0-dev
+libmpg123-dev
