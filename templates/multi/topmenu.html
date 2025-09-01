@@ -49,6 +49,17 @@ function running_states()
 				$("#lms2udpstate").attr("style", "color:red").html('<!--$T::RUNNINGINSTANCES_ERROR_FETCHING-->');
 			}
 			
+			if(resp.versonline != null) {
+				$("#versonline").html(resp.versonline);
+			} else {
+				$("#versonline").html('--');
+			}
+			
+			if(resp.versinstalled != null) {
+				$("#versinstalled").html(resp.versinstalled);
+			} else {
+				$("#versinstalled").html('--');
+			}
 	  })
 	  .fail(function(resp) {
 			$("#squeezelitestate").attr("style", "color:red").html('<!--$T::RUNNINGINSTANCES_ERROR_FETCHING-->');

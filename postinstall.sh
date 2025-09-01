@@ -29,13 +29,30 @@ ARGV4=$4 # Forth argument is Plugin version
 ARGV5=$5 # Fifth argument is Base folder of LoxBerry
 
 echo "<INFO> Determining if we are running on Raspberry"
-cat /etc/os-release | grep "ID=raspbian" > /dev/null
-if [ $? -eq 0 ] ; then
-	echo "Raspbian" > $ARGV5/config/plugins/$ARGV2/is_raspbian.info
-	echo "<OK> Running on a Raspberry Pi"
+# DietPi
+if [ -e /boot/dietpi/func/dietpi-obtain_hw_model ]; then
+	HWMODELFILENAME=$(cat /boot/dietpi/func/dietpi-obtain_hw_model | grep "G_HW_MODEL $G_HW_MODEL " | awk '/.*G_HW_MODEL .*/ {for(i=4; i<=NF; ++i) printf "%s_", $i; print ""}' | sed 's/\//_/g' | sed 's/[()]//g' | sed 's/_$//' | tr '[:upper:]' '[:lower:]')
+	if echo $HWMODELFILENAME | grep -q "raspberry"; then
+		echo "Raspbian" > $ARGV5/config/plugins/$ARGV2/is_raspbian.info
+		echo "<OK> Running on a Raspberry Pi"
+	else
+		echo "<OK> This is not Raspberry hardware"
+	fi
+# Raspbian
 else
-	echo "<OK> This is not Raspberry hardware"
+	cat /etc/os-release | grep "ID=raspbian" > /dev/null
+	if [ $? -eq 0 ] ; then
+		echo "Raspbian" > $ARGV5/config/plugins/$ARGV2/is_raspbian.info
+		echo "<OK> Running on a Raspberry Pi"
+	else
+		echo "<OK> This is not Raspberry hardware"
+	fi
 fi
+
+echo "<INFO> Compiling newest Squeezelite binaries"
+echo "<INFO> --------------------------------------------------------------"
+$ARGV5/bin/plugins/$ARGV2/update_squeezelite.sh initial $2
+echo "<INFO> --------------------------------------------------------------"
 
 # Exit with Status 0
 exit 0
